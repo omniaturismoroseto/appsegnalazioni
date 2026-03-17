@@ -33,7 +33,6 @@ label:first-child{margin-top:0}
 .badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:var(--radius);letter-spacing:.04em;display:inline-block}
 .badge-emergenza{background:var(--danger-bg);color:var(--danger-text)}
 .badge-pericolo{background:var(--warning-bg);color:var(--warning-text)}
-.badge-condizioni{background:var(--info-bg);color:var(--info-text)}
 .filter-btn{font-size:12px;padding:4px 12px;border-radius:20px}
 .filter-btn.active{background:var(--bg3);border-color:var(--border2);font-weight:600}
 .type-btn{padding:10px 4px;border-radius:var(--radius);font-size:12px;text-align:center;transition:all .15s}
@@ -91,7 +90,6 @@ label:first-child{margin-top:0}
 .report-card.resolved{opacity:.5;border:1px solid var(--border)}
 .report-card.emergenza{border:1px solid var(--danger-border)}
 .report-card.pericolo{border:1px solid var(--warning-border)}
-.report-card.condizioni{border:1px solid var(--info-border)}
 .report-top{display:flex;align-items:flex-start;gap:8px}
 .report-body{flex:1;min-width:0}.report-meta{font-size:11px;color:var(--text2);margin-top:4px}
 .report-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
@@ -102,7 +100,7 @@ label:first-child{margin-top:0}
 .tag-public{font-size:10px;color:var(--text3);border:1px solid var(--border);padding:1px 5px;border-radius:4px}
 .tag-resolved{font-size:11px;color:var(--success-text)}
 .zone-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:7px 12px;background:var(--bg2);border-radius:var(--radius)}
-.form-wrap{max-width:480px}.type-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.form-wrap{max-width:480px}.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .photo-preview{margin-top:8px;max-width:100%;height:100px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block}
 .photo-remove{font-size:11px;padding:2px 8px;margin-top:6px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent}
 .confirm-wrap{text-align:center;padding:40px 0}
@@ -232,7 +230,7 @@ const WA_CHANNEL="https://whatsapp.com/channel/0029VbCewQeCMY0PyZ6v5P3z";
 const PIN="1234";
 const RED="#D62B1F",NAVY="#1A3B8C";
 const FLAG_COLORS={verde:"#27ae60",gialla:"#F5C800",rossa:"#e74c3c"};
-const ALERT_COLORS={emergenza:"#D81B8C",pericolo:"#EF9F27",condizioni:"#378ADD"};
+const ALERT_COLORS={emergenza:"#D81B8C",pericolo:"#EF9F27"};
 const LOGO_SRC=null;
 
 const STATIONS=[
@@ -268,7 +266,7 @@ ZONES.push("Spiaggia libera / Area non concessionata");
 const TYPES={
   emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio grave","Bandiera rossa / divieto bagno"]},
   pericolo: {label:"Pericolo", sub:["Vento Garbino","Correnti pericolose","Mare molto mosso","Meduse","Oggetti pericolosi in acqua"]},
-  condizioni:{label:"Condizioni",sub:["Mare calmo","Mare mosso","Mare agitato","Visibilit\u00e0 ridotta","Acqua fredda"]},
+
 };
 
 let currentScreen="home",currentRole=null;
@@ -372,7 +370,7 @@ function playBeep(){
   }catch(e){}
 }
 function sendWANotify(r){
-  const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO",condizioni:"\uD83C\uDF0A CONDIZIONI"};
+  const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO"};
   const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Segnalazioni`;
   window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
 }
@@ -464,7 +462,6 @@ function getMarkerColor(s){
   const zr=open.filter(r=>r.zone===zl);
   if(zr.some(r=>r.type==="emergenza"))return{bg:ALERT_COLORS.emergenza,ring:true};
   if(zr.some(r=>r.type==="pericolo"))return{bg:ALERT_COLORS.pericolo,ring:true};
-  if(zr.some(r=>r.type==="condizioni"))return{bg:ALERT_COLORS.condizioni,ring:false};
   return{bg:FLAG_COLORS[flagsData[s.num]||"verde"],ring:false,flag:flagsData[s.num]||"verde"};
 }
 function refreshMarkers(){
@@ -715,7 +712,7 @@ function renderSubmit(page){
   function setType(k){
     type=k;sub="";
     subSel.innerHTML=`<option value="">Seleziona...</option>`+TYPES[k].sub.map(s=>`<option value="${s}">${s}</option>`).join("");
-    const map={emergenza:"danger",pericolo:"warning",condizioni:"info"};
+    const map={emergenza:"danger",pericolo:"warning"};
     Object.entries(typeBtns).forEach(([bk,bb])=>{
       const c=map[bk];bb.style.background=bk===k?`var(--${c}-bg)`:"";
       bb.style.color=bk===k?`var(--${c}-text)`:"var(--text2)";
@@ -741,8 +738,8 @@ function renderSubmit(page){
     const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--info-text);margin-top:4px";
     hint.textContent=`\uD83D\uDCCD Postazione pi\u00f9 vicina preselezionata (${fmtDist(nearestDist)})`;wrap.appendChild(hint);
   }
-  const lbN=document.createElement("label");lbN.textContent="Descrizione";wrap.appendChild(lbN);
-  const notesEl=document.createElement("textarea");notesEl.placeholder="Descrivi la situazione...";notesEl.rows=3;
+  const lbN=document.createElement("label");lbN.innerHTML="Descrizione <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(opzionale)</span>";wrap.appendChild(lbN);
+  const notesEl=document.createElement("textarea");notesEl.placeholder="Aggiungi dettagli (opzionale)...";notesEl.rows=3;
   notesEl.addEventListener("input",()=>notes=notesEl.value);wrap.appendChild(notesEl);
   const lbF=document.createElement("label");lbF.textContent="Foto (opzionale)";wrap.appendChild(lbF);
   const fileInp=document.createElement("input");fileInp.type="file";fileInp.accept="image/*";fileInp.setAttribute("capture","environment");
@@ -786,7 +783,7 @@ function renderSubmit(page){
     sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
     var phoneEl2=document.getElementById("segnalazione-phone");
     if(phoneEl2)phone=phoneEl2.value.trim();
-    if(!sub||!notes.trim()){alert("Seleziona il tipo e inserisci una descrizione.");return;}
+    if(!sub){alert("Seleziona il tipo di segnalazione.");return;}
     if(currentRole!=="operator"&&phone.length<9){
       if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
       alert("Inserisci un numero di telefono valido per procedere.");return;
@@ -827,7 +824,7 @@ function renderDashboard(page){
   newBtn.addEventListener("click",()=>render("submit"));ac.appendChild(newBtn);tb.appendChild(ac);page.appendChild(tb);
   const sg=document.createElement("div");sg.className="stats-grid";
   [{label:"APERTE",value:open.length,color:""},{label:"EMERGENZE",value:open.filter(r=>r.type==="emergenza").length,color:"var(--danger-text)"},
-   {label:"PERICOLI",value:open.filter(r=>r.type==="pericolo").length,color:"var(--warning-text)"},{label:"CONDIZIONI",value:open.filter(r=>r.type==="condizioni").length,color:"var(--info-text)"}]
+   {label:"PERICOLI",value:open.filter(r=>r.type==="pericolo").length,color:"var(--warning-text)"}]
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
@@ -844,7 +841,7 @@ function renderDashboard(page){
     clr.addEventListener("click",()=>{activeStation=null;renderPage();});bar.appendChild(clr);page.appendChild(bar);
   }
   const ft=document.createElement("div");ft.className="filters";
-  [["aperte","Aperte"],["emergenza","Emergenze"],["pericolo","Pericoli"],["condizioni","Condizioni"],["tutte","Tutte"]].forEach(([k,l])=>{
+  [["aperte","Aperte"],["emergenza","Emergenze"],["pericolo","Pericoli"],["tutte","Tutte"]].forEach(([k,l])=>{
     const b=document.createElement("button");b.className="filter-btn"+(activeFilter===k?" active":"");b.textContent=l;
     b.addEventListener("click",()=>{activeFilter=k;renderPage();});ft.appendChild(b);
   });
@@ -871,7 +868,7 @@ function renderDashboard(page){
     const acts=document.createElement("div");acts.className="report-actions";
     const wa=document.createElement("button");wa.className="action-btn wa";wa.textContent="WA";
     wa.addEventListener("click",()=>{
-      const em={emergenza:"\uD83D\uDEA8",pericolo:"\u26A0\uFE0F",condizioni:"\uD83C\uDF0A"};
+      const em={emergenza:"\uD83D\uDEA8",pericolo:"\u26A0\uFE0F"};
       const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Safety Lifeguard`;
       window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
     });acts.appendChild(wa);
