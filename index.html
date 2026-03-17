@@ -417,8 +417,7 @@ function renderHeader(){
   const btns=document.createElement("div");btns.className="header-btns";
   const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
   btns.appendChild(sd);
-  const ap=document.createElement("a");ap.className="hbtn-icon";ap.href="tel:"+PHONE;ap.textContent="\uD83D\uDCDE";
-  const aw=document.createElement("a");aw.className="hbtn-icon";aw.href=WA_CHANNEL;aw.target="_blank";aw.textContent="\uD83D\uDCAC";
+
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
@@ -432,7 +431,7 @@ function renderHeader(){
   if(currentRole==="operator"&&newReportCount>0){
     const nb=document.createElement("span");nb.className="notif-badge";nb.textContent=newReportCount;opWrap.appendChild(nb);
   }
-  btns.appendChild(ap);btns.appendChild(aw);btns.appendChild(opWrap);
+  btns.appendChild(opWrap);
   hdr.appendChild(btns);
 }
 
