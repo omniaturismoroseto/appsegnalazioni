@@ -1,78 +1,1026 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
-
-<meta name="theme-color" content="#D62B1F">
-<link rel="manifest" href="/appsegnalazioni/manifest.json">
-<link rel="icon" href="/appsegnalazioni/icon-192.png">
-
+<meta name="description" content="Segnalazioni spiaggia Roseto degli Abruzzi - Omnia Adriatic Safety Lifeguard"/>
+<meta name="theme-color" content="#D62B1F"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="application-name" content="Omnia Segnalazioni"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Omnia"/>
+<link rel="manifest" href="/appsegnalazioni/manifest.json"/>
+<link rel="apple-touch-icon" href="icon.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
-body{
-margin:0;
-font-family:Arial,Helvetica,sans-serif;
-background:#f5f5f5;
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;font-size:15px}
+:root{
+  --red:#D62B1F;--navy:#1A3B8C;--bg:#fff;--bg2:#f5f5f5;--bg3:#ebebeb;
+  --text:#1a1a1a;--text2:#666;--text3:#999;--border:#e0e0e0;--border2:#ccc;
+  --danger-bg:#fef2f2;--danger-text:#c0392b;--danger-border:#f5c6cb;
+  --warning-bg:#fffbeb;--warning-text:#b45309;--warning-border:#fcd34d;
+  --info-bg:#eff6ff;--info-text:#1d4ed8;--info-border:#bfdbfe;
+  --success-bg:#f0fdf4;--success-text:#166534;
+  --radius:8px;--radius-lg:12px;
+  --verde:#27ae60;--gialla:#F5C800;--rossa:#e74c3c;
+}
+input,select,textarea,button{font-family:inherit;font-size:14px;outline:none}
+input[type=text],input[type=password],select{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);display:block}
+input:focus,select:focus,textarea:focus{border-color:var(--navy)}
+textarea{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);resize:vertical;background:var(--bg);color:var(--text);line-height:1.5}
+button{cursor:pointer;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);padding:7px 14px;transition:background .15s}
+button:hover{background:var(--bg2)}
+.btn-primary{background:var(--red);color:white;border-color:var(--red);font-weight:600;padding:12px;width:100%;font-size:15px}
+.btn-primary:hover{background:#b82318}.btn-primary:disabled{opacity:.35;cursor:not-allowed}
+.back-btn{background:none;border:none;color:var(--text2);font-size:13px;padding:0;margin-bottom:20px;display:block}
+.back-btn:hover{background:none;color:var(--text)}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:6px;margin-top:14px;letter-spacing:.03em}
+label:first-child{margin-top:0}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:var(--radius);letter-spacing:.04em;display:inline-block}
+.badge-emergenza{background:var(--danger-bg);color:var(--danger-text)}
+.badge-pericolo{background:var(--warning-bg);color:var(--warning-text)}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:20px}
+.filter-btn.active{background:var(--bg3);border-color:var(--border2);font-weight:600}
+.type-btn{padding:10px 4px;border-radius:var(--radius);font-size:12px;text-align:center;transition:all .15s}
+.header{background:var(--red);padding:10px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:1000}
+.header-logo{display:flex;align-items:center;flex:1;cursor:pointer;min-width:0}
+.header-btns{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hbtn-icon{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:none;display:flex;align-items:center;justify-content:center;font-size:15px;text-decoration:none;color:white;cursor:pointer;flex-shrink:0}
+.hbtn-icon:hover{background:rgba(255,255,255,.3)}
+.hbtn-op{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:white;font-size:17px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.hbtn-op:hover{background:rgba(255,255,255,.3)}
+.notif-badge{position:absolute;top:-4px;right:-4px;background:#F5C800;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--red)}
+.hbtn-wrap{position:relative}
+#main-map{height:280px;width:100%;display:block;z-index:1;background:#e8e8e8}
+.map-legend{display:flex;gap:11px;flex-wrap:wrap;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);align-items:center}
+.ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:3px;vertical-align:middle}
+#content{padding:16px}.page-inner{max-width:660px;margin:0 auto}
+.nearest-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--radius-lg);margin-bottom:14px}
+.nearest-flag{width:18px;height:18px;border-radius:50%;flex-shrink:0}
+.nearest-info{flex:1;min-width:0}
+.nearest-info strong{font-size:14px;font-weight:600;color:var(--info-text);display:block}
+.nearest-info span{font-size:12px;color:var(--text2)}
+.nearest-btn{font-size:12px;padding:5px 11px;color:var(--info-text);background:white;border-color:var(--info-border);white-space:nowrap;flex-shrink:0}
+.home-btns{display:grid;gap:10px;margin-bottom:18px}
+.home-btn{padding:16px;border-radius:var(--radius-lg);border:2px solid var(--border);background:var(--bg);cursor:pointer;text-align:left;width:100%;transition:border-color .15s}
+.home-btn:hover{background:var(--bg)}.home-btn.primary{border-color:var(--red)}
+.home-btn h3{font-size:15px;font-weight:600;margin-bottom:3px}.home-btn.primary h3{color:var(--red)}
+.home-btn p{font-size:12px;color:var(--text2);margin:0}
+.quick-links{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid var(--border);padding-top:18px}
+.quick-link{display:block;padding:12px;border-radius:var(--radius);border:1px solid var(--border);text-align:center;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;background:var(--bg)}
+.quick-link:hover{background:var(--bg2)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat-card{background:var(--bg2);border-radius:var(--radius);padding:10px 12px}
+.stat-label{font-size:10px;color:var(--text2);margin-bottom:3px;letter-spacing:.05em}
+.stat-value{font-size:21px;font-weight:600;line-height:1}
+.dash-toolbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
+.dash-actions{display:flex;gap:6px;flex-wrap:wrap}
+.tab-bar{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:100%;margin-bottom:16px}
+.tab-btn{flex:1;padding:8px;font-size:13px;background:transparent;border:none;border-right:1px solid var(--border);color:var(--text2);cursor:pointer}
+.tab-btn:last-child{border-right:none}.tab-btn.active{background:var(--bg2);color:var(--text);font-weight:600}
+.bandiere-panel{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden}
+.bandiere-header{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.bandiere-header h3{font-size:14px;font-weight:600}
+.bulk-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bulk-controls label{margin:0;font-size:12px;color:var(--text2);white-space:nowrap}
+.bulk-btn{font-size:12px;padding:5px 12px;background:var(--navy);color:white;border-color:var(--navy)}
+.bulk-btn:hover{background:#142f70}
+.station-row{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)}
+.station-row:last-child{border-bottom:none}
+.station-flag-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.1)}
+.station-name{flex:1;font-size:13px}.station-num{font-size:11px;color:var(--text3);margin-left:4px}
+.flag-select{width:auto;padding:4px 8px;font-size:12px;flex-shrink:0}
+.filters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.reports-list{display:grid;gap:8px}
+.report-card{border-radius:var(--radius-lg);padding:13px 15px;background:var(--bg);transition:opacity .2s}
+.report-card.resolved{opacity:.5;border:1px solid var(--border)}
+.report-card.emergenza{border:1px solid var(--danger-border)}
+.report-card.pericolo{border:1px solid var(--warning-border)}
+.report-top{display:flex;align-items:flex-start;gap:8px}
+.report-body{flex:1;min-width:0}.report-meta{font-size:11px;color:var(--text2);margin-top:4px}
+.report-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.action-btn{font-size:11px;padding:3px 9px;border-radius:var(--radius)}
+.action-btn.wa{color:var(--success-text);font-weight:700;background:var(--success-bg);border-color:transparent}
+.action-btn.resolve{color:var(--info-text);background:var(--info-bg);border-color:transparent}
+.action-btn.del{color:var(--danger-text);background:var(--danger-bg);border-color:transparent}
+.tag-public{font-size:10px;color:var(--text3);border:1px solid var(--border);padding:1px 5px;border-radius:4px}
+.tag-resolved{font-size:11px;color:var(--success-text)}
+.zone-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:7px 12px;background:var(--bg2);border-radius:var(--radius)}
+.form-wrap{max-width:480px}.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.photo-preview{margin-top:8px;max-width:100%;height:100px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block}
+.photo-remove{font-size:11px;padding:2px 8px;margin-top:6px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent}
+.confirm-wrap{text-align:center;padding:40px 0}
+.confirm-icon{width:52px;height:52px;border-radius:50%;background:var(--success-bg);color:var(--success-text);font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#27ae60;display:inline-block;margin-left:5px;vertical-align:middle}
+.sync-dot.off{background:#e74c3c}
+.empty{text-align:center;color:var(--text3);padding:32px;font-size:13px}
+@media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header" id="hdr"></div>
+  <div id="main-map" style="height:280px;width:100%;background:#cde;position:relative;z-index:1;"></div>
+  <div class="map-legend" id="map-legend" style="display:none"></div>
+  <div id="content"><div class="page-inner" id="page"></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// Firebase REST API - no SDK needed, works everywhere
+var FB_URL="https://app-segnalazioni-omnia-roseto-default-rtdb.europe-west1.firebasedatabase.app";
+var _fbListeners={};
+
+// Storage ibrido: Firebase REST se online, localStorage se offline
+var _fbOnline=false;
+function _lsGet(k){try{return JSON.parse(localStorage.getItem("fb_"+k)||"null");}catch(e){return null;}}
+function _lsSet(k,v){try{localStorage.setItem("fb_"+k,JSON.stringify(v));}catch(e){}}
+
+function _fbFetch(path,method,body){
+  var opts={method:method||"GET",headers:{"Content-Type":"application/json"}};
+  if(body!==undefined)opts.body=JSON.stringify(body);
+  return fetch(FB_URL+"/"+path+".json",opts)
+    .then(function(r){if(!r.ok)throw new Error(r.status);_fbOnline=true;return r.json();});
 }
 
-.header{
-background:#D62B1F;
-color:white;
-padding:16px;
-text-align:center;
-font-weight:bold;
-font-size:20px;
+var firebase={
+  _db:{
+    ref:function(path){
+      return {
+        _path:path,
+        on:function(evt,cb){
+          var self=this;
+          var lsKey=self._path;
+          // Avvia subito con dati locali
+          var local=_lsGet(lsKey);
+          if(local!==null)cb({val:function(){return local;}});
+          // Poi tenta Firebase in background
+          function poll(){
+            _fbFetch(self._path)
+              .then(function(data){
+                _lsSet(lsKey,data);
+                cb({val:function(){return data;}});
+              })
+              .catch(function(){/* silenzioso - usa localStorage */});
+          }
+          poll();
+          setInterval(poll,5000);
+        },
+        push:function(data){
+          var lsKey=this._path;
+          // Salva sempre in locale
+          var arr=_lsGet(lsKey)||{};
+          var tempKey="local_"+Date.now();
+          arr[tempKey]=data;
+          _lsSet(lsKey,arr);
+          // Tenta Firebase
+          return _fbFetch(lsKey,"POST",data)
+            .then(function(d){return {key:d.name};})
+            .catch(function(){return {key:tempKey};});
+        },
+        set:function(data){
+          _lsSet(this._path,data);
+          return _fbFetch(this._path,"PUT",data).catch(function(){return null;});
+        },
+        update:function(data){
+          var cur=_lsGet(this._path)||{};
+          Object.assign(cur,data);
+          _lsSet(this._path,cur);
+          return _fbFetch(this._path,"PATCH",data).catch(function(){return null;});
+        },
+        remove:function(){
+          _lsSet(this._path,null);
+          return _fbFetch(this._path,"DELETE").catch(function(){return null;});
+        },
+        child:function(sub){return firebase._db.ref(this._path+"/"+sub);}
+      };
+    }
+  },
+  database:function(){return firebase._db;}
+};
+firebase.initializeApp=function(){};
+
+window.addEventListener("load",function(){
+  function boot(){
+    try{startApp();}catch(e){
+      document.getElementById("page").innerHTML='<div style="padding:20px;color:red;font-size:13px"><b>Errore:</b><br>'+e.toString()+'</div>';
+    }
+  }
+  if(typeof L!=="undefined"){
+    boot();
+  } else {
+    setTimeout(boot,600);
+  }
+});
+function startApp(){
+// Debug: mostra subito che startApp è partito
+var dbg=document.getElementById("page");
+if(dbg)dbg.innerHTML='<p style="padding:10px;font-size:12px;color:#888">Avvio app...</p>';
+
+const firebaseConfig={
+  apiKey:"AIzaSyDcLeex_9o0BqgAs2lEEXTiVYG_zRSiXQA",
+  authDomain:"app-segnalazioni-omnia-roseto.firebaseapp.com",
+  databaseURL:"https://app-segnalazioni-omnia-roseto-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"app-segnalazioni-omnia-roseto",
+  storageBucket:"app-segnalazioni-omnia-roseto.firebasestorage.app",
+  messagingSenderId:"699028105579",
+  appId:"1:699028105579:web:cdc0a432083b7fe18d442e"
+};
+// Firebase REST - no initializeApp needed
+const db=firebase.database();
+const reportsRef=db.ref("reports");
+const flagsRef=db.ref("flags");
+
+const PHONE="+393284769641";
+const WA_NOTIFY="393284769641";
+const WA_CHANNEL="https://whatsapp.com/channel/0029VbCewQeCMY0PyZ6v5P3z";
+const PIN="1234";
+const RED="#D62B1F",NAVY="#1A3B8C";
+const FLAG_COLORS={verde:"#27ae60",gialla:"#F5C800",rossa:"#e74c3c"};
+const ALERT_COLORS={emergenza:"#D81B8C",pericolo:"#EF9F27"};
+const LOGO_SRC=null;
+
+const STATIONS=[
+  {num:10,name:"Tartaruga",lat:42.66747,lng:14.02596},
+  {num:11,name:"Cabana Park",lat:42.66836,lng:14.02542},
+  {num:12,name:"Spiaggia Libera tra Orsa Minore e Scirocco",lat:42.67120,lng:14.02308},
+  {num:13,name:"Spiaggia Libera tra Ahamar e Papenoo",lat:42.67290,lng:14.02199},
+  {num:14,name:"Lido La Vela",lat:42.67410,lng:14.02162},
+  {num:15,name:"Bagni Marini",lat:42.67514,lng:14.02057},
+  {num:16,name:"Bolla Mare",lat:42.67643,lng:14.01932},
+  {num:17,name:"La Paranzella",lat:42.67753,lng:14.01848},
+  {num:18,name:"Celommi",lat:42.67885,lng:14.01741},
+  {num:19,name:"Marisella",lat:42.68013,lng:14.01646},
+  {num:20,name:"Sirenetta",lat:42.68164,lng:14.01554},
+  {num:21,name:"Lauretta",lat:42.68282,lng:14.01457},
+  {num:22,name:"Lido Azzurra",lat:42.68372,lng:14.01391},
+  {num:23,name:"Aurora",lat:42.68511,lng:14.01286},
+  {num:24,name:"Bellavista",lat:42.68657,lng:14.01179},
+  {num:25,name:"Lido Aragosta",lat:42.68774,lng:14.01106},
+  {num:26,name:"Riva del Sol",lat:42.68898,lng:14.01014},
+  {num:27,name:"Tropical",lat:42.69022,lng:14.00906},
+  {num:28,name:"Lido38",lat:42.69139,lng:14.00815},
+  {num:29,name:"Spiaggia Libera tra VVF e Lido Sahara",lat:42.69265,lng:14.00706},
+  {num:30,name:"Casa del Mar",lat:42.69426,lng:14.00533},
+  {num:31,name:"Maldimare",lat:42.69532,lng:14.00436},
+  {num:32,name:"Bora Bora",lat:42.69630,lng:14.00378},
+  {num:33,name:"Camping Surabaia",lat:42.69927,lng:14.00192},
+  {num:34,name:"Spiaggia Libera tra Lo Squalo e Bagni Bruno",lat:42.72301,lng:13.98858},
+  {num:35,name:"Camping Nino",lat:42.72457,lng:13.98758},
+];
+const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
+ZONES.push("Spiaggia libera / Area non concessionata");
+const TYPES={
+  emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio grave","Bandiera rossa / divieto bagno"]},
+  pericolo: {label:"Pericolo", sub:["Vento Garbino","Correnti pericolose","Mare molto mosso","Meduse","Oggetti pericolosi in acqua"]},
+
+};
+
+let currentScreen="home",currentRole=null;
+let activeFilter="aperte",activeStation=null,activeDashTab="segnalazioni";
+let mapObj=null,mapMarkers=[],userMarker=null;
+let nearestStation=null,nearestDist=null;
+let fbReady=false,newReportCount=0;
+let reportsData={},flagsData={};
+let prevReportKeys=new Set();
+
+// FIREBASE LISTENERS
+reportsRef.on("value",snap=>{
+  const snapData=snap.val()||{};
+  const newKeys=new Set(Object.keys(snapData));
+  if(fbReady&&currentRole==="operator"){
+    let added=0;
+    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&snapData[k]&&snapData[k].status==="aperta")added++;});
+    if(added>0){newReportCount+=added;onNewReport();}
+  }
+  prevReportKeys=newKeys;
+  reportsData=snapData;
+  fbReady=true;
+  refreshMarkers();
+  if(currentScreen==="dashboard")renderPage();
+  if(currentScreen==="home")renderPage();
+  renderHeader();
+});
+flagsRef.on("value",snap=>{
+  const fsnap=snap.val()||{};
+  flagsData={};
+  STATIONS.forEach(s=>{flagsData[s.num]=fsnap[String(s.num)]||fsnap[s.num]||"verde";});
+  refreshMarkers();
+  if(currentScreen==="home")renderPage();
+  if(currentScreen==="dashboard"&&activeDashTab==="bandiere")renderPage();
+});
+
+function onNewReport(){
+  renderHeader();
+  playBeep();
+  if(window.Notification&&Notification.permission==="granted"){
+    new Notification("Omnia \u2013 Nuova segnalazione",{body:"Nuova segnalazione ricevuta"});
+  }
 }
 
-.map{
-height:420px;
-background:#ddd;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-color:#666;
+// DATA HELPERS
+function getReports(){
+  return Object.entries(reportsData).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.id-a.id);
+}
+function getFlags(){return{...flagsData};}
+function addReport(r){return reportsRef.push(r);}
+function resolveReport(key){return reportsRef.child(key).update({status:"risolta"});}
+function deleteReport(key){return reportsRef.child(key).remove();}
+function saveFlags(obj){
+  const clean={};STATIONS.forEach(s=>{clean[String(s.num)]=obj[s.num]||"verde";});
+  return flagsRef.set(clean);
+}
+function setFlag(num,val){return flagsRef.child(String(num)).set(val);}
+
+// UTILS
+function fmt(iso){
+  const d=new Date(iso);
+  return d.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"})+" \u00b7 "+
+         d.toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit"});
+}
+function fmtDist(m){return m<1000?m+"m":(m/1000).toFixed(1)+"km";}
+function resizeImg(file,cb){
+  const i=new Image(),u=URL.createObjectURL(file);
+  i.onload=()=>{
+    const M=500;let w=i.width,h=i.height;
+    if(w>M){h=Math.round(h*M/w);w=M;}
+    const c=document.createElement("canvas");c.width=w;c.height=h;
+    c.getContext("2d").drawImage(i,0,0,w,h);
+    cb(c.toDataURL("image/jpeg",0.55));URL.revokeObjectURL(u);
+  };i.src=u;
+}
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function findNearest(lat,lng){
+  let best=null,bestDist=Infinity;
+  STATIONS.forEach(s=>{const d=haversine(lat,lng,s.lat,s.lng);if(d<bestDist){bestDist=d;best=s;}});
+  return{station:best,dist:Math.round(bestDist)};
 }
 
-.sos{
-width:100%;
-padding:12px 14px;
+function isServiceActive(){var h=new Date().getHours();return h>=9&&h<19;}
+function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
+var _svcActive=isServiceActive();
+setInterval(function(){var c=isServiceActive();if(_svcActive&&!c)applyServiceFlags();_svcActive=c;},60000);
+if(!isServiceActive())applyServiceFlags();
+function playBeep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [880,1100].forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=f;g.gain.value=0.25;
+      o.start(ctx.currentTime+i*0.22);o.stop(ctx.currentTime+i*0.22+0.15);
+    });
+  }catch(e){}
+}
+function sendWANotify(r){
+  const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO"};
+  const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Segnalazioni`;
+  window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
 }
 
-.sos a{
-display:block;
-width:100%;
-text-align:center;
+// GPS
+function requestGPS(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const{latitude:lat,longitude:lng}=pos.coords;
+    const{station,dist}=findNearest(lat,lng);
+    nearestStation=station;nearestDist=dist;
+    if(mapObj){
+      if(userMarker){try{userMarker.remove();}catch(e){}}
+      const icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+      userMarker=L.marker([lat,lng],{icon}).addTo(mapObj).bindPopup('<b>Sei qui</b>');
+      const bounds=L.latLngBounds([[lat,lng],[station.lat,station.lng]]);
+      mapObj.fitBounds(bounds,{padding:[50,50],maxZoom:16});
+    }
+    if(currentScreen==="home")renderPage();
+  },function(e){
+    // GPS non disponibile - mostra strip cliccabile
+    nearestStation=null;
+    if(currentScreen==="home")renderPage();
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+
+
+
+window._segnalaPostazione=function(zoneLabel){
+  currentRole="public";
+  activeStation=zoneLabel||null;
+  render("submit");
+};
+
+
+function callEmergency112(){
+  var ok = confirm("Stai per chiamare il numero di emergenza 112. Vuoi continuare?");
+  if(ok){
+    window.location.href = "tel:112";
+  }
+}
+
+// HEADER
+function renderHeader(){
+  const hdr=document.getElementById("hdr");hdr.innerHTML="";
+  const logoWrap=document.createElement("div");logoWrap.className="header-logo";
+  logoWrap.addEventListener("click",()=>render("home"));
+  var logoImg=document.createElement("img");
+  logoImg.src="logo.png";
+  logoImg.alt="OMNIA";
+  logoImg.style.cssText="display:block;height:54px;width:auto;max-width:min(70vw,520px);object-fit:contain";
+  logoImg.onerror=function(){
+    this.onerror=null;
+    this.outerHTML='<div><div style="font-size:22px;font-weight:900;color:white;letter-spacing:.04em;line-height:1">OMNIA</div><div style="font-size:7.5px;color:rgba(255,255,255,.8);letter-spacing:.07em;margin-top:1px">ADRIATIC SAFETY LIFEGUARD</div></div>';
+  };
+  logoWrap.appendChild(logoImg);hdr.appendChild(logoWrap);
+  const btns=document.createElement("div");btns.className="header-btns";
+  const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
+  btns.appendChild(sd);
+
+  const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
+  const op=document.createElement("button");op.className="hbtn-op";
+  if(currentRole==="operator"){
+    op.textContent="\uD83D\uDD13";op.title="Esci";
+    op.addEventListener("click",()=>{currentRole=null;newReportCount=0;render("home");});
+  }else{
+    op.textContent="\uD83D\uDD10";op.title="Area Operatori";
+    op.addEventListener("click",()=>render("login"));
+  }
+  opWrap.appendChild(op);
+  if(currentRole==="operator"&&newReportCount>0){
+    const nb=document.createElement("span");nb.className="notif-badge";nb.textContent=newReportCount;opWrap.appendChild(nb);
+  }
+  btns.appendChild(opWrap);
+  hdr.appendChild(btns);
+}
+
+// MAPPA
+function initMap(){
+  var el=document.getElementById("main-map");
+  if(!el)return;
+  if(mapObj){refreshMarkers();mapObj.invalidateSize(true);return;}
+  el.style.height="280px";el.style.width="100%";
+  mapObj=L.map(el,{zoomControl:true,preferCanvas:true,updateWhenIdle:true,tap:true}).setView([42.686,14.010],13);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+    attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:20,updateWhenIdle:true,keepBuffer:3
+  }).addTo(mapObj);
+  refreshMarkers();
+  mapObj.whenReady(function(){
+    [50,250,700].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});
+  });
+  mapObj.on("load",function(){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},150);});
+}
+function getMarkerColor(s){
+  const open=Object.values(reportsData).filter(r=>r.status==="aperta");
+  const zl=`P.${s.num} \u2013 ${s.name}`;
+  const zr=open.filter(r=>r.zone===zl);
+  if(zr.some(r=>r.type==="emergenza"))return{bg:ALERT_COLORS.emergenza,ring:true};
+  if(zr.some(r=>r.type==="pericolo"))return{bg:ALERT_COLORS.pericolo,ring:true};
+  return{bg:FLAG_COLORS[flagsData[s.num]||"verde"],ring:false,flag:flagsData[s.num]||"verde"};
+}
+function refreshMarkers(){
+  if(!mapObj)return;
+  mapMarkers.forEach(m=>{try{m.remove();}catch(e){}});
+  mapMarkers=[];
+  const open=Object.values(reportsData).filter(r=>r.status==="aperta");
+  STATIONS.forEach(s=>{
+    const zl=`P.${s.num} \u2013 ${s.name}`;
+    const zr=open.filter(r=>r.zone===zl);
+    const mc=getMarkerColor(s);
+    const isNearest=nearestStation&&nearestStation.num===s.num;
+    const shadow=mc.ring?`box-shadow:0 0 0 3px ${mc.bg},0 0 0 5px white;`:`box-shadow:0 1px 4px rgba(0,0,0,.4);`;
+    const nearRing=isNearest?`outline:3px solid #1d4ed8;outline-offset:2px;`:"";
+    const icon=L.divIcon({className:"",
+      html:`<div style="width:26px;height:26px;border-radius:50%;background:${mc.bg};border:2.5px solid white;color:white;font-size:8.5px;font-weight:700;line-height:21px;text-align:center;${shadow}${nearRing}">${s.num}</div>`,
+      iconSize:[26,26],iconAnchor:[13,13]});
+    // Popup con info postazione e distanza
+    (function(station, zoneLabel, alerts, markerColor){
+      var m=L.marker([station.lat,station.lng],{icon}).addTo(mapObj);
+      m.on("click",function(){
+        // Cerca posizione utente dal userMarker
+        var userPos=null;
+        if(userMarker){try{userPos=userMarker.getLatLng();}catch(e){}}
+        var distStr="";
+        if(userPos){
+          var dm=Math.round(haversine(userPos.lat,userPos.lng,station.lat,station.lng));
+          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(dm)+" da te</span>";
+        } else if(nearestStation&&nearestStation.num===station.num&&nearestDist){
+          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(nearestDist)+" da te</span>";
+        }
+        // Colore bandiera
+        var flagName=flagsData[station.num]||"verde";
+        var flagCol=FLAG_COLORS[flagName];
+        var flagStr="<br><span style=\"font-size:12px\">Bandiera <span style=\"font-weight:700;color:"+flagCol+"\">"+flagName.toUpperCase()+"</span></span>";
+        // Alert aperti
+        var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
+        var popup=L.popup({maxWidth:220})
+          .setContent(
+            "<div style=\"font-family:sans-serif;padding:2px\">"
+            +"<b style=\"font-size:14px\">P."+station.num+" \u2013 "+station.name+"</b>"
+            +distStr+flagStr+alertStr
+            +"<br><button onclick=\"window._segnalaPostazione('"+zoneLabel+"')\" "
+            +"style=\"margin-top:8px;width:100%;padding:7px;background:#D62B1F;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer\">"
+            +"\uD83D\uDEA8 Segnala qui</button>"
+            +"</div>"
+          );
+        m.bindPopup(popup).openPopup();
+      });
+      mapMarkers.push(m);
+    })(s, zl, zr, mc.bg);
+  });
+}
+function renderMapLegend(){
+  const leg=document.getElementById("map-legend");leg.style.display="flex";
+  leg.innerHTML=
+    `<span><span class="ldot" style="background:#27ae60"></span>Verde</span>`+
+    `<span><span class="ldot" style="background:#F5C800"></span>Gialla</span>`+
+    `<span><span class="ldot" style="background:#e74c3c"></span>Rossa</span>`+
+    `<span style="border-left:1px solid var(--border);padding-left:11px"><span class="ldot" style="background:#D81B8C"></span>Emergenza</span>`+
+    `<span><span class="ldot" style="background:#EF9F27"></span>Pericolo</span>`+
+    `<span style="margin-left:auto;color:var(--text3);font-size:10px">\u25cf sei tu</span>`;
+}
+
+// RENDER
+function render(screen){
+  currentScreen=screen;
+  renderHeader();
+  const mapEl=document.getElementById("main-map");
+  const showMap=["home","dashboard"].includes(screen);
+  mapEl.style.display=showMap?"block":"none";
+  document.getElementById("map-legend").style.display=showMap?"flex":"none";
+  if(showMap){
+    if(!mapObj){initMap();}
+    else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
+    renderMapLegend();
+    if(!nearestStation)requestGPS();
+  }else{
+  }
+  renderPage();
+}
+function renderPage(){
+  const page=document.getElementById("page");page.innerHTML="";
+  if(currentScreen==="home")renderHome(page);
+  else if(currentScreen==="login")renderLogin(page);
+  else if(currentScreen==="submit")renderSubmit(page);
+  else if(currentScreen==="done")renderDone(page);
+  else if(currentScreen==="dashboard"){if(currentRole!=="operator"){render("login");return;}renderDashboard(page);}
+}
+
+// HOME
+function renderHome(page){
+
+  const emergencyBox=document.createElement("div");
+  emergencyBox.style.cssText="margin-bottom:14px";
+  emergencyBox.innerHTML=
+    '<button type="button" style="display:block;width:100%;text-align:center;background:#b30000;color:white;font-weight:800;padding:18px;border:none;border-radius:14px;font-size:16px;box-shadow:0 4px 14px rgba(0,0,0,0.2)">🚨 IN CASO DI PERICOLO CHIAMA IL 112 IMMEDIATAMENTE 🚨</button>';
+  emergencyBox.querySelector("button").addEventListener("click",callEmergency112);
+  page.appendChild(emergencyBox);
+
+  // legenda bandiere
+  const flagBox=document.createElement("div");
+  flagBox.style.cssText="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px";
+  flagBox.innerHTML=
+    `<p style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Significato delle bandiere</p>`+
+    `<div style="display:grid;gap:8px">`+
+    `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#27ae60;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#27ae60">VERDE</span><span style="font-size:12px;color:var(--text2)"> &mdash; Mare calmo, bagno sicuro</span></div></div>`+
+    `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#F5C800;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#F5C800">GIALLA</span><span style="font-size:12px;color:var(--text2)"> &mdash; Mare mosso, prestare attenzione</span></div></div>`+
+    `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#e74c3c;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#e74c3c">ROSSA</span><span style="font-size:12px;color:var(--text2)"> &mdash; Pericolo, divieto di balneazione</span></div></div>`+
+    `</div>`;
+  page.appendChild(flagBox);
+
+
+  (function(){
+    var ns=document.createElement("div");
+    if(nearestStation){
+      var fc2=FLAG_COLORS[flagsData[nearestStation.num]||"verde"];
+      var svc=isServiceActive();
+      var fn=(flagsData[nearestStation.num]||"verde").toUpperCase();
+      ns.style.cssText="border-radius:var(--radius-lg);margin-bottom:14px;background:"+(svc?"#f0fdf4":"#fef2f2")+";border:1px solid "+(svc?"#bbf7d0":"#fecaca")+";overflow:hidden";
+      // Info row
+      var infoRow=document.createElement("div");
+      infoRow.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 14px 10px";
+      infoRow.innerHTML='<span style="font-size:22px">\uD83D\uDCCD</span>'
+        +'<div style="flex:1;min-width:0">'
+        +'<p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 2px">P.'+nearestStation.num+' \u2013 '+nearestStation.name+'</p>'
+        +'<p style="font-size:12px;color:var(--text2);margin:0">A <strong>'+fmtDist(nearestDist)+'</strong> da te &nbsp;\u00b7&nbsp; Bandiera <span style="font-weight:700;color:'+fc2+'">'+fn+'</span>'+(svc?'':' &nbsp;\u00b7&nbsp; <span style="color:#b91c1c;font-weight:700">FUORI SERVIZIO</span>')+'</p>'
+        +'</div>';
+      ns.appendChild(infoRow);
+      // Buttons row
+      var btnRow=document.createElement("div");
+      btnRow.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid "+(svc?"#bbf7d0":"#fecaca");
+      // Segnala qui
+      var btnSeg=document.createElement("button");
+      btnSeg.style.cssText="padding:11px 8px;background:transparent;border:none;border-right:1px solid "+(svc?"#bbf7d0":"#fecaca")+";font-size:13px;font-weight:600;color:"+(svc?"#166534":"#991b1b")+";cursor:pointer";
+      btnSeg.innerHTML='\uD83D\uDEA8 Segnala qui';
+      btnSeg.addEventListener("click",function(){
+        currentRole="public";
+        activeStation="P."+nearestStation.num+" \u2013 "+nearestStation.name;
+        render("submit");
+      });
+      // Vai (apre navigatore)
+      var btnNav=document.createElement("button");
+      btnNav.style.cssText="padding:11px 8px;background:transparent;border:none;font-size:13px;font-weight:600;color:"+(svc?"#166534":"#991b1b")+";cursor:pointer";
+      btnNav.innerHTML='\uD83E\uDDED Vai \u2192';
+      btnNav.addEventListener("click",function(){
+        var lat=nearestStation.lat;
+        var lng=nearestStation.lng;
+        var label=encodeURIComponent("P."+nearestStation.num+" - "+nearestStation.name);
+        // Apre Google Maps o Apple Maps o qualsiasi navigatore
+        var ua=navigator.userAgent||"";
+        var url;
+        if(/iPhone|iPad|iPod/i.test(ua)){
+          url="maps://maps.apple.com/?daddr="+lat+","+lng+"&dirflg=d";
+        } else {
+          url="https://www.google.com/maps/dir/?api=1&destination="+lat+","+lng+"&travelmode=walking";
+        }
+        window.open(url,"_blank");
+      });
+      btnRow.appendChild(btnSeg);btnRow.appendChild(btnNav);
+      ns.appendChild(btnRow);
+    } else {
+      ns.style.cssText="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);cursor:pointer";
+      ns.innerHTML='<span style="font-size:18px">\uD83D\uDCCD</span><span style="font-size:13px;color:var(--text2)">Tocca per rilevare la postazione pi\u00f9 vicina</span>';
+      ns.addEventListener("click",function(){requestGPS();});
+    }
+    page.appendChild(ns);
+    if(!isServiceActive()){
+      var d2=new Date();
+      var ob=document.createElement("div");
+      ob.style.cssText="padding:10px 14px;border-radius:var(--radius);background:#fef2f2;border:1px solid #fecaca;margin-bottom:14px;font-size:13px;color:#991b1b;text-align:center;font-weight:500";
+      ob.innerHTML='\u26A0\uFE0F Servizio non attivo ('+String(d2.getHours()).padStart(2,"0")+':'+String(d2.getMinutes()).padStart(2,"0")+') &middot; Orario: <strong>09:00 &ndash; 19:00</strong>';
+      page.appendChild(ob);
+    }
+  })();
+  // pulsante segnala
+  const btns=document.createElement("div");btns.className="home-btns";
+  const b1=document.createElement("button");b1.className="home-btn primary";
+  b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
+  b1.addEventListener("click",()=>{currentRole="public";render("submit");});
+  btns.appendChild(b1);page.appendChild(btns);
+
+  // chiama + scrivi su WA
+  const contacts=document.createElement("div");
+  contacts.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px";
+  const aCall=document.createElement("a");aCall.href="tel:"+PHONE;
+  aCall.style.cssText="display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);text-decoration:none;font-size:13px;font-weight:600;color:var(--text)";
+  aCall.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Chiama Omnia`;
+  const aWAMsg=document.createElement("a");aWAMsg.href=`https://wa.me/${WA_NOTIFY}`;aWAMsg.target="_blank";
+  aWAMsg.style.cssText="display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);text-decoration:none;font-size:13px;font-weight:600;color:var(--text)";
+  aWAMsg.innerHTML=`<svg width="18" height="18" viewBox="0 0 32 32" fill="#25D366"><path d="M16 .5C7.44.5.5 7.44.5 16c0 2.82.74 5.47 2.03 7.78L.5 31.5l7.93-2.08A15.43 15.43 0 0 0 16 31.5c8.56 0 15.5-6.94 15.5-15.5S24.56.5 16 .5zm0 28.18a12.6 12.6 0 0 1-6.43-1.76l-.46-.27-4.71 1.24 1.25-4.6-.3-.48A12.68 12.68 0 1 1 16 28.68zm6.95-9.5c-.38-.19-2.26-1.12-2.61-1.24-.35-.13-.6-.19-.86.19-.25.38-1 1.24-1.22 1.5-.22.25-.45.28-.83.1-.38-.19-1.61-.6-3.07-1.91-1.13-1.01-1.9-2.26-2.12-2.64-.22-.38-.02-.58.17-.77.17-.17.38-.44.57-.66.19-.22.25-.38.38-.63.13-.25.06-.47-.03-.66-.1-.19-.86-2.08-1.18-2.85-.31-.75-.63-.65-.86-.66h-.73c-.25 0-.66.1-1 .47-.35.38-1.32 1.29-1.32 3.14s1.35 3.64 1.54 3.9c.19.25 2.66 4.06 6.44 5.69.9.39 1.6.62 2.15.79.9.29 1.73.25 2.38.15.73-.11 2.26-.92 2.58-1.82.32-.9.32-1.67.22-1.82-.09-.16-.34-.25-.72-.44z"/></svg>Scrivi su WhatsApp`;
+  contacts.appendChild(aCall);contacts.appendChild(aWAMsg);
+  page.appendChild(contacts);
+
+  // segui omnia
+  const followTitle=document.createElement("p");
+  followTitle.style.cssText="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px";
+  followTitle.textContent="Segui Omnia su";
+  page.appendChild(followTitle);
+
+  const social=document.createElement("div");
+  social.style.cssText="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px";
+
+  // WA canale
+  const aWACh=document.createElement("a");
+  aWACh.href="https://whatsapp.com/channel/0029VbCewQeCMY0PyZ6v5P3z";aWACh.target="_blank";
+  aWACh.style.cssText="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg);text-decoration:none";
+  aWACh.innerHTML=`<svg width="28" height="28" viewBox="0 0 32 32" fill="#25D366"><path d="M16 .5C7.44.5.5 7.44.5 16c0 2.82.74 5.47 2.03 7.78L.5 31.5l7.93-2.08A15.43 15.43 0 0 0 16 31.5c8.56 0 15.5-6.94 15.5-15.5S24.56.5 16 .5zm0 28.18a12.6 12.6 0 0 1-6.43-1.76l-.46-.27-4.71 1.24 1.25-4.6-.3-.48A12.68 12.68 0 1 1 16 28.68zm6.95-9.5c-.38-.19-2.26-1.12-2.61-1.24-.35-.13-.6-.19-.86.19-.25.38-1 1.24-1.22 1.5-.22.25-.45.28-.83.1-.38-.19-1.61-.6-3.07-1.91-1.13-1.01-1.9-2.26-2.12-2.64-.22-.38-.02-.58.17-.77.17-.17.38-.44.57-.66.19-.22.25-.38.38-.63.13-.25.06-.47-.03-.66-.1-.19-.86-2.08-1.18-2.85-.31-.75-.63-.65-.86-.66h-.73c-.25 0-.66.1-1 .47-.35.38-1.32 1.29-1.32 3.14s1.35 3.64 1.54 3.9c.19.25 2.66 4.06 6.44 5.69.9.39 1.6.62 2.15.79.9.29 1.73.25 2.38.15.73-.11 2.26-.92 2.58-1.82.32-.9.32-1.67.22-1.82-.09-.16-.34-.25-.72-.44z"/></svg><span style="font-size:11px;font-weight:600;color:var(--text2)">Canale WA</span>`;
+
+  // Facebook
+  const aFB=document.createElement("a");
+  aFB.href="https://www.facebook.com/profile.php?id=61586744621945";aFB.target="_blank";
+  aFB.style.cssText="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg);text-decoration:none";
+  aFB.innerHTML=`<svg width="28" height="28" viewBox="0 0 32 32" fill="#1877F2"><path d="M32 16C32 7.163 24.837 0 16 0S0 7.163 0 16c0 7.988 5.845 14.606 13.5 15.806V20.625H9.438V16H13.5v-3.525c0-4.01 2.389-6.225 6.044-6.225 1.75 0 3.581.313 3.581.313v3.938h-2.018c-1.988 0-2.607 1.233-2.607 2.498V16h4.438l-.709 4.625H18.5v11.181C26.155 30.606 32 23.988 32 16z"/></svg><span style="font-size:11px;font-weight:600;color:var(--text2)">Facebook</span>`;
+
+  // Instagram
+  const aIG=document.createElement("a");
+  aIG.href="https://www.instagram.com/omnialifeguard/";aIG.target="_blank";
+  aIG.style.cssText="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg);text-decoration:none";
+  aIG.innerHTML=`<svg width="28" height="28" viewBox="0 0 32 32"><defs><radialGradient id="ig" cx="30%" cy="107%" r="150%"><stop offset="0%" stop-color="#fdf497"/><stop offset="5%" stop-color="#fdf497"/><stop offset="45%" stop-color="#fd5949"/><stop offset="60%" stop-color="#d6249f"/><stop offset="90%" stop-color="#285AEB"/></radialGradient></defs><rect width="32" height="32" rx="8" fill="url(#ig)"/><circle cx="16" cy="16" r="6" fill="none" stroke="white" stroke-width="2.2"/><circle cx="23.5" cy="8.5" r="1.5" fill="white"/><rect x="3" y="3" width="26" height="26" rx="7" fill="none" stroke="white" stroke-width="2"/></svg><span style="font-size:11px;font-weight:600;color:var(--text2)">Instagram</span>`;
+
+  social.appendChild(aWACh);social.appendChild(aFB);social.appendChild(aIG);
+  page.appendChild(social);
+}
+
+// LOGIN
+function renderLogin(page){
+  const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
+  back.addEventListener("click",()=>render("home"));page.appendChild(back);
+  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Accesso operatori";page.appendChild(h);
+  const lbl=document.createElement("label");lbl.textContent="PIN di accesso";page.appendChild(lbl);
+  const inp=document.createElement("input");inp.type="password";inp.placeholder="\u2022\u2022\u2022\u2022";inp.maxLength=6;page.appendChild(inp);
+  const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent="PIN non corretto";page.appendChild(err);
+  function go(){
+    if(inp.value===PIN){
+      currentRole="operator";newReportCount=0;if(window._requestNotifPermission)_requestNotifPermission();
+      if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
+      render("dashboard");
+    }else{err.style.display="block";}
+  }
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+  const btn=document.createElement("button");btn.className="btn-primary";btn.textContent="Accedi";btn.addEventListener("click",go);page.appendChild(btn);
+  const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--text3);text-align:center;margin-top:12px";hint.textContent="PIN demo: 1234";page.appendChild(hint);
+}
+
+// SUBMIT
+function renderSubmit(page){
+  let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
+  const wrap=document.createElement("div");wrap.className="form-wrap";
+  const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
+  back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
+  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Nuova segnalazione";wrap.appendChild(h);
+  const lbT=document.createElement("label");lbT.textContent="Tipo segnalazione";wrap.appendChild(lbT);
+  const tg=document.createElement("div");tg.className="type-grid";
+  const typeBtns={};
+  function setType(k){
+    type=k;sub="";
+    subSel.innerHTML=`<option value="">Seleziona...</option>`+TYPES[k].sub.map(s=>`<option value="${s}">${s}</option>`).join("");
+    const map={emergenza:"danger",pericolo:"warning"};
+    Object.entries(typeBtns).forEach(([bk,bb])=>{
+      const c=map[bk];bb.style.background=bk===k?`var(--${c}-bg)`:"";
+      bb.style.color=bk===k?`var(--${c}-text)`:"var(--text2)";
+      bb.style.borderColor=bk===k?`var(--${c}-border)`:"var(--border2)";
+      bb.style.fontWeight=bk===k?"600":"400";
+    });
+  }
+  Object.entries(TYPES).forEach(([k,v])=>{
+    const btn=document.createElement("button");btn.className="type-btn";btn.textContent=v.label;
+    btn.addEventListener("click",()=>setType(k));typeBtns[k]=btn;tg.appendChild(btn);
+  });
+  wrap.appendChild(tg);
+  const lbS=document.createElement("label");lbS.textContent="Dettaglio";wrap.appendChild(lbS);
+  const subSel=document.createElement("select");wrap.appendChild(subSel);
+  subSel.addEventListener("change",()=>sub=subSel.value);setType("pericolo");
+  const lbZ=document.createElement("label");lbZ.textContent="Postazione";wrap.appendChild(lbZ);
+  const zoneSel=document.createElement("select");
+  ZONES.forEach(z=>{const o=document.createElement("option");o.value=z;o.textContent=z;zoneSel.appendChild(o);});
+  const presel=activeStation||(nearestStation?`P.${nearestStation.num} \u2013 ${nearestStation.name}`:null);
+  if(presel&&ZONES.includes(presel))zoneSel.value=presel;
+  zone=zoneSel.value;zoneSel.addEventListener("change",()=>zone=zoneSel.value);wrap.appendChild(zoneSel);
+  if(nearestStation&&!activeStation){
+    const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--info-text);margin-top:4px";
+    hint.textContent=`\uD83D\uDCCD Postazione pi\u00f9 vicina preselezionata (${fmtDist(nearestDist)})`;wrap.appendChild(hint);
+  }
+  const lbN=document.createElement("label");lbN.innerHTML="Descrizione <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(opzionale)</span>";wrap.appendChild(lbN);
+  const notesEl=document.createElement("textarea");notesEl.placeholder="Aggiungi dettagli (opzionale)...";notesEl.rows=3;
+  notesEl.addEventListener("input",()=>notes=notesEl.value);wrap.appendChild(notesEl);
+  const lbF=document.createElement("label");lbF.textContent="Foto (opzionale)";wrap.appendChild(lbF);
+  const fileInp=document.createElement("input");fileInp.type="file";fileInp.accept="image/*";fileInp.setAttribute("capture","environment");
+  fileInp.style.cssText="font-size:12px;color:var(--text2);width:100%";
+  const photoWrap=document.createElement("div");
+  fileInp.addEventListener("change",()=>{
+    const f=fileInp.files[0];if(!f)return;
+    resizeImg(f,b=>{
+      photo=b;photoWrap.innerHTML="";
+      const img=document.createElement("img");img.src=b;img.className="photo-preview";
+      const rm=document.createElement("button");rm.className="photo-remove";rm.textContent="\u2715 Rimuovi";
+      rm.addEventListener("click",()=>{photo=null;photoWrap.innerHTML="";fileInp.value="";});
+      photoWrap.appendChild(img);photoWrap.appendChild(rm);
+    });
+  });
+  wrap.appendChild(fileInp);wrap.appendChild(photoWrap);
+  const lbA=document.createElement("label");lbA.textContent="Nome (opzionale)";wrap.appendChild(lbA);
+  const authorEl=document.createElement("input");authorEl.type="text";
+  authorEl.placeholder=currentRole==="operator"?"Operatore":"Nome";
+  authorEl.addEventListener("input",()=>author=authorEl.value);wrap.appendChild(authorEl);
+  // Telefono obbligatorio (solo pubblico)
+  if(currentRole!=="operator"){
+    const lbP=document.createElement("label");
+    lbP.innerHTML="Telefono <span style=\"color:var(--red)\">*</span> <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(obbligatorio)</span>";
+    wrap.appendChild(lbP);
+    const phoneEl=document.createElement("input");phoneEl.type="tel";
+    phoneEl.placeholder="Es. 3281234567";phoneEl.id="segnalazione-phone";
+    phoneEl.style.cssText="border-color:var(--border2)";
+    phoneEl.addEventListener("input",function(){
+      phone=phoneEl.value.trim();
+      phoneEl.style.borderColor=phone.length>=9?"var(--verde)":"var(--border2)";
+    });
+    wrap.appendChild(phoneEl);
+    const phoneHint=document.createElement("p");
+    phoneHint.style.cssText="font-size:11px;color:var(--text3);margin-top:4px";
+    phoneHint.textContent="Il numero di telefono sarà utilizzato esclusivamente per eventuali comunicazioni relative alla segnalazione inviata.";
+    wrap.appendChild(phoneHint);
+  }
+  const privacyWrap=document.createElement("div");
+  privacyWrap.style.cssText="margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2)";
+  privacyWrap.innerHTML=
+    '<p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Informativa privacy</p>'
+    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">Ai sensi del Regolamento UE 2016/679 (GDPR), i dati personali eventualmente forniti tramite questo servizio, incluso il numero di telefono, saranno trattati da Omnia Servizi al Turismo SRLS esclusivamente per la gestione della segnalazione, eventuali verifiche e ricontatto dell’utente, se necessario.</p>'
+    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">I dati saranno utilizzati solo dal personale incaricato del servizio e conservati per il tempo strettamente necessario alla gestione della segnalazione.</p>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text);margin:0"><input type="checkbox" id="privacyCheck" style="margin-top:2px;flex-shrink:0"> <span>Ho letto l’informativa privacy e acconsento al trattamento dei dati personali per la gestione della segnalazione.</span></label>';
+  wrap.appendChild(privacyWrap);
+
+  const emergencyNote=document.createElement("p");
+  emergencyNote.style.cssText="font-size:11px;color:var(--danger-text);text-align:center;margin-top:10px";
+  emergencyNote.textContent="Per emergenze reali contattare immediatamente il 112 o il servizio di salvataggio più vicino.";
+  wrap.appendChild(emergencyNote);
+
+  const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
+  submitBtn.addEventListener("click",()=>{
+    sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
+    var phoneEl2=document.getElementById("segnalazione-phone");
+    if(phoneEl2)phone=phoneEl2.value.trim();
+    if(!sub){alert("Seleziona il tipo di segnalazione.");return;}
+    if(currentRole!=="operator"&&phone.length<9){
+      if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
+      alert("Inserisci un numero di telefono valido per procedere.");return;
+    }
+    var privacyCheck=document.getElementById("privacyCheck");
+    if(privacyCheck&&!privacyCheck.checked){
+      alert("Devi leggere e accettare l’informativa privacy per procedere.");return;
+    }
+    submitBtn.disabled=true;submitBtn.textContent="Invio...";
+    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
+    addReport(r).then(()=>{sendWANotify(r);render("done");})
+    .catch(e=>{submitBtn.disabled=false;submitBtn.textContent="Invia segnalazione";alert("Errore: "+e.message);});
+  });
+  wrap.appendChild(submitBtn);
+  const wanote=document.createElement("p");wanote.style.cssText="font-size:11px;color:var(--text3);text-align:center;margin-top:10px";
+  wanote.textContent="\uD83D\uDCAC Dopo l'invio si aprir\u00e0 WhatsApp per notificare gli operatori";
+  wrap.appendChild(wanote);page.appendChild(wrap);
+}
+
+// DONE
+function renderDone(page){
+  const w=document.createElement("div");w.className="confirm-wrap";
+  const ic=document.createElement("div");ic.className="confirm-icon";ic.textContent="\u2713";w.appendChild(ic);
+  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:8px";h.textContent="Segnalazione inviata";w.appendChild(h);
+  const p=document.createElement("p");p.style.cssText="color:var(--text2);font-size:14px;margin-bottom:4px";p.textContent="Grazie. Gli operatori sono stati avvisati.";w.appendChild(p);
+  const wn=document.createElement("p");wn.style.cssText="font-size:12px;color:var(--success-text);margin-bottom:20px";wn.textContent="\uD83D\uDCAC Notifica WhatsApp inviata";w.appendChild(wn);
+  const b1=document.createElement("button");b1.className="btn-primary";b1.textContent="Nuova segnalazione";b1.addEventListener("click",()=>render("submit"));w.appendChild(b1);
+  const b2=document.createElement("button");b2.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:10px;width:100%;cursor:pointer";
+  b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{currentRole=null;render("home");});w.appendChild(b2);page.appendChild(w);
+}
+
+// DASHBOARD
+function renderDashboard(page){
+  const reports=getReports(),open=reports.filter(r=>r.status==="aperta");
+  const tb=document.createElement("div");tb.className="dash-toolbar";
+  const ti=document.createElement("div");
+  const sd=fbReady?`<span class="sync-dot" title="Sync attivo"></span>`:`<span class="sync-dot off" title="Connessione..."></span>`;
+  ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">Dashboard Operatori ${sd}</h1><p style="font-size:11px;color:var(--text2)">Roseto degli Abruzzi &middot; P.10 \u2013 P.35</p>`;
+  tb.appendChild(ti);
+  const ac=document.createElement("div");ac.className="dash-actions";
+  const newBtn=document.createElement("button");newBtn.className="btn-primary";newBtn.style.cssText="width:auto;font-size:12px;padding:6px 14px";newBtn.textContent="+ Segnala";
+  newBtn.addEventListener("click",()=>render("submit"));ac.appendChild(newBtn);tb.appendChild(ac);page.appendChild(tb);
+  const sg=document.createElement("div");sg.className="stats-grid";
+  [{label:"APERTE",value:open.length,color:""},{label:"EMERGENZE",value:open.filter(r=>r.type==="emergenza").length,color:"var(--danger-text)"},
+   {label:"PERICOLI",value:open.filter(r=>r.type==="pericolo").length,color:"var(--warning-text)"}]
+  .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
+  page.appendChild(sg);
+  const tabBar=document.createElement("div");tabBar.className="tab-bar";
+  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"]].forEach(([k,l])=>{
+    const btn=document.createElement("button");btn.className="tab-btn"+(activeDashTab===k?" active":"");btn.textContent=l;
+    btn.addEventListener("click",()=>{activeDashTab=k;renderPage();});tabBar.appendChild(btn);
+  });
+  page.appendChild(tabBar);
+  if(activeDashTab==="bandiere"){renderBandiere(page);return;}
+  if(activeStation){
+    const bar=document.createElement("div");bar.className="zone-filter-bar";
+    bar.innerHTML=`<span style="font-size:12px;flex:1;color:var(--text2)">Filtro: ${activeStation}</span>`;
+    const clr=document.createElement("button");clr.style.cssText="font-size:11px;padding:2px 8px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent";clr.textContent="\u2715 rimuovi";
+    clr.addEventListener("click",()=>{activeStation=null;renderPage();});bar.appendChild(clr);page.appendChild(bar);
+  }
+  const ft=document.createElement("div");ft.className="filters";
+  [["aperte","Aperte"],["emergenza","Emergenze"],["pericolo","Pericoli"],["tutte","Tutte"]].forEach(([k,l])=>{
+    const b=document.createElement("button");b.className="filter-btn"+(activeFilter===k?" active":"");b.textContent=l;
+    b.addEventListener("click",()=>{activeFilter=k;renderPage();});ft.appendChild(b);
+  });
+  page.appendChild(ft);
+  let filtered=activeFilter==="tutte"?reports:activeFilter==="aperte"?open:reports.filter(r=>r.type===activeFilter);
+  if(activeStation)filtered=filtered.filter(r=>r.zone===activeStation);
+  if(!filtered.length){const em=document.createElement("p");em.className="empty";em.textContent="Nessuna segnalazione";page.appendChild(em);return;}
+  const list=document.createElement("div");list.className="reports-list";
+  filtered.forEach(r=>{
+    const res=r.status==="risolta";
+    const card=document.createElement("div");card.className=`report-card ${res?"resolved":r.type}`;
+    const top=document.createElement("div");top.className="report-top";
+    const body=document.createElement("div");body.className="report-body";
+    const hr=document.createElement("div");hr.style.cssText="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px";
+    const bdg=document.createElement("span");bdg.className=`badge badge-${r.type}`;bdg.textContent=TYPES[r.type].label.toUpperCase();hr.appendChild(bdg);
+    const subEl=document.createElement("span");subEl.style.cssText="font-size:13px;font-weight:600";subEl.textContent=r.sub;hr.appendChild(subEl);
+    if(res){const t=document.createElement("span");t.className="tag-resolved";t.textContent="\u2713 risolta";hr.appendChild(t);}
+    if(r.role==="public"){const t=document.createElement("span");t.className="tag-public";t.textContent="pubblico";hr.appendChild(t);}
+    body.appendChild(hr);
+    const nt=document.createElement("p");nt.style.cssText="font-size:13px;line-height:1.5;margin-bottom:4px";nt.textContent=r.notes;body.appendChild(nt);
+    if(r.photo){const img=document.createElement("img");img.src=r.photo;img.style.cssText="margin:4px 0;max-width:100%;height:90px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block";body.appendChild(img);}
+    const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}${r.phone?" \u00b7 \uD83D\uDCDE "+r.phone:""}`;body.appendChild(mt);
+    top.appendChild(body);
+    const acts=document.createElement("div");acts.className="report-actions";
+    const wa=document.createElement("button");wa.className="action-btn wa";wa.textContent="WA";
+    wa.addEventListener("click",()=>{
+      const em={emergenza:"\uD83D\uDEA8",pericolo:"\u26A0\uFE0F"};
+      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Safety Lifeguard`;
+      window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
+    });acts.appendChild(wa);
+    if(!res){
+      const rv=document.createElement("button");rv.className="action-btn resolve";rv.textContent="\u2713";
+      rv.addEventListener("click",()=>resolveReport(r._key).then(()=>refreshMarkers()));acts.appendChild(rv);
+    }
+    const dl=document.createElement("button");dl.className="action-btn del";dl.textContent="\u2715";
+    dl.addEventListener("click",()=>{if(confirm("Eliminare questa segnalazione?")){deleteReport(r._key).then(()=>refreshMarkers());}});
+    acts.appendChild(dl);top.appendChild(acts);card.appendChild(top);list.appendChild(card);
+  });
+  page.appendChild(list);
+}
+
+// BANDIERE
+function renderBandiere(page){
+  const flags=getFlags();
+  const panel=document.createElement("div");panel.className="bandiere-panel";
+  const hdr=document.createElement("div");hdr.className="bandiere-header";
+  const title=document.createElement("h3");title.textContent="Bandiere postazioni";hdr.appendChild(title);
+  const bulk=document.createElement("div");bulk.className="bulk-controls";
+  const bulkLbl=document.createElement("label");bulkLbl.textContent="Tutte:";bulk.appendChild(bulkLbl);
+  const bulkSel=document.createElement("select");bulkSel.style.cssText="width:auto;padding:5px 8px;font-size:12px";
+  [["verde","\uD83D\uDFE2 Verde"],["gialla","\uD83D\uDFE1 Gialla"],["rossa","\uD83D\uDD34 Rossa"]].forEach(([v,l])=>{
+    const o=document.createElement("option");o.value=v;o.textContent=l;bulkSel.appendChild(o);
+  });
+  bulk.appendChild(bulkSel);
+  const bulkBtn=document.createElement("button");bulkBtn.className="bulk-btn";bulkBtn.textContent="Applica a tutte";
+  bulkBtn.addEventListener("click",()=>{
+    const val=bulkSel.value,f={};STATIONS.forEach(s=>f[s.num]=val);saveFlags(f);
+  });
+  bulk.appendChild(bulkBtn);hdr.appendChild(bulk);panel.appendChild(hdr);
+  STATIONS.forEach(s=>{
+    const row=document.createElement("div");row.className="station-row";
+    const dot=document.createElement("div");dot.className="station-flag-dot";dot.style.background=FLAG_COLORS[flags[s.num]||"verde"];row.appendChild(dot);
+    const nm=document.createElement("div");nm.className="station-name";
+    nm.innerHTML=`${s.name} <span class="station-num">P.${s.num}</span>`;row.appendChild(nm);
+    const sel=document.createElement("select");sel.className="flag-select";
+    [["verde","\uD83D\uDFE2 Verde"],["gialla","\uD83D\uDFE1 Gialla"],["rossa","\uD83D\uDD34 Rossa"]].forEach(([v,l])=>{
+      const o=document.createElement("option");o.value=v;o.textContent=l;
+      if((flags[s.num]||"verde")===v)o.selected=true;sel.appendChild(o);
+    });
+    sel.addEventListener("change",()=>{dot.style.background=FLAG_COLORS[sel.value];setFlag(s.num,sel.value);});
+    row.appendChild(sel);panel.appendChild(row);
+  });
+  page.appendChild(panel);
+}
+
+try{
+  render("home");
+  [250,700,1200].forEach(function(t){
+    setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);
+  });
+}catch(e2){
+  document.body.innerHTML='<div style="padding:20px;font-family:sans-serif">'
+    +'<h2 style="color:red">Errore render</h2>'
+    +'<pre style="background:#f5f5f5;padding:10px;font-size:11px;white-space:pre-wrap">'+e2.toString()+'\n'+e2.stack+'</pre>'
+    +'</div>';
+}
+
+
+
+} // end startApp
+</script>
+<script>
+// Registra Service Worker per PWA
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js")
+    .then(function(reg){
+      console.log("SW registrato:", reg.scope);
+    })
+    .catch(function(e){console.warn("SW error:",e);});
+}
+// Chiedi permesso notifiche al login operatore
+window._requestNotifPermission=function(){
+  if("Notification" in window && Notification.permission==="default"){
+    Notification.requestPermission().then(function(p){
+      console.log("Notifiche:", p);
+    });
+  }
+};
+</script>
+
+  <div style="padding:18px 16px 28px;text-align:center;border-top:1px solid #e0e0e0;background:#fafafa">
+    <a href="/appsegnalazioni/privacy.html" style="font-size:12px;color:#1A3B8C;text-decoration:none;font-weight:600">Informativa Privacy</a>
+    <div style="font-size:11px;color:#777;margin-top:6px">Omnia Servizi al Turismo SRLS</div>
+  </div>
+
+
+<a href="tel:112"
+style="position:fixed;
+bottom:18px;
+left:50%;
+transform:translateX(-50%);
+z-index:9999;
 background:#b30000;
 color:white;
 font-weight:800;
-padding:18px;
+padding:18px 24px;
 border-radius:14px;
 text-decoration:none;
 font-size:16px;
-box-shadow:0 4px 14px rgba(0,0,0,0.2);
-}
-</style>
-
-</head>
-
-<body>
-
-<div class="header">
-OMNIA SEGNALAZIONI
-</div>
-
-<div id="map" class="map">
-MAPPA
-</div>
-
-<div class="sos">
-<a href="tel:112">
+box-shadow:0 6px 18px rgba(0,0,0,0.25);
+text-align:center;
+max-width:92%;
+">
 🚨 IN CASO DI PERICOLO CHIAMA IL 112 IMMEDIATAMENTE 🚨
 </a>
-</div>
 
 </body>
 </html>
