@@ -196,16 +196,15 @@ var firebase={
 firebase.initializeApp=function(){};
 
 window.addEventListener("load",function(){
-  if(typeof L!=="undefined"){
+  function boot(){
     try{startApp();}catch(e){
       document.getElementById("page").innerHTML='<div style="padding:20px;color:red;font-size:13px"><b>Errore:</b><br>'+e.toString()+'</div>';
     }
+  }
+  if(typeof L!=="undefined"){
+    boot();
   } else {
-    setTimeout(function(){
-      try{startApp();}catch(e){
-        document.getElementById("page").innerHTML='<div style="padding:20px;color:red;font-size:13px"><b>Errore Leaflet:</b><br>'+e.toString()+'</div>';
-      }
-    },2000);
+    setTimeout(boot,600);
   }
 });
 function startApp(){
@@ -286,7 +285,7 @@ reportsRef.on("value",snap=>{
   const newKeys=new Set(Object.keys(snapData));
   if(fbReady&&currentRole==="operator"){
     let added=0;
-    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&raw[k].status==="aperta")added++;});
+    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&snapData[k]&&snapData[k].status==="aperta")added++;});
     if(added>0){newReportCount+=added;onNewReport();}
   }
   prevReportKeys=newKeys;
@@ -399,9 +398,6 @@ function requestGPS(){
     if(currentScreen==="home")renderPage();
   },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
-  const fc=FLAG_COLORS[flagsData[nearestStation.num]||"verde"];
-  banner.style.display="flex";
-  banner.innerHTML=`<span style="width:10px;height:10px;border-radius:50%;background:${fc};flex-shrink:0;border:1px solid rgba(0,0,0,.15)"></span><span>\uD83D\uDCCD Sei vicino a <strong>P.${nearestStation.num} \u2013 ${nearestStation.name}</strong> &middot; ${fmtDist(nearestDist)}</span>`;
 
 
 // HEADER
@@ -409,19 +405,11 @@ function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
   const logoWrap=document.createElement("div");logoWrap.className="header-logo";
   logoWrap.addEventListener("click",()=>render("home"));
-  var logoImg=document.createElement("img");
-  logoImg.src="logo.png";
-  logoImg.alt="Omnia Adriatic Safety Lifeguard";
-  logoImg.style.cssText="height:42px;width:auto;display:block;object-fit:contain";
-  logoImg.onerror=function(){
-    // Fallback se logo non carica
-    this.style.display="none";
-    var fb=document.createElement("div");
-    fb.style.cssText="display:flex;align-items:center;gap:8px";
-    fb.innerHTML='<div style="font-size:22px;font-weight:900;color:white;letter-spacing:.04em">OMNIA</div>';
-    logoWrap.appendChild(fb);
-  };
-  logoWrap.appendChild(logoImg);hdr.appendChild(logoWrap);
+  var logoSvg=document.createElement("div");
+  logoSvg.style.cssText="display:flex;align-items:center;gap:8px";
+  logoSvg.innerHTML='<svg width="42" height="42" viewBox="0 0 42 42"><circle cx="21" cy="21" r="20" fill="#1A3B8C" stroke="white" stroke-width="1.5"/><ellipse cx="21" cy="26" rx="8" ry="9" fill="#1A3B8C"/><ellipse cx="21" cy="19" rx="6.5" ry="7" fill="#e8eaf0"/><circle cx="21" cy="12" r="4" fill="#e8eaf0"/><circle cx="15.5" cy="22" r="3.8" fill="none" stroke="#D62B1F" stroke-width="2.2"/><circle cx="26.5" cy="22" r="3.8" fill="none" stroke="#D62B1F" stroke-width="2.2"/><rect x="17.5" y="21" width="7" height="2.2" fill="#D62B1F" rx="1"/><circle cx="21" cy="21" r="20" fill="none" stroke="white" stroke-width="1.5"/></svg>'
+    +'<div><div style="font-size:22px;font-weight:900;color:white;letter-spacing:.04em;line-height:1">OMNIA</div><div style="font-size:7.5px;color:rgba(255,255,255,.8);letter-spacing:.07em;margin-top:1px">ADRIATIC SAFETY LIFEGUARD</div></div>';
+  logoWrap.appendChild(logoSvg);hdr.appendChild(logoWrap);
   const btns=document.createElement("div");btns.className="header-btns";
   const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
   btns.appendChild(sd);
@@ -446,12 +434,16 @@ function renderHeader(){
 
 // MAPPA
 function initMap(){
-  // Non crea la mappa - viene creata una sola volta da startMap()
-  // Aggiorna solo marker e legenda se la mappa esiste gia'
-  if(mapObj){
-    refreshMarkers();
-    renderMapLegend();
-  }
+  var el=document.getElementById("main-map");
+  if(!el)return;
+  if(mapObj){refreshMarkers();mapObj.invalidateSize(true);return;}
+  el.style.height="280px";el.style.width="100%";
+  mapObj=L.map(el,{zoomControl:true}).setView([42.686,14.010],13);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+    attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:20
+  }).addTo(mapObj);
+  refreshMarkers();
+  [100,400,900].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});
 }
 function getMarkerColor(s){
   const open=Object.values(reportsData).filter(r=>r.status==="aperta");
@@ -509,8 +501,8 @@ function render(screen){
   mapEl.style.display=showMap?"block":"none";
   document.getElementById("map-legend").style.display=showMap?"flex":"none";
   if(showMap){
-    // La mappa viene gestita esclusivamente da startMap()
-    if(mapObj){refreshMarkers();renderMapLegend();}
+    if(!mapObj){initMap();}
+    else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
     renderMapLegend();
     if(!nearestStation)requestGPS();
   }else{
@@ -869,37 +861,15 @@ function renderBandiere(page){
 
 try{
   render("home");
+  [250,700,1200].forEach(function(t){
+    setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);
+  });
 }catch(e2){
   document.body.innerHTML='<div style="padding:20px;font-family:sans-serif">'
     +'<h2 style="color:red">Errore render</h2>'
     +'<pre style="background:#f5f5f5;padding:10px;font-size:11px;white-space:pre-wrap">'+e2.toString()+'\n'+e2.stack+'</pre>'
     +'</div>';
 }
-// Inizializza mappa UNA SOLA VOLTA con timing corretto
-function startMap(){
-  if(mapObj)return; // gia' inizializzata
-  var el=document.getElementById("main-map");
-  if(!el)return;
-  // Verifica che il div abbia dimensioni reali
-  var rect=el.getBoundingClientRect();
-  if(rect.height<10){
-    // Non ancora visibile, riprova
-    setTimeout(startMap,100);
-    return;
-  }
-  mapObj=L.map(el,{zoomControl:true}).setView([42.686,14.010],13);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
-    attribution:"&copy; OpenStreetMap &copy; CARTO",
-    subdomains:"abcd",maxZoom:20
-  }).addTo(mapObj);
-  // Un solo invalidateSize dopo che il browser ha completato il paint
-  requestAnimationFrame(function(){
-    mapObj.invalidateSize(true);
-    refreshMarkers();
-    renderMapLegend();
-  });
-}
-startMap();
 
 
 
