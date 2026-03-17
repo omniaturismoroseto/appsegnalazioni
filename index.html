@@ -446,16 +446,12 @@ function renderHeader(){
 
 // MAPPA
 function initMap(){
-  var el=document.getElementById("main-map");
-  if(!el)return;
-  if(mapObj){refreshMarkers();mapObj.invalidateSize(true);return;}
-  el.style.height="280px";el.style.width="100%";
-  mapObj=L.map(el,{zoomControl:true}).setView([42.686,14.010],13);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
-    attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:20
-  }).addTo(mapObj);
-  refreshMarkers();
-  [100,400,900].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});
+  // Non crea la mappa - viene creata una sola volta da startMap()
+  // Aggiorna solo marker e legenda se la mappa esiste gia'
+  if(mapObj){
+    refreshMarkers();
+    renderMapLegend();
+  }
 }
 function getMarkerColor(s){
   const open=Object.values(reportsData).filter(r=>r.status==="aperta");
@@ -513,8 +509,8 @@ function render(screen){
   mapEl.style.display=showMap?"block":"none";
   document.getElementById("map-legend").style.display=showMap?"flex":"none";
   if(showMap){
-    if(!mapObj){initMap();}
-    else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
+    // La mappa viene gestita esclusivamente da startMap()
+    if(mapObj){refreshMarkers();renderMapLegend();}
     renderMapLegend();
     if(!nearestStation)requestGPS();
   }else{
@@ -873,14 +869,37 @@ function renderBandiere(page){
 
 try{
   render("home");
-  // Forza init mappa subito dopo il primo render
-  initMap();
 }catch(e2){
   document.body.innerHTML='<div style="padding:20px;font-family:sans-serif">'
     +'<h2 style="color:red">Errore render</h2>'
     +'<pre style="background:#f5f5f5;padding:10px;font-size:11px;white-space:pre-wrap">'+e2.toString()+'\n'+e2.stack+'</pre>'
     +'</div>';
 }
+// Inizializza mappa UNA SOLA VOLTA con timing corretto
+function startMap(){
+  if(mapObj)return; // gia' inizializzata
+  var el=document.getElementById("main-map");
+  if(!el)return;
+  // Verifica che il div abbia dimensioni reali
+  var rect=el.getBoundingClientRect();
+  if(rect.height<10){
+    // Non ancora visibile, riprova
+    setTimeout(startMap,100);
+    return;
+  }
+  mapObj=L.map(el,{zoomControl:true}).setView([42.686,14.010],13);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+    attribution:"&copy; OpenStreetMap &copy; CARTO",
+    subdomains:"abcd",maxZoom:20
+  }).addTo(mapObj);
+  // Un solo invalidateSize dopo che il browser ha completato il paint
+  requestAnimationFrame(function(){
+    mapObj.invalidateSize(true);
+    refreshMarkers();
+    renderMapLegend();
+  });
+}
+startMap();
 
 
 
