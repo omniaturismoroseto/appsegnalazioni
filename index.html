@@ -373,7 +373,7 @@ function playBeep(){
 }
 function sendWANotify(r){
   const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO",condizioni:"\uD83C\uDF0A CONDIZIONI"};
-  const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Segnalazioni`;
+  const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Segnalazioni`;
   window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
 }
 
@@ -670,7 +670,7 @@ function renderLogin(page){
 
 // SUBMIT
 function renderSubmit(page){
-  let type="pericolo",sub="",zone=ZONES[0],notes="",author="",photo=null;
+  let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
   const wrap=document.createElement("div");wrap.className="form-wrap";
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
@@ -725,16 +725,40 @@ function renderSubmit(page){
     });
   });
   wrap.appendChild(fileInp);wrap.appendChild(photoWrap);
-  const lbA=document.createElement("label");lbA.textContent=`Nome${currentRole!=="operator"?" (opzionale)":""}`;wrap.appendChild(lbA);
+  const lbA=document.createElement("label");lbA.textContent="Nome (opzionale)";wrap.appendChild(lbA);
   const authorEl=document.createElement("input");authorEl.type="text";
-  authorEl.placeholder=currentRole==="operator"?"Operatore":"Anonimo";
+  authorEl.placeholder=currentRole==="operator"?"Operatore":"Nome";
   authorEl.addEventListener("input",()=>author=authorEl.value);wrap.appendChild(authorEl);
+  // Telefono obbligatorio (solo pubblico)
+  if(currentRole!=="operator"){
+    const lbP=document.createElement("label");
+    lbP.innerHTML="Telefono <span style=\"color:var(--red)\">*</span> <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(obbligatorio)</span>";
+    wrap.appendChild(lbP);
+    const phoneEl=document.createElement("input");phoneEl.type="tel";
+    phoneEl.placeholder="Es. 3281234567";phoneEl.id="segnalazione-phone";
+    phoneEl.style.cssText="border-color:var(--border2)";
+    phoneEl.addEventListener("input",function(){
+      phone=phoneEl.value.trim();
+      phoneEl.style.borderColor=phone.length>=9?"var(--verde)":"var(--border2)";
+    });
+    wrap.appendChild(phoneEl);
+    const phoneHint=document.createElement("p");
+    phoneHint.style.cssText="font-size:11px;color:var(--text3);margin-top:4px";
+    phoneHint.textContent="Necessario per verificare la segnalazione e richiamarti se necessario";
+    wrap.appendChild(phoneHint);
+  }
   const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
   submitBtn.addEventListener("click",()=>{
     sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
+    var phoneEl2=document.getElementById("segnalazione-phone");
+    if(phoneEl2)phone=phoneEl2.value.trim();
     if(!sub||!notes.trim()){alert("Seleziona il tipo e inserisci una descrizione.");return;}
+    if(currentRole!=="operator"&&phone.length<9){
+      if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
+      alert("Inserisci un numero di telefono valido per procedere.");return;
+    }
     submitBtn.disabled=true;submitBtn.textContent="Invio...";
-    const r={id:Date.now(),type,sub,zone,notes,author,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
+    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
     addReport(r).then(()=>{sendWANotify(r);render("done");})
     .catch(e=>{submitBtn.disabled=false;submitBtn.textContent="Invia segnalazione";alert("Errore: "+e.message);});
   });
@@ -808,13 +832,13 @@ function renderDashboard(page){
     body.appendChild(hr);
     const nt=document.createElement("p");nt.style.cssText="font-size:13px;line-height:1.5;margin-bottom:4px";nt.textContent=r.notes;body.appendChild(nt);
     if(r.photo){const img=document.createElement("img");img.src=r.photo;img.style.cssText="margin:4px 0;max-width:100%;height:90px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block";body.appendChild(img);}
-    const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}`;body.appendChild(mt);
+    const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}${r.phone?" \u00b7 \uD83D\uDCDE "+r.phone:""}`;body.appendChild(mt);
     top.appendChild(body);
     const acts=document.createElement("div");acts.className="report-actions";
     const wa=document.createElement("button");wa.className="action-btn wa";wa.textContent="WA";
     wa.addEventListener("click",()=>{
       const em={emergenza:"\uD83D\uDEA8",pericolo:"\u26A0\uFE0F",condizioni:"\uD83C\uDF0A"};
-      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Safety Lifeguard`;
+      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Safety Lifeguard`;
       window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
     });acts.appendChild(wa);
     if(!res){
