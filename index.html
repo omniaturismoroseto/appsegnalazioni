@@ -2,8 +2,16 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
+<meta name="description" content="Segnalazioni spiaggia Roseto degli Abruzzi - Omnia Adriatic Safety Lifeguard"/>
+<meta name="theme-color" content="#D62B1F"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Omnia"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="logo.png"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -689,7 +697,7 @@ function renderLogin(page){
   const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent="PIN non corretto";page.appendChild(err);
   function go(){
     if(inp.value===PIN){
-      currentRole="operator";newReportCount=0;
+      currentRole="operator";newReportCount=0;if(window._requestNotifPermission)_requestNotifPermission();
       if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
       render("dashboard");
     }else{err.style.display="block";}
@@ -932,6 +940,24 @@ try{
 
 
 } // end startApp
+</script>
+<script>
+// Registra Service Worker per PWA
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js")
+    .then(function(reg){
+      console.log("SW registrato:", reg.scope);
+    })
+    .catch(function(e){console.warn("SW error:",e);});
+}
+// Chiedi permesso notifiche al login operatore
+window._requestNotifPermission=function(){
+  if("Notification" in window && Notification.permission==="default"){
+    Notification.requestPermission().then(function(p){
+      console.log("Notifiche:", p);
+    });
+  }
+};
 </script>
 </body>
 </html>

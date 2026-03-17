@@ -1,0 +1,25 @@
+{
+  "name": "Omnia Segnalazioni",
+  "short_name": "Omnia",
+  "description": "Segnalazioni spiaggia Roseto degli Abruzzi",
+  "start_url": "/appsegnalazioni/",
+  "scope": "/appsegnalazioni/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#D62B1F",
+  "theme_color": "#D62B1F",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
