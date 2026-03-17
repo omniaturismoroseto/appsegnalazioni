@@ -7,13 +7,11 @@
 <meta name="description" content="Segnalazioni spiaggia Roseto degli Abruzzi - Omnia Adriatic Safety Lifeguard"/>
 <meta name="theme-color" content="#D62B1F"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="application-name" content="Omnia Segnalazioni"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Omnia"/>
-<link rel="manifest" href="/appsegnalazioni/manifest.json"/>
+<link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.png"/>
-<link rel="apple-touch-icon" sizes="180x180" href="icon.png"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -128,7 +126,15 @@ label:first-child{margin-top:0}
   <div class="map-legend" id="map-legend" style="display:none"></div>
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js">
+function callEmergency112(){
+  var ok = confirm("Stai per chiamare il numero di emergenza 112. Vuoi continuare?");
+  if(ok){
+    window.location.href = "tel:112";
+  }
+}
+
+</script>
 <script>
 // Firebase REST API - no SDK needed, works everywhere
 var FB_URL="https://app-segnalazioni-omnia-roseto-default-rtdb.europe-west1.firebasedatabase.app";
@@ -415,14 +421,6 @@ window._segnalaPostazione=function(zoneLabel){
   render("submit");
 };
 
-
-function callEmergency112(){
-  var ok = confirm("Stai per chiamare il numero di emergenza 112. Vuoi continuare?");
-  if(ok){
-    window.location.href = "tel:112";
-  }
-}
-
 // HEADER
 function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
@@ -572,14 +570,6 @@ function renderPage(){
 
 // HOME
 function renderHome(page){
-
-  const emergencyBox=document.createElement("div");
-  emergencyBox.style.cssText="margin-bottom:14px";
-  emergencyBox.innerHTML=
-    '<button type="button" style="display:block;width:100%;text-align:center;background:#b30000;color:white;font-weight:800;padding:18px;border:none;border-radius:14px;font-size:16px;box-shadow:0 4px 14px rgba(0,0,0,0.2)">🚨 IN CASO DI PERICOLO CHIAMA IL 112 IMMEDIATAMENTE 🚨</button>';
-  emergencyBox.querySelector("button").addEventListener("click",callEmergency112);
-  page.appendChild(emergencyBox);
-
   // legenda bandiere
   const flagBox=document.createElement("div");
   flagBox.style.cssText="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px";
@@ -801,23 +791,9 @@ function renderSubmit(page){
     wrap.appendChild(phoneEl);
     const phoneHint=document.createElement("p");
     phoneHint.style.cssText="font-size:11px;color:var(--text3);margin-top:4px";
-    phoneHint.textContent="Il numero di telefono sarà utilizzato esclusivamente per eventuali comunicazioni relative alla segnalazione inviata.";
+    phoneHint.textContent="Necessario per verificare la segnalazione e richiamarti se necessario";
     wrap.appendChild(phoneHint);
   }
-  const privacyWrap=document.createElement("div");
-  privacyWrap.style.cssText="margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2)";
-  privacyWrap.innerHTML=
-    '<p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Informativa privacy</p>'
-    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">Ai sensi del Regolamento UE 2016/679 (GDPR), i dati personali eventualmente forniti tramite questo servizio, incluso il numero di telefono, saranno trattati da Omnia Servizi al Turismo SRLS esclusivamente per la gestione della segnalazione, eventuali verifiche e ricontatto dell’utente, se necessario.</p>'
-    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">I dati saranno utilizzati solo dal personale incaricato del servizio e conservati per il tempo strettamente necessario alla gestione della segnalazione.</p>'
-    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text);margin:0"><input type="checkbox" id="privacyCheck" style="margin-top:2px;flex-shrink:0"> <span>Ho letto l’informativa privacy e acconsento al trattamento dei dati personali per la gestione della segnalazione.</span></label>';
-  wrap.appendChild(privacyWrap);
-
-  const emergencyNote=document.createElement("p");
-  emergencyNote.style.cssText="font-size:11px;color:var(--danger-text);text-align:center;margin-top:10px";
-  emergencyNote.textContent="Per emergenze reali contattare immediatamente il 112 o il servizio di salvataggio più vicino.";
-  wrap.appendChild(emergencyNote);
-
   const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
   submitBtn.addEventListener("click",()=>{
     sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
@@ -827,10 +803,6 @@ function renderSubmit(page){
     if(currentRole!=="operator"&&phone.length<9){
       if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
       alert("Inserisci un numero di telefono valido per procedere.");return;
-    }
-    var privacyCheck=document.getElementById("privacyCheck");
-    if(privacyCheck&&!privacyCheck.checked){
-      alert("Devi leggere e accettare l’informativa privacy per procedere.");return;
     }
     submitBtn.disabled=true;submitBtn.textContent="Invio...";
     const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
@@ -995,32 +967,5 @@ window._requestNotifPermission=function(){
   }
 };
 </script>
-
-  <div style="padding:18px 16px 28px;text-align:center;border-top:1px solid #e0e0e0;background:#fafafa">
-    <a href="/appsegnalazioni/privacy.html" style="font-size:12px;color:#1A3B8C;text-decoration:none;font-weight:600">Informativa Privacy</a>
-    <div style="font-size:11px;color:#777;margin-top:6px">Omnia Servizi al Turismo SRLS</div>
-  </div>
-
-
-<a href="tel:112"
-style="position:fixed;
-bottom:18px;
-left:50%;
-transform:translateX(-50%);
-z-index:9999;
-background:#b30000;
-color:white;
-font-weight:800;
-padding:18px 24px;
-border-radius:14px;
-text-decoration:none;
-font-size:16px;
-box-shadow:0 6px 18px rgba(0,0,0,0.25);
-text-align:center;
-max-width:92%;
-">
-🚨 IN CASO DI PERICOLO CHIAMA IL 112 IMMEDIATAMENTE 🚨
-</a>
-
 </body>
 </html>
