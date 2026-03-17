@@ -196,16 +196,15 @@ var firebase={
 firebase.initializeApp=function(){};
 
 window.addEventListener("load",function(){
-  if(typeof L!=="undefined"){
+  function boot(){
     try{startApp();}catch(e){
       document.getElementById("page").innerHTML='<div style="padding:20px;color:red;font-size:13px"><b>Errore:</b><br>'+e.toString()+'</div>';
     }
+  }
+  if(typeof L!=="undefined"){
+    boot();
   } else {
-    setTimeout(function(){
-      try{startApp();}catch(e){
-        document.getElementById("page").innerHTML='<div style="padding:20px;color:red;font-size:13px"><b>Errore Leaflet:</b><br>'+e.toString()+'</div>';
-      }
-    },2000);
+    setTimeout(boot,600);
   }
 });
 function startApp(){
@@ -239,30 +238,30 @@ const LOGO_SRC=null;
 const STATIONS=[
   {num:10,name:"Tartaruga",lat:42.66747,lng:14.02596},
   {num:11,name:"Cabana Park",lat:42.66836,lng:14.02542},
-  {num:12,name:"Pontile",lat:42.67120,lng:14.02308},
-  {num:13,name:"Ahmar",lat:42.67290,lng:14.02199},
-  {num:14,name:"Vela",lat:42.67410,lng:14.02162},
-  {num:15,name:"Marini",lat:42.67514,lng:14.02057},
-  {num:16,name:"Bolla",lat:42.67643,lng:14.01932},
-  {num:17,name:"Paranzella",lat:42.67753,lng:14.01848},
+  {num:12,name:"Spiaggia Libera tra Orsa Minore e Scirocco",lat:42.67120,lng:14.02308},
+  {num:13,name:"Spiaggia Libera tra Ahamar e Papenoo",lat:42.67290,lng:14.02199},
+  {num:14,name:"Lido La Vela",lat:42.67410,lng:14.02162},
+  {num:15,name:"Bagni Marini",lat:42.67514,lng:14.02057},
+  {num:16,name:"Bolla Mare",lat:42.67643,lng:14.01932},
+  {num:17,name:"La Paranzella",lat:42.67753,lng:14.01848},
   {num:18,name:"Celommi",lat:42.67885,lng:14.01741},
   {num:19,name:"Marisella",lat:42.68013,lng:14.01646},
   {num:20,name:"Sirenetta",lat:42.68164,lng:14.01554},
   {num:21,name:"Lauretta",lat:42.68282,lng:14.01457},
-  {num:22,name:"Azzurra",lat:42.68372,lng:14.01391},
+  {num:22,name:"Lido Azzurra",lat:42.68372,lng:14.01391},
   {num:23,name:"Aurora",lat:42.68511,lng:14.01286},
   {num:24,name:"Bellavista",lat:42.68657,lng:14.01179},
-  {num:25,name:"Aragosta",lat:42.68774,lng:14.01106},
+  {num:25,name:"Lido Aragosta",lat:42.68774,lng:14.01106},
   {num:26,name:"Riva del Sol",lat:42.68898,lng:14.01014},
   {num:27,name:"Tropical",lat:42.69022,lng:14.00906},
   {num:28,name:"Lido38",lat:42.69139,lng:14.00815},
-  {num:29,name:"VVF",lat:42.69265,lng:14.00706},
+  {num:29,name:"Spiaggia Libera tra VVF e Lido Sahara",lat:42.69265,lng:14.00706},
   {num:30,name:"Casa del Mar",lat:42.69426,lng:14.00533},
   {num:31,name:"Maldimare",lat:42.69532,lng:14.00436},
   {num:32,name:"Bora Bora",lat:42.69630,lng:14.00378},
-  {num:33,name:"Surabaia",lat:42.69927,lng:14.00192},
-  {num:34,name:"Squalo",lat:42.72301,lng:13.98858},
-  {num:35,name:"Corradetti",lat:42.72457,lng:13.98758},
+  {num:33,name:"Camping Surabaia",lat:42.69927,lng:14.00192},
+  {num:34,name:"Spiaggia Libera tra Lo Squalo e Bagni Bruno",lat:42.72301,lng:13.98858},
+  {num:35,name:"Camping Nino",lat:42.72457,lng:13.98758},
 ];
 const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
 ZONES.push("Spiaggia libera / Area non concessionata");
@@ -286,7 +285,7 @@ reportsRef.on("value",snap=>{
   const newKeys=new Set(Object.keys(snapData));
   if(fbReady&&currentRole==="operator"){
     let added=0;
-    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&raw[k].status==="aperta")added++;});
+    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&snapData[k]&&snapData[k].status==="aperta")added++;});
     if(added>0){newReportCount+=added;onNewReport();}
   }
   prevReportKeys=newKeys;
@@ -374,7 +373,7 @@ function playBeep(){
 }
 function sendWANotify(r){
   const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO",condizioni:"\uD83C\uDF0A CONDIZIONI"};
-  const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Segnalazioni`;
+  const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Segnalazioni`;
   window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
 }
 
@@ -399,9 +398,6 @@ function requestGPS(){
     if(currentScreen==="home")renderPage();
   },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
-  const fc=FLAG_COLORS[flagsData[nearestStation.num]||"verde"];
-  banner.style.display="flex";
-  banner.innerHTML=`<span style="width:10px;height:10px;border-radius:50%;background:${fc};flex-shrink:0;border:1px solid rgba(0,0,0,.15)"></span><span>\uD83D\uDCCD Sei vicino a <strong>P.${nearestStation.num} \u2013 ${nearestStation.name}</strong> &middot; ${fmtDist(nearestDist)}</span>`;
 
 
 // HEADER
@@ -409,16 +405,19 @@ function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
   const logoWrap=document.createElement("div");logoWrap.className="header-logo";
   logoWrap.addEventListener("click",()=>render("home"));
-  var logoSvg=document.createElement("div");
-  logoSvg.style.cssText="display:flex;align-items:center;gap:8px";
-  logoSvg.innerHTML='<svg width="42" height="42" viewBox="0 0 42 42"><circle cx="21" cy="21" r="20" fill="#1A3B8C" stroke="white" stroke-width="1.5"/><ellipse cx="21" cy="26" rx="8" ry="9" fill="#1A3B8C"/><ellipse cx="21" cy="19" rx="6.5" ry="7" fill="#e8eaf0"/><circle cx="21" cy="12" r="4" fill="#e8eaf0"/><circle cx="15.5" cy="22" r="3.8" fill="none" stroke="#D62B1F" stroke-width="2.2"/><circle cx="26.5" cy="22" r="3.8" fill="none" stroke="#D62B1F" stroke-width="2.2"/><rect x="17.5" y="21" width="7" height="2.2" fill="#D62B1F" rx="1"/><circle cx="21" cy="21" r="20" fill="none" stroke="white" stroke-width="1.5"/></svg>'
-    +'<div><div style="font-size:22px;font-weight:900;color:white;letter-spacing:.04em;line-height:1">OMNIA</div><div style="font-size:7.5px;color:rgba(255,255,255,.8);letter-spacing:.07em;margin-top:1px">ADRIATIC SAFETY LIFEGUARD</div></div>';
-  logoWrap.appendChild(logoSvg);hdr.appendChild(logoWrap);
+  var logoImg=document.createElement("img");
+  logoImg.src="logo.png";
+  logoImg.alt="OMNIA";
+  logoImg.style.cssText="display:block;height:54px;width:auto;max-width:min(70vw,520px);object-fit:contain";
+  logoImg.onerror=function(){
+    this.onerror=null;
+    this.outerHTML='<div><div style="font-size:22px;font-weight:900;color:white;letter-spacing:.04em;line-height:1">OMNIA</div><div style="font-size:7.5px;color:rgba(255,255,255,.8);letter-spacing:.07em;margin-top:1px">ADRIATIC SAFETY LIFEGUARD</div></div>';
+  };
+  logoWrap.appendChild(logoImg);hdr.appendChild(logoWrap);
   const btns=document.createElement("div");btns.className="header-btns";
   const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
   btns.appendChild(sd);
-  const ap=document.createElement("a");ap.className="hbtn-icon";ap.href="tel:"+PHONE;ap.textContent="\uD83D\uDCDE";
-  const aw=document.createElement("a");aw.className="hbtn-icon";aw.href=WA_CHANNEL;aw.target="_blank";aw.textContent="\uD83D\uDCAC";
+
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
@@ -432,7 +431,7 @@ function renderHeader(){
   if(currentRole==="operator"&&newReportCount>0){
     const nb=document.createElement("span");nb.className="notif-badge";nb.textContent=newReportCount;opWrap.appendChild(nb);
   }
-  btns.appendChild(ap);btns.appendChild(aw);btns.appendChild(opWrap);
+  btns.appendChild(opWrap);
   hdr.appendChild(btns);
 }
 
@@ -671,7 +670,7 @@ function renderLogin(page){
 
 // SUBMIT
 function renderSubmit(page){
-  let type="pericolo",sub="",zone=ZONES[0],notes="",author="",photo=null;
+  let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
   const wrap=document.createElement("div");wrap.className="form-wrap";
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
@@ -726,16 +725,40 @@ function renderSubmit(page){
     });
   });
   wrap.appendChild(fileInp);wrap.appendChild(photoWrap);
-  const lbA=document.createElement("label");lbA.textContent=`Nome${currentRole!=="operator"?" (opzionale)":""}`;wrap.appendChild(lbA);
+  const lbA=document.createElement("label");lbA.textContent="Nome (opzionale)";wrap.appendChild(lbA);
   const authorEl=document.createElement("input");authorEl.type="text";
-  authorEl.placeholder=currentRole==="operator"?"Operatore":"Anonimo";
+  authorEl.placeholder=currentRole==="operator"?"Operatore":"Nome";
   authorEl.addEventListener("input",()=>author=authorEl.value);wrap.appendChild(authorEl);
+  // Telefono obbligatorio (solo pubblico)
+  if(currentRole!=="operator"){
+    const lbP=document.createElement("label");
+    lbP.innerHTML="Telefono <span style=\"color:var(--red)\">*</span> <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(obbligatorio)</span>";
+    wrap.appendChild(lbP);
+    const phoneEl=document.createElement("input");phoneEl.type="tel";
+    phoneEl.placeholder="Es. 3281234567";phoneEl.id="segnalazione-phone";
+    phoneEl.style.cssText="border-color:var(--border2)";
+    phoneEl.addEventListener("input",function(){
+      phone=phoneEl.value.trim();
+      phoneEl.style.borderColor=phone.length>=9?"var(--verde)":"var(--border2)";
+    });
+    wrap.appendChild(phoneEl);
+    const phoneHint=document.createElement("p");
+    phoneHint.style.cssText="font-size:11px;color:var(--text3);margin-top:4px";
+    phoneHint.textContent="Necessario per verificare la segnalazione e richiamarti se necessario";
+    wrap.appendChild(phoneHint);
+  }
   const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
   submitBtn.addEventListener("click",()=>{
     sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
+    var phoneEl2=document.getElementById("segnalazione-phone");
+    if(phoneEl2)phone=phoneEl2.value.trim();
     if(!sub||!notes.trim()){alert("Seleziona il tipo e inserisci una descrizione.");return;}
+    if(currentRole!=="operator"&&phone.length<9){
+      if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
+      alert("Inserisci un numero di telefono valido per procedere.");return;
+    }
     submitBtn.disabled=true;submitBtn.textContent="Invio...";
-    const r={id:Date.now(),type,sub,zone,notes,author,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
+    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
     addReport(r).then(()=>{sendWANotify(r);render("done");})
     .catch(e=>{submitBtn.disabled=false;submitBtn.textContent="Invia segnalazione";alert("Errore: "+e.message);});
   });
@@ -809,13 +832,13 @@ function renderDashboard(page){
     body.appendChild(hr);
     const nt=document.createElement("p");nt.style.cssText="font-size:13px;line-height:1.5;margin-bottom:4px";nt.textContent=r.notes;body.appendChild(nt);
     if(r.photo){const img=document.createElement("img");img.src=r.photo;img.style.cssText="margin:4px 0;max-width:100%;height:90px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block";body.appendChild(img);}
-    const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}`;body.appendChild(mt);
+    const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}${r.phone?" \u00b7 \uD83D\uDCDE "+r.phone:""}`;body.appendChild(mt);
     top.appendChild(body);
     const acts=document.createElement("div");acts.className="report-actions";
     const wa=document.createElement("button");wa.className="action-btn wa";wa.textContent="WA";
     wa.addEventListener("click",()=>{
       const em={emergenza:"\uD83D\uDEA8",pericolo:"\u26A0\uFE0F",condizioni:"\uD83C\uDF0A"};
-      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Safety Lifeguard`;
+      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Safety Lifeguard`;
       window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
     });acts.appendChild(wa);
     if(!res){
@@ -865,8 +888,9 @@ function renderBandiere(page){
 
 try{
   render("home");
-  // Forza init mappa subito dopo il primo render
-  initMap();
+  [250,700,1200].forEach(function(t){
+    setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);
+  });
 }catch(e2){
   document.body.innerHTML='<div style="padding:20px;font-family:sans-serif">'
     +'<h2 style="color:red">Errore render</h2>'
