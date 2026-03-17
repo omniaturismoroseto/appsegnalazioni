@@ -39,6 +39,8 @@ label:first-child{margin-top:0}
 .type-btn{padding:10px 4px;border-radius:var(--radius);font-size:12px;text-align:center;transition:all .15s}
 .header{background:var(--red);padding:10px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:1000}
 .header-logo{display:flex;align-items:center;flex:1;cursor:pointer;min-width:0}
+.header-logo img{height:48px;width:auto;display:block;object-fit:contain;max-width:min(68vw,420px)}
+@media(max-width:480px){.header-logo img{height:38px;max-width:62vw}}
 .header-btns{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .hbtn-icon{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:none;display:flex;align-items:center;justify-content:center;font-size:15px;text-decoration:none;color:white;cursor:pointer;flex-shrink:0}
 .hbtn-icon:hover{background:rgba(255,255,255,.3)}
@@ -406,11 +408,18 @@ function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
   const logoWrap=document.createElement("div");logoWrap.className="header-logo";
   logoWrap.addEventListener("click",()=>render("home"));
-  var logoSvg=document.createElement("div");
-  logoSvg.style.cssText="display:flex;align-items:center;gap:8px";
-  logoSvg.innerHTML='<svg width="42" height="42" viewBox="0 0 42 42"><circle cx="21" cy="21" r="20" fill="#1A3B8C" stroke="white" stroke-width="1.5"/><ellipse cx="21" cy="26" rx="8" ry="9" fill="#1A3B8C"/><ellipse cx="21" cy="19" rx="6.5" ry="7" fill="#e8eaf0"/><circle cx="21" cy="12" r="4" fill="#e8eaf0"/><circle cx="15.5" cy="22" r="3.8" fill="none" stroke="#D62B1F" stroke-width="2.2"/><circle cx="26.5" cy="22" r="3.8" fill="none" stroke="#D62B1F" stroke-width="2.2"/><rect x="17.5" y="21" width="7" height="2.2" fill="#D62B1F" rx="1"/><circle cx="21" cy="21" r="20" fill="none" stroke="white" stroke-width="1.5"/></svg>'
-    +'<div><div style="font-size:22px;font-weight:900;color:white;letter-spacing:.04em;line-height:1">OMNIA</div><div style="font-size:7.5px;color:rgba(255,255,255,.8);letter-spacing:.07em;margin-top:1px">ADRIATIC SAFETY LIFEGUARD</div></div>';
-  logoWrap.appendChild(logoSvg);hdr.appendChild(logoWrap);
+  var logoImg=document.createElement("img");
+  logoImg.src="./logo-omnia-verticale-su-rosso.gif";
+  logoImg.alt="Omnia Adriatic Safety Lifeguard";
+  logoImg.loading="eager";
+  logoImg.onerror=function(){
+    this.style.display="none";
+    var fallback=document.createElement("div");
+    fallback.style.cssText="font-size:22px;font-weight:900;color:white;letter-spacing:.04em;line-height:1";
+    fallback.textContent="OMNIA";
+    logoWrap.appendChild(fallback);
+  };
+  logoWrap.appendChild(logoImg);hdr.appendChild(logoWrap);
   const btns=document.createElement("div");btns.className="header-btns";
   const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
   btns.appendChild(sd);
