@@ -472,15 +472,48 @@ function refreshMarkers(){
     const icon=L.divIcon({className:"",
       html:`<div style="width:26px;height:26px;border-radius:50%;background:${mc.bg};border:2.5px solid white;color:white;font-size:8.5px;font-weight:700;line-height:21px;text-align:center;${shadow}${nearRing}">${s.num}</div>`,
       iconSize:[26,26],iconAnchor:[13,13]});
-    const flagLabel=mc.flag?` &middot; Bandiera ${mc.flag}`:"";
-    const m=L.marker([s.lat,s.lng],{icon}).addTo(mapObj)
-      .bindPopup(`<b>P.${s.num} \u2013 ${s.name}</b>${flagLabel}<br/>${zr.length>0?`<span style="color:${mc.bg}">${zr.length} segnalaz.</span>`:"Nessuna segnalazione"}`);
-    m.on("click",()=>{
-      if(["home","dashboard"].includes(currentScreen)){
-        activeStation=zl===activeStation?null:zl;
-        if(currentScreen==="home")render("dashboard");else renderPage();
-      }
-    });
+    // Popup con info postazione e distanza
+    (function(station, zoneLabel, alerts, markerColor){
+      var m=L.marker([station.lat,station.lng],{icon}).addTo(mapObj);
+      m.on("click",function(){
+        // Calcola distanza se abbiamo la posizione GPS
+        var distTxt="";
+        if(nearestStation!==null&&nearestDist!==null){
+          var d=Math.round(haversine(
+            nearestStation===station?nearestDist:0,0,0,0
+          ));
+          // Ricalcola distanza dalla posizione utente se disponibile
+        }
+        // Cerca posizione utente dal userMarker
+        var userPos=null;
+        if(userMarker){try{userPos=userMarker.getLatLng();}catch(e){}}
+        var distStr="";
+        if(userPos){
+          var dm=Math.round(haversine(userPos.lat,userPos.lng,station.lat,station.lng));
+          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(dm)+" da te</span>";
+        } else if(nearestStation&&nearestStation.num===station.num&&nearestDist){
+          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(nearestDist)+" da te</span>";
+        }
+        // Colore bandiera
+        var flagName=flagsData[station.num]||"verde";
+        var flagCol=FLAG_COLORS[flagName];
+        var flagStr="<br><span style=\"font-size:12px\">Bandiera <span style=\"font-weight:700;color:"+flagCol+"\">"+flagName.toUpperCase()+"</span></span>";
+        // Alert aperti
+        var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
+        var popup=L.popup({maxWidth:220})
+          .setContent(
+            "<div style=\"font-family:sans-serif;padding:2px\">"
+            +"<b style=\"font-size:14px\">P."+station.num+" \u2013 "+station.name+"</b>"
+            +distStr+flagStr+alertStr
+            +"<br><button onclick=\"window._segnalaPostazione('"+zoneLabel+"')\" "
+            +"style=\"margin-top:8px;width:100%;padding:7px;background:#D62B1F;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer\">"
+            +"\uD83D\uDEA8 Segnala qui</button>"
+            +"</div>"
+          );
+        m.bindPopup(popup).openPopup();
+      });
+      mapMarkers.push(m);
+    })(s, zl, zr, mc.bg);
     mapMarkers.push(m);
   });
 }
