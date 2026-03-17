@@ -484,19 +484,21 @@ function refreshMarkers(){
     });
     mapMarkers.push(m);
   });
-}
 
-  // UFFICIO LOCAMARE ROSETO
-  var cpIcon = L.icon({
-    iconUrl: 'cp.png',
-    iconSize: [44,44],
-    iconAnchor: [22,22],
-    popupAnchor: [0,-20]
+  // LOCAMARE ROSETO
+  const cpIcon=L.icon({
+    iconUrl:'cp.png',
+    iconSize:[40,40],
+    iconAnchor:[20,20],
+    popupAnchor:[0,-20]
   });
-  var cpMarker = L.marker([42.6766,14.0133],{icon:cpIcon}).addTo(mapObj)
-    .bindPopup("<b>Ufficio Locale Marittimo – Roseto degli Abruzzi</b><br>Capitaneria di Porto / Guardia Costiera<br><a href='https://maps.app.goo.gl/ZYNve4cy2G4osYEw6' target='_blank'>Apri su Google Maps</a>");
-  mapMarkers.push(cpMarker);
+  const locamare=L.marker([42.68633,14.01085],{icon:cpIcon}).addTo(mapObj)
+    .bindPopup(`<b>Ufficio Locale Marittimo – Roseto degli Abruzzi</b><br>
+    Capitaneria di Porto / Guardia Costiera<br>
+    <a href="https://maps.app.goo.gl/ZYNve4cy2G4osYEw6" target="_blank">Apri su Google Maps</a>`);
+  mapMarkers.push(locamare);
 
+}
 function renderMapLegend(){
   const leg=document.getElementById("map-legend");leg.style.display="flex";
   leg.innerHTML=
