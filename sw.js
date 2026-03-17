@@ -1,3 +1,4 @@
+
 const CACHE_NAME = 'omnia-v1';
 const ASSETS = [
   '/appsegnalazioni/',
@@ -7,7 +8,6 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'
 ];
 
-// Installazione: precache assets
 self.addEventListener('install', function(e) {
   e.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
@@ -19,7 +19,6 @@ self.addEventListener('install', function(e) {
   self.skipWaiting();
 });
 
-// Attivazione: pulisce cache vecchie
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
@@ -32,9 +31,7 @@ self.addEventListener('activate', function(e) {
   self.clients.claim();
 });
 
-// Fetch: network first, poi cache
 self.addEventListener('fetch', function(e) {
-  // Non intercettare richieste Firebase o tile mappa
   var url = e.request.url;
   if (url.includes('firebasedatabase.app') ||
       url.includes('cartocdn.com') ||
@@ -45,7 +42,6 @@ self.addEventListener('fetch', function(e) {
   e.respondWith(
     fetch(e.request)
       .then(function(response) {
-        // Salva in cache se risposta valida
         if (response && response.status === 200) {
           var clone = response.clone();
           caches.open(CACHE_NAME).then(function(cache) {
@@ -60,7 +56,6 @@ self.addEventListener('fetch', function(e) {
   );
 });
 
-// Notifiche push
 self.addEventListener('push', function(e) {
   var data = {};
   try { data = e.data.json(); } catch(err) {
@@ -69,8 +64,8 @@ self.addEventListener('push', function(e) {
   e.waitUntil(
     self.registration.showNotification(data.title || 'Omnia Segnalazioni', {
       body: data.body || 'Nuova segnalazione ricevuta',
-      icon: '/appsegnalazioni/logo.png',
-      badge: '/appsegnalazioni/logo.png',
+      icon: '/appsegnalazioni/icon.png',
+      badge: '/appsegnalazioni/icon.png',
       vibrate: [200, 100, 200],
       tag: 'omnia-segnalazione',
       renotify: true,
@@ -79,7 +74,6 @@ self.addEventListener('push', function(e) {
   );
 });
 
-// Click sulla notifica: apre l'app
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
   e.waitUntil(
