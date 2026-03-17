@@ -39,8 +39,6 @@ label:first-child{margin-top:0}
 .type-btn{padding:10px 4px;border-radius:var(--radius);font-size:12px;text-align:center;transition:all .15s}
 .header{background:var(--red);padding:10px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:1000}
 .header-logo{display:flex;align-items:center;flex:1;cursor:pointer;min-width:0}
-.header-logo img{height:48px;width:auto;display:block;object-fit:contain;max-width:min(68vw,420px)}
-@media(max-width:480px){.header-logo img{height:38px;max-width:62vw}}
 .header-btns{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .hbtn-icon{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:none;display:flex;align-items:center;justify-content:center;font-size:15px;text-decoration:none;color:white;cursor:pointer;flex-shrink:0}
 .hbtn-icon:hover{background:rgba(255,255,255,.3)}
@@ -288,7 +286,7 @@ reportsRef.on("value",snap=>{
   const newKeys=new Set(Object.keys(snapData));
   if(fbReady&&currentRole==="operator"){
     let added=0;
-    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&snapData[k]&&snapData[k].status==="aperta")added++;});
+    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&raw[k].status==="aperta")added++;});
     if(added>0){newReportCount+=added;onNewReport();}
   }
   prevReportKeys=newKeys;
@@ -401,6 +399,9 @@ function requestGPS(){
     if(currentScreen==="home")renderPage();
   },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
+  const fc=FLAG_COLORS[flagsData[nearestStation.num]||"verde"];
+  banner.style.display="flex";
+  banner.innerHTML=`<span style="width:10px;height:10px;border-radius:50%;background:${fc};flex-shrink:0;border:1px solid rgba(0,0,0,.15)"></span><span>\uD83D\uDCCD Sei vicino a <strong>P.${nearestStation.num} \u2013 ${nearestStation.name}</strong> &middot; ${fmtDist(nearestDist)}</span>`;
 
 
 // HEADER
@@ -409,15 +410,16 @@ function renderHeader(){
   const logoWrap=document.createElement("div");logoWrap.className="header-logo";
   logoWrap.addEventListener("click",()=>render("home"));
   var logoImg=document.createElement("img");
-  logoImg.src="./logo-omnia-verticale-su-rosso.gif";
+  logoImg.src="logo.png";
   logoImg.alt="Omnia Adriatic Safety Lifeguard";
-  logoImg.loading="eager";
+  logoImg.style.cssText="height:42px;width:auto;display:block;object-fit:contain";
   logoImg.onerror=function(){
+    // Fallback se logo non carica
     this.style.display="none";
-    var fallback=document.createElement("div");
-    fallback.style.cssText="font-size:22px;font-weight:900;color:white;letter-spacing:.04em;line-height:1";
-    fallback.textContent="OMNIA";
-    logoWrap.appendChild(fallback);
+    var fb=document.createElement("div");
+    fb.style.cssText="display:flex;align-items:center;gap:8px";
+    fb.innerHTML='<div style="font-size:22px;font-weight:900;color:white;letter-spacing:.04em">OMNIA</div>';
+    logoWrap.appendChild(fb);
   };
   logoWrap.appendChild(logoImg);hdr.appendChild(logoWrap);
   const btns=document.createElement("div");btns.className="header-btns";
