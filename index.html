@@ -119,25 +119,6 @@ label:first-child{margin-top:0}
 .sync-dot.off{background:#e74c3c}
 .empty{text-align:center;color:var(--text3);padding:32px;font-size:13px}
 @media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-
-.meteo-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px}
-.meteo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
-.meteo-head h3{font-size:15px;font-weight:700;color:var(--navy);margin:0}
-.meteo-updated{font-size:11px;color:var(--text3)}
-.meteo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.meteo-stat{background:var(--bg2);border-radius:10px;padding:10px}
-.meteo-stat .k{font-size:11px;color:var(--text2);margin-bottom:3px}
-.meteo-stat .v{font-size:18px;font-weight:700;line-height:1.1}
-.meteo-stat .s{font-size:11px;color:var(--text2);margin-top:2px}
-.meteo-risk{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--info-bg);border:1px solid var(--info-border);border-radius:10px;padding:10px;margin-bottom:10px}
-.meteo-risk strong{font-size:13px}
-.meteo-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.meteo-hour{background:var(--bg2);border-radius:10px;padding:8px;text-align:center}
-.meteo-hour .t{font-size:11px;color:var(--text2);margin-bottom:4px}
-.meteo-hour .m{font-size:12px;font-weight:600}
-.meteo-hour .s{font-size:11px;color:var(--text2);margin-top:2px}
-@media(max-width:520px){.meteo-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
-
 </style>
 </head>
 <body>
@@ -149,8 +130,6 @@ label:first-child{margin-top:0}
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-// Meteomare integrato con Open-Meteo Marine API e Forecast API
-
 // Firebase REST API - no SDK needed, works everywhere
 var FB_URL="https://app-segnalazioni-omnia-roseto-default-rtdb.europe-west1.firebasedatabase.app";
 var _fbListeners={};
@@ -232,7 +211,6 @@ window.addEventListener("load",function(){
   }
   if(typeof L!=="undefined"){
     boot();
-    setTimeout(function(){try{fetchMeteoMarine(false);}catch(e){}},300);
   } else {
     setTimeout(boot,600);
   }
@@ -307,124 +285,7 @@ let mapObj=null,mapMarkers=[],userMarker=null,locamareMarker=null;
 let nearestStation=null,nearestDist=null;
 let fbReady=false,newReportCount=0;
 let reportsData={},flagsData={};
-let meteoData=null,meteoLoading=false,meteoError="",meteoLastFetch=0;
 let prevReportKeys=new Set();
-
-
-const METEO_POINT={lat:42.68657,lng:14.01179,name:"Roseto degli Abruzzi"};
-function knotsFromKmh(v){return Math.round((Number(v||0))*0.539957);}
-function degToCompass(deg){
-  if(deg===undefined||deg===null||isNaN(deg)) return "-";
-  const dirs=["N","NE","E","SE","S","SO","O","NO"];
-  return dirs[Math.round((((deg%360)+360)%360)/45)%8];
-}
-function getRiskFromMeteo(m){
-  if(!m) return {level:"n/d",flag:"verde",text:"Dati non disponibili"};
-  const wave=Number(m.wave_height||0);
-  const windKn=knotsFromKmh(m.wind_speed_10m||0);
-  const gustKn=knotsFromKmh(m.wind_gusts_10m||0);
-  const weatherCode=Number(m.weather_code||0);
-  const thunder=[95,96,99].includes(weatherCode);
-  if(thunder || wave>=1.2 || windKn>=22 || gustKn>=28) return {level:"alto",flag:"rossa",text:"Condizioni critiche o potenzialmente pericolose"};
-  if(wave>=0.6 || windKn>=12 || gustKn>=18) return {level:"medio",flag:"gialla",text:"Mare mosso o vento sostenuto: attenzione"};
-  return {level:"basso",flag:"verde",text:"Condizioni generalmente favorevoli"};
-}
-function fmtHour(iso){
-  try{return new Date(iso).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});}catch(e){return "--:--";}
-}
-async function fetchMeteoMarine(force){
-  const now=Date.now();
-  if(meteoLoading) return;
-  if(!force && meteoData && (now-meteoLastFetch)<20*60*1000) return;
-  meteoLoading=true; meteoError="";
-  if(currentScreen==="home") renderPage();
-  try{
-    const forecastUrl = "https://api.open-meteo.com/v1/forecast?latitude="+METEO_POINT.lat+"&longitude="+METEO_POINT.lng+"&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&timezone=auto&forecast_days=2";
-    const marineUrl = "https://marine-api.open-meteo.com/v1/marine?latitude="+METEO_POINT.lat+"&longitude="+METEO_POINT.lng+"&current=wave_height,wave_direction,wave_period,sea_surface_temperature&hourly=wave_height,wave_direction,wave_period,sea_surface_temperature&timezone=auto&forecast_days=2&cell_selection=sea";
-    const [forecastRes, marineRes] = await Promise.all([fetch(forecastUrl), fetch(marineUrl)]);
-    if(!forecastRes.ok) throw new Error("Forecast HTTP "+forecastRes.status);
-    if(!marineRes.ok) throw new Error("Marine HTTP "+marineRes.status);
-    const forecast = await forecastRes.json();
-    const marine = await marineRes.json();
-    const current = Object.assign({}, forecast.current||{}, marine.current||{});
-    const times = (forecast.hourly&&forecast.hourly.time)||[];
-    const marineTimes = (marine.hourly&&marine.hourly.time)||[];
-    const hourly = [];
-    const startIdx = times.findIndex(function(t){
-      const d = new Date(t).getTime();
-      return d >= now-60*60*1000;
-    });
-    const from = startIdx>=0 ? startIdx : 0;
-    for(let i=from;i<Math.min(from+4,times.length);i++){
-      const mt = marineTimes.indexOf(times[i]);
-      hourly.push({
-        time: times[i],
-        wind_speed_10m: forecast.hourly.wind_speed_10m ? forecast.hourly.wind_speed_10m[i] : null,
-        wind_direction_10m: forecast.hourly.wind_direction_10m ? forecast.hourly.wind_direction_10m[i] : null,
-        precipitation: forecast.hourly.precipitation ? forecast.hourly.precipitation[i] : null,
-        wave_height: mt>=0 && marine.hourly.wave_height ? marine.hourly.wave_height[mt] : null,
-        sea_surface_temperature: mt>=0 && marine.hourly.sea_surface_temperature ? marine.hourly.sea_surface_temperature[mt] : null
-      });
-    }
-    meteoData = {
-      current: current,
-      hourly: hourly,
-      risk: getRiskFromMeteo(current),
-      updatedAt: new Date().toISOString()
-    };
-    meteoLastFetch = Date.now();
-  }catch(err){
-    meteoError = "Dati meteomarini non disponibili";
-  }finally{
-    meteoLoading=false;
-    if(currentScreen==="home") renderPage();
-  }
-}
-function renderMeteoCard(page){
-  const card=document.createElement("div");
-  card.className="meteo-card";
-  if(meteoLoading && !meteoData){
-    card.innerHTML='<div class="meteo-head"><h3>🌊 Meteomare Roseto</h3></div><div class="empty" style="padding:16px 0">Caricamento dati meteomarini...</div>';
-    page.appendChild(card); return;
-  }
-  if(meteoError && !meteoData){
-    card.innerHTML='<div class="meteo-head"><h3>🌊 Meteomare Roseto</h3></div><div class="empty" style="padding:16px 0">'+meteoError+'</div>';
-    page.appendChild(card); return;
-  }
-  const m=meteoData;
-  const risk=m ? m.risk : {flag:"verde",level:"n/d",text:""};
-  const flagCol=FLAG_COLORS[risk.flag]||"#666";
-  const flagLabel=(risk.flag||"verde").toUpperCase();
-  const current = m.current||{};
-  const seaTemp=(current.sea_surface_temperature!=null ? current.sea_surface_temperature : current.temperature_2m);
-  card.innerHTML =
-    '<div class="meteo-head">'+
-      '<div><h3>🌊 Meteomare Roseto</h3><div class="meteo-updated">Aggiornato: '+fmt(m.updatedAt)+'</div></div>'+
-      '<button type="button" class="nearest-btn" id="meteo-refresh-btn">Aggiorna</button>'+
-    '</div>'+
-    '<div class="meteo-grid">'+
-      '<div class="meteo-stat"><div class="k">Vento</div><div class="v">'+knotsFromKmh(current.wind_speed_10m)+' nodi</div><div class="s">'+degToCompass(current.wind_direction_10m)+'</div></div>'+
-      '<div class="meteo-stat"><div class="k">Onda</div><div class="v">'+(current.wave_height!=null?Number(current.wave_height).toFixed(1):"-")+' m</div><div class="s">Periodo '+(current.wave_period!=null?Number(current.wave_period).toFixed(0):"-")+' s</div></div>'+
-      '<div class="meteo-stat"><div class="k">Raffiche</div><div class="v">'+knotsFromKmh(current.wind_gusts_10m)+' nodi</div><div class="s">vento max</div></div>'+
-      '<div class="meteo-stat"><div class="k">Temp. mare</div><div class="v">'+(seaTemp!=null?Number(seaTemp).toFixed(1):"-")+'°</div><div class="s">superficie</div></div>'+
-      '<div class="meteo-stat"><div class="k">Pioggia</div><div class="v">'+(current.precipitation!=null?Number(current.precipitation).toFixed(1):"-")+' mm</div><div class="s">ultima ora</div></div>'+
-    '</div>'+
-    '<div class="meteo-risk">'+
-      '<div><strong>Bandiera consigliata: <span style="color:'+flagCol+'">'+flagLabel+'</span></strong><div style="font-size:12px;color:var(--text2);margin-top:3px">'+risk.text+'</div></div>'+
-      '<div class="badge" style="background:'+flagCol+';color:#fff">'+risk.level.toUpperCase()+'</div>'+
-    '</div>'+
-    '<div class="meteo-strip">'+
-      m.hourly.map(function(h){
-        return '<div class="meteo-hour">'+
-          '<div class="t">'+fmtHour(h.time)+'</div>'+
-          '<div class="m">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):"-")+' m</div>'+
-          '<div class="s">'+knotsFromKmh(h.wind_speed_10m)+' nd · '+degToCompass(h.wind_direction_10m)+'<br>'+(h.precipitation!=null?Number(h.precipitation).toFixed(1)+' mm':'-')+'</div>'+
-        '</div>';
-      }).join('')+
-    '</div>';
-  page.appendChild(card);
-  card.querySelector("#meteo-refresh-btn").addEventListener("click", function(){ fetchMeteoMarine(true); });
-}
 
 // FIREBASE LISTENERS
 reportsRef.on("value",snap=>{
@@ -750,13 +611,12 @@ function renderPage(){
   else if(currentScreen==="login")renderLogin(page);
   else if(currentScreen==="submit")renderSubmit(page);
   else if(currentScreen==="done")renderDone(page);
+  else if(currentScreen==="forecast")renderForecastPage(page);
   else if(currentScreen==="dashboard"){if(currentRole!=="operator"){render("login");return;}renderDashboard(page);}
 }
 
 // HOME
 function renderHome(page){
-  fetchMeteoMarine(false);
-  renderMeteoCard(page);
 
   const emergencyBox=document.createElement("div");
   emergencyBox.style.cssText="margin-bottom:14px";
@@ -891,6 +751,81 @@ function renderHome(page){
 }
 
 // LOGIN
+
+function renderForecastPage(page){
+  fetchMeteoMarine(true);
+  const wrap=document.createElement("div");
+  wrap.className="page-inner";
+
+  const back=document.createElement("button");
+  back.className="back-btn";
+  back.textContent="← Torna alla home";
+  back.onclick=function(){render("home");};
+  page.appendChild(back);
+
+  const title=document.createElement("div");
+  title.style.cssText="margin-bottom:14px";
+  title.innerHTML='<h2 style="font-size:20px;color:var(--navy);margin-bottom:4px">🌊 Previsioni meteomarine</h2><div style="font-size:13px;color:var(--text2)">Roseto degli Abruzzi - dettaglio operativo</div>';
+  page.appendChild(title);
+
+  if(meteoLoading && !meteoData){
+    const box=document.createElement("div");
+    box.className="meteo-card";
+    box.innerHTML='<div class="empty" style="padding:22px 0">Caricamento previsioni...</div>';
+    page.appendChild(box);
+    return;
+  }
+
+  if(meteoError && !meteoData){
+    const box=document.createElement("div");
+    box.className="meteo-card";
+    box.innerHTML='<div class="empty" style="padding:22px 0">'+meteoError+'</div>';
+    page.appendChild(box);
+    return;
+  }
+
+  if(meteoData){
+    renderMeteoCard(page);
+
+    const ext=document.createElement("div");
+    ext.className="meteo-card";
+    const current=meteoData.current||{};
+    const risk=meteoData.risk||{flag:"verde",level:"n/d",text:""};
+    const flagCol=FLAG_COLORS[risk.flag]||"#666";
+
+    ext.innerHTML =
+      '<div class="meteo-head">'+
+        '<div><h3>Dettaglio condizioni</h3><div class="meteo-updated">Ultimo aggiornamento: '+fmt(meteoData.updatedAt)+'</div></div>'+
+      '</div>'+
+      '<div class="meteo-grid">'+
+        '<div class="meteo-stat"><div class="k">Bandiera consigliata</div><div class="v" style="color:'+flagCol+'">'+String(risk.flag||"verde").toUpperCase()+'</div><div class="s">'+risk.text+'</div></div>'+
+        '<div class="meteo-stat"><div class="k">Livello rischio</div><div class="v">'+String(risk.level||"n/d").toUpperCase()+'</div><div class="s">valutazione automatica</div></div>'+
+        '<div class="meteo-stat"><div class="k">Direzione onda</div><div class="v">'+degToCompass(current.wave_direction)+'</div><div class="s">'+(current.wave_direction!=null?Math.round(current.wave_direction)+'°':'-')+'</div></div>'+
+        '<div class="meteo-stat"><div class="k">Codice meteo</div><div class="v">'+(current.weather_code!=null?current.weather_code:'-')+'</div><div class="s">condizioni meteo</div></div>'+
+      '</div>';
+    page.appendChild(ext);
+
+    const timeline=document.createElement("div");
+    timeline.className="meteo-card";
+    timeline.innerHTML='<div class="meteo-head"><div><h3>Prossime ore</h3><div class="meteo-updated">Vento, onda e pioggia</div></div></div>';
+
+    const strip=document.createElement("div");
+    strip.style.cssText="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px";
+    (meteoData.hourly||[]).forEach(function(h){
+      const item=document.createElement("div");
+      item.className="meteo-stat";
+      item.innerHTML =
+        '<div class="k">'+fmtHour(h.time)+'</div>'+
+        '<div class="v">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):'-')+' m</div>'+
+        '<div class="s">Vento '+knotsFromKmh(h.wind_speed_10m)+' nodi · '+degToCompass(h.wind_direction_10m)+'</div>'+
+        '<div class="s">Pioggia '+(h.precipitation!=null?Number(h.precipitation).toFixed(1):'-')+' mm</div>';
+      strip.appendChild(item);
+    });
+    timeline.appendChild(strip);
+    page.appendChild(timeline);
+  }
+}
+
 function renderLogin(page){
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render("home"));page.appendChild(back);
