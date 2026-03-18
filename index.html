@@ -139,6 +139,14 @@ label:first-child{margin-top:0}
 @media(max-width:520px){.meteo-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 
+.satellite-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:14px}
+.satellite-tabs{display:flex;border-bottom:1px solid var(--border)}
+.satellite-tab{flex:1;padding:9px 6px;font-size:12px;font-weight:600;background:transparent;border:none;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.satellite-tab.active{color:var(--red);border-bottom-color:var(--red)}
+.satellite-body{position:relative;width:100%;background:#1a1a2e}
+.satellite-body iframe{width:100%;height:320px;border:none;display:block}
+.satellite-body .sat-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);font-size:13px;pointer-events:none}
+.satellite-footer{padding:7px 12px;font-size:10px;color:var(--text3);display:flex;align-items:center;justify-content:space-between}
 .meteo-home-btn{
   display:block;width:100%;
   padding:18px 16px;
@@ -470,6 +478,55 @@ function renderMeteoCard(page){
     '</div>';
   page.appendChild(card);
   card.querySelector("#meteo-refresh-btn").addEventListener("click", function(){ fetchMeteoMarine(true); });
+}
+
+function renderSatelliteCard(page){
+  const card=document.createElement("div");
+  card.className="satellite-card";
+
+  // Header con tabs
+  const tabs=document.createElement("div");tabs.className="satellite-tabs";
+  const tabDefs=[
+    {id:"radar",label:t("Radar piogge","Rain Radar"),
+     src:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=320&zoom=7&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+    {id:"satellite",label:t("Satellite","Satellite"),
+     src:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=320&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+    {id:"vento",label:t("Vento","Wind"),
+     src:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=320&zoom=7&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+    {id:"onde",label:t("Onde","Waves"),
+     src:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=320&zoom=7&level=surface&overlay=waves&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+  ];
+
+  var activeTab="radar";
+  const body=document.createElement("div");body.className="satellite-body";
+  const loadingEl=document.createElement("div");loadingEl.className="sat-loading";loadingEl.textContent=t("Caricamento...","Loading...");
+  body.appendChild(loadingEl);
+  const iframe=document.createElement("iframe");
+  iframe.src=tabDefs[0].src;
+  iframe.allow="fullscreen";
+  iframe.setAttribute("loading","lazy");
+  iframe.onload=function(){loadingEl.style.display="none";};
+  body.appendChild(iframe);
+
+  tabDefs.forEach(function(td){
+    var btn=document.createElement("button");btn.className="satellite-tab"+(td.id===activeTab?" active":"");
+    btn.textContent=td.label;
+    btn.addEventListener("click",function(){
+      if(activeTab===td.id)return;
+      activeTab=td.id;
+      tabs.querySelectorAll(".satellite-tab").forEach(function(b){b.classList.remove("active");});
+      btn.classList.add("active");
+      loadingEl.style.display="flex";
+      iframe.src=td.src;
+    });
+    tabs.appendChild(btn);
+  });
+
+  const footer=document.createElement("div");footer.className="satellite-footer";
+  footer.innerHTML='<span>'+t("Dati in tempo reale · Powered by","Real-time data · Powered by")+'</span><a href="https://www.windy.com" target="_blank" style="color:var(--info-text);font-weight:600;">Windy.com</a>';
+
+  card.appendChild(tabs);card.appendChild(body);card.appendChild(footer);
+  page.appendChild(card);
 }
 
 // FIREBASE LISTENERS
@@ -966,6 +1023,9 @@ function renderForecastPage(page){
   title.style.cssText="margin-bottom:14px";
   title.innerHTML='<h2 style="font-size:20px;color:var(--navy);margin-bottom:4px">ðŸŒŠ Previsioni meteomarine</h2><div style="font-size:13px;color:var(--text2)">Roseto degli Abruzzi - dettaglio operativo</div>';
   page.appendChild(title);
+
+  // Sezione satellite/radar Windy
+  renderSatelliteCard(page);
 
   if(meteoLoading && !meteoData){
     const box=document.createElement("div");
