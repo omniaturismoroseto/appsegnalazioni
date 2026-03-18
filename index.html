@@ -337,7 +337,7 @@ async function fetchMeteoMarine(force){
   if(meteoLoading) return;
   if(!force && meteoData && (now-meteoLastFetch)<20*60*1000) return;
   meteoLoading=true; meteoError="";
-  if(currentScreen==="home") renderPage();
+  
   try{
     const forecastUrl = "https://api.open-meteo.com/v1/forecast?latitude="+METEO_POINT.lat+"&longitude="+METEO_POINT.lng+"&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&timezone=auto&forecast_days=2";
     const marineUrl = "https://marine-api.open-meteo.com/v1/marine?latitude="+METEO_POINT.lat+"&longitude="+METEO_POINT.lng+"&current=wave_height,wave_direction,wave_period,sea_surface_temperature&hourly=wave_height,wave_direction,wave_period,sea_surface_temperature&timezone=auto&forecast_days=2&cell_selection=sea";
@@ -377,7 +377,7 @@ async function fetchMeteoMarine(force){
     meteoError = "Dati meteomarini non disponibili";
   }finally{
     meteoLoading=false;
-    if(currentScreen==="home") renderPage();
+    
   }
 }
 function renderMeteoCard(page){
@@ -757,7 +757,7 @@ function renderPage(){
 // HOME
 function renderHome(page){
   fetchMeteoMarine(false);
-  renderMeteoCard(page);
+  
 
   const emergencyBox=document.createElement("div");
   emergencyBox.style.cssText="margin-bottom:14px";
@@ -932,7 +932,7 @@ function renderForecastPage(page){
   }
 
   if(meteoData){
-    renderMeteoCard(page);
+    
 
     const ext=document.createElement("div");
     ext.className="meteo-card";
