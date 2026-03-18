@@ -1274,3 +1274,30 @@ window._requestNotifPermission=function(){
 
 </body>
 </html>
+
+<script>
+// STYLE PREVISIONI BUTTON
+setTimeout(()=>{
+  const buttons = document.querySelectorAll('button, .home-btn, div');
+  buttons.forEach(el=>{
+    if(el.innerText && el.innerText.includes('Previsioni')){
+      el.style.background = '#0a84ff';
+      el.style.color = '#fff';
+      el.style.border = 'none';
+      el.style.marginBottom = '20px';
+      el.style.marginTop = '10px';
+    }
+  });
+
+  // CENTER SEGUI OMNIA
+  const nodes = document.querySelectorAll('*');
+  nodes.forEach(el=>{
+    if(el.innerText && el.innerText.trim() === 'SEGUI OMNIA SU'){
+      el.style.textAlign = 'center';
+      el.style.display = 'block';
+      el.style.marginTop = '10px';
+      el.style.marginBottom = '10px';
+    }
+  });
+},500);
+</script>
