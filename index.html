@@ -1272,32 +1272,38 @@ window._requestNotifPermission=function(){
 
 
 
-</body>
-</html>
+
+<style>
+.previsioni-btn {
+  background: linear-gradient(135deg, #4fc3f7, #0288d1);
+  color: white !important;
+  border: none !important;
+  border-radius: 16px;
+  padding: 18px;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  display: block;
+  width: 100%;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  margin: 15px 0 25px 0;
+}
+.previsioni-btn span {
+  margin-right: 8px;
+  font-size: 20px;
+}
+</style>
 
 <script>
-// STYLE PREVISIONI BUTTON
 setTimeout(()=>{
-  const buttons = document.querySelectorAll('button, .home-btn, div');
-  buttons.forEach(el=>{
+  document.querySelectorAll('*').forEach(el=>{
     if(el.innerText && el.innerText.includes('Previsioni')){
-      el.style.background = '#0a84ff';
-      el.style.color = '#fff';
-      el.style.border = 'none';
-      el.style.marginBottom = '20px';
-      el.style.marginTop = '10px';
-    }
-  });
-
-  // CENTER SEGUI OMNIA
-  const nodes = document.querySelectorAll('*');
-  nodes.forEach(el=>{
-    if(el.innerText && el.innerText.trim() === 'SEGUI OMNIA SU'){
-      el.style.textAlign = 'center';
-      el.style.display = 'block';
-      el.style.marginTop = '10px';
-      el.style.marginBottom = '10px';
+      el.classList.add('previsioni-btn');
+      el.innerHTML = '<span>🌊☀️🌧️</span> Previsioni';
     }
   });
 },500);
 </script>
+
+</body>
+</html>
