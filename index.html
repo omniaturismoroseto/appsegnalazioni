@@ -138,6 +138,36 @@ label:first-child{margin-top:0}
 .meteo-hour .s{font-size:11px;color:var(--text2);margin-top:2px}
 @media(max-width:520px){.meteo-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+.meteo-home-btn{
+  display:block;width:100%;
+  padding:18px 16px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(135deg,#67d6ff 0%,#36b8f5 45%,#1697e6 100%);
+  color:#fff;
+  box-shadow:0 8px 20px rgba(22,151,230,.28);
+  text-align:left;
+  margin-top:10px;
+  margin-bottom:24px;
+}
+.meteo-home-btn:hover{background:linear-gradient(135deg,#67d6ff 0%,#36b8f5 45%,#1697e6 100%)}
+.meteo-home-btn h3{
+  display:flex;align-items:center;gap:10px;
+  color:#fff !important;
+  margin:0 0 4px 0;
+  font-size:16px;font-weight:700;
+}
+.meteo-home-btn p{
+  color:rgba(255,255,255,.92) !important;
+  margin:0;
+  font-size:12px;
+}
+.meteo-home-icons{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:18px;line-height:1;
+}
+
 </style>
 </head>
 <body>
@@ -861,9 +891,8 @@ function renderHome(page){
   page.appendChild(contacts);
 
   const forecastBtn=document.createElement("button");
-  forecastBtn.className="home-btn";
-  forecastBtn.style.marginTop="10px";
-  forecastBtn.innerHTML=`<h3>🌊 Previsioni</h3><p>Meteo mare e condizioni operative</p>`;
+  forecastBtn.className="home-btn meteo-home-btn";
+  forecastBtn.innerHTML=`<h3><span class="meteo-home-icons">🌊 ☀️ 🌧️</span>Previsioni Meteo</h3><p>Meteo mare e condizioni operative</p>`;
   forecastBtn.onclick=function(){render("forecast");};
   page.appendChild(forecastBtn);
 
@@ -1271,39 +1300,6 @@ window._requestNotifPermission=function(){
 
 
 
-
-
-<style>
-.previsioni-btn {
-  background: linear-gradient(135deg, #4fc3f7, #0288d1);
-  color: white !important;
-  border: none !important;
-  border-radius: 16px;
-  padding: 18px;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-  display: block;
-  width: 100%;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  margin: 15px 0 25px 0;
-}
-.previsioni-btn span {
-  margin-right: 8px;
-  font-size: 20px;
-}
-</style>
-
-<script>
-setTimeout(()=>{
-  document.querySelectorAll('*').forEach(el=>{
-    if(el.innerText && el.innerText.includes('Previsioni')){
-      el.classList.add('previsioni-btn');
-      el.innerHTML = '<span>🌊☀️🌧️</span> Previsioni';
-    }
-  });
-},500);
-</script>
 
 </body>
 </html>
