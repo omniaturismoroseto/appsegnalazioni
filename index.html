@@ -418,7 +418,7 @@ function renderMeteoCard(page){
         return '<div class="meteo-hour">'+
           '<div class="t">'+fmtHour(h.time)+'</div>'+
           '<div class="m">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):"-")+' m</div>'+
-          '<div class="s">'+knotsFromKmh(h.wind_speed_10m)+' nd · '+degToCompass(h.wind_direction_10m)+'<br>'+ (h.precipitation!=null?Number(h.precipitation).toFixed(1)+' mm':'-')</div>'+
+          '<div class="s">'+knotsFromKmh(h.wind_speed_10m)+' nd · '+degToCompass(h.wind_direction_10m)+'<br>'+(h.precipitation!=null?Number(h.precipitation).toFixed(1)+' mm':'-')+'</div>'+
         '</div>';
       }).join('')+
     '</div>';
