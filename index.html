@@ -53,16 +53,6 @@ label:first-child{margin-top:0}
 .hbtn-icon:hover{background:rgba(255,255,255,.3)}
 .hbtn-op{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:white;font-size:17px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .hbtn-op:hover{background:rgba(255,255,255,.3)}
-
-.lang-btn{
-  width:34px;height:34px;border-radius:50%;
-  background:rgba(255,255,255,.18);
-  border:1px solid rgba(255,255,255,.35);
-  color:white;font-size:16px;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0
-}
-.lang-btn:hover{background:rgba(255,255,255,.3)}
-
 .notif-badge{position:absolute;top:-4px;right:-4px;background:#F5C800;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--red)}
 .hbtn-wrap{position:relative}
 #main-map{height:280px;width:100%;display:block;z-index:1;background:#e8e8e8}
@@ -129,6 +119,25 @@ label:first-child{margin-top:0}
 .sync-dot.off{background:#e74c3c}
 .empty{text-align:center;color:var(--text3);padding:32px;font-size:13px}
 @media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+
+.meteo-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px}
+.meteo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.meteo-head h3{font-size:15px;font-weight:700;color:var(--navy);margin:0}
+.meteo-updated{font-size:11px;color:var(--text3)}
+.meteo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.meteo-stat{background:var(--bg2);border-radius:10px;padding:10px}
+.meteo-stat .k{font-size:11px;color:var(--text2);margin-bottom:3px}
+.meteo-stat .v{font-size:18px;font-weight:700;line-height:1.1}
+.meteo-stat .s{font-size:11px;color:var(--text2);margin-top:2px}
+.meteo-risk{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--info-bg);border:1px solid var(--info-border);border-radius:10px;padding:10px;margin-bottom:10px}
+.meteo-risk strong{font-size:13px}
+.meteo-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.meteo-hour{background:var(--bg2);border-radius:10px;padding:8px;text-align:center}
+.meteo-hour .t{font-size:11px;color:var(--text2);margin-bottom:4px}
+.meteo-hour .m{font-size:12px;font-weight:600}
+.meteo-hour .s{font-size:11px;color:var(--text2);margin-top:2px}
+@media(max-width:520px){.meteo-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -140,6 +149,8 @@ label:first-child{margin-top:0}
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+// Meteomare integrato con Open-Meteo Marine API e Forecast API
+
 // Firebase REST API - no SDK needed, works everywhere
 var FB_URL="https://app-segnalazioni-omnia-roseto-default-rtdb.europe-west1.firebasedatabase.app";
 var _fbListeners={};
@@ -221,6 +232,7 @@ window.addEventListener("load",function(){
   }
   if(typeof L!=="undefined"){
     boot();
+    setTimeout(function(){try{fetchMeteoMarine(false);}catch(e){}},300);
   } else {
     setTimeout(boot,600);
   }
@@ -252,74 +264,6 @@ const RED="#D62B1F",NAVY="#1A3B8C";
 const FLAG_COLORS={verde:"#27ae60",gialla:"#F5C800",rossa:"#e74c3c"};
 const ALERT_COLORS={emergenza:"#D81B8C",pericolo:"#1a1a1a"};
 const LOGO_SRC=null;
-
-let currentLang=localStorage.getItem("omnia_lang")||"it";
-const I18N={
-  it:{
-    appName:"Omnia Segnalazioni",
-    operatorArea:"Area Operatori",
-    logout:"Esci",
-    home:"Home",
-    nearestYou:"Postazione più vicina",
-    fromYou:"da te",
-    openReports:"segnalaz. aperte",
-    noReports:"+t("noReports")+",
-    reportHere:"🚨 Segnala qui",
-    beachFlags:"Significato delle bandiere",
-    green:"Verde",
-    yellow:"Gialla",
-    red:"Rossa",
-    emergency:"Emergenza",
-    danger:"Pericolo",
-    you:"● sei tu",
-    emergencyLabel:"Emergenza",
-    dangerLabel:"Pericolo",
-    emergencyCallConfirm:"Stai per chiamare il numero di emergenza 112. Vuoi continuare?",
-    locamareTitle:"${t("locamareTitle")}",
-    address:"Indirizzo",
-    phone:"Telefono",
-    email:"Email",
-    directions:"${t("directions")}",
-    flag:"Bandiera"
-  },
-  en:{
-    appName:"Omnia Reports",
-    operatorArea:"Operator Area",
-    logout:"Log out",
-    home:"Home",
-    nearestYou:"Nearest station",
-    fromYou:"from you",
-    openReports:"open reports",
-    noReports:"No reports",
-    reportHere:"🚨 Report here",
-    beachFlags:"Beach flags meaning",
-    green:"Green",
-    yellow:"Yellow",
-    red:"Red",
-    emergency:"Emergency",
-    danger:"Danger",
-    you:"● your position",
-    emergencyLabel:"Emergency",
-    dangerLabel:"Danger",
-    emergencyCallConfirm:"You are about to call emergency number 112. Do you want to continue?",
-    locamareTitle:"LOCAMARE Maritime Office of Roseto degli Abruzzi",
-    address:"Address",
-    phone:"Phone",
-    email:"Email",
-    directions:"Open directions",
-    flag:"Flag"
-  }
-};
-function t(k){return (I18N[currentLang]&&I18N[currentLang][k])||I18N.it[k]||k;}
-function toggleLanguage(){
-  currentLang=currentLang==="it"?"en":"it";
-  localStorage.setItem("omnia_lang",currentLang);
-  renderHeader();
-  renderMapLegend();
-  renderPage();
-  if(mapObj){ try{ if(locamareMarker){ locamareMarker.unbindPopup(); locamareMarker.remove(); locamareMarker=null; } ensureLocamareMarker(); refreshMarkers(); }catch(e){} }
-}
-
 
 const STATIONS=[
   {num:10,name:"Tartaruga",lat:42.66747,lng:14.02596},
@@ -363,7 +307,122 @@ let mapObj=null,mapMarkers=[],userMarker=null,locamareMarker=null;
 let nearestStation=null,nearestDist=null;
 let fbReady=false,newReportCount=0;
 let reportsData={},flagsData={};
+let meteoData=null,meteoLoading=false,meteoError="",meteoLastFetch=0;
 let prevReportKeys=new Set();
+
+
+const METEO_POINT={lat:42.68657,lng:14.01179,name:"Roseto degli Abruzzi"};
+function knotsFromKmh(v){return Math.round((Number(v||0))*0.539957);}
+function degToCompass(deg){
+  if(deg===undefined||deg===null||isNaN(deg)) return "-";
+  const dirs=["N","NE","E","SE","S","SO","O","NO"];
+  return dirs[Math.round((((deg%360)+360)%360)/45)%8];
+}
+function getRiskFromMeteo(m){
+  if(!m) return {level:"n/d",flag:"verde",text:"Dati non disponibili"};
+  const wave=Number(m.wave_height||0);
+  const windKn=knotsFromKmh(m.wind_speed_10m||0);
+  const gustKn=knotsFromKmh(m.wind_gusts_10m||0);
+  const weatherCode=Number(m.weather_code||0);
+  const thunder=[95,96,99].includes(weatherCode);
+  if(thunder || wave>=1.2 || windKn>=22 || gustKn>=28) return {level:"alto",flag:"rossa",text:"Condizioni critiche o potenzialmente pericolose"};
+  if(wave>=0.6 || windKn>=12 || gustKn>=18) return {level:"medio",flag:"gialla",text:"Mare mosso o vento sostenuto: attenzione"};
+  return {level:"basso",flag:"verde",text:"Condizioni generalmente favorevoli"};
+}
+function fmtHour(iso){
+  try{return new Date(iso).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});}catch(e){return "--:--";}
+}
+async function fetchMeteoMarine(force){
+  const now=Date.now();
+  if(meteoLoading) return;
+  if(!force && meteoData && (now-meteoLastFetch)<20*60*1000) return;
+  meteoLoading=true; meteoError="";
+  if(currentScreen==="home") renderPage();
+  try{
+    const forecastUrl = "https://api.open-meteo.com/v1/forecast?latitude="+METEO_POINT.lat+"&longitude="+METEO_POINT.lng+"&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto&forecast_days=2";
+    const marineUrl = "https://marine-api.open-meteo.com/v1/marine?latitude="+METEO_POINT.lat+"&longitude="+METEO_POINT.lng+"&current=wave_height,wave_direction,wave_period,sea_surface_temperature&hourly=wave_height,wave_direction,wave_period,sea_surface_temperature&timezone=auto&forecast_days=2&cell_selection=sea";
+    const [forecastRes, marineRes] = await Promise.all([fetch(forecastUrl), fetch(marineUrl)]);
+    if(!forecastRes.ok) throw new Error("Forecast HTTP "+forecastRes.status);
+    if(!marineRes.ok) throw new Error("Marine HTTP "+marineRes.status);
+    const forecast = await forecastRes.json();
+    const marine = await marineRes.json();
+    const current = Object.assign({}, forecast.current||{}, marine.current||{});
+    const times = (forecast.hourly&&forecast.hourly.time)||[];
+    const marineTimes = (marine.hourly&&marine.hourly.time)||[];
+    const hourly = [];
+    const startIdx = times.findIndex(function(t){
+      const d = new Date(t).getTime();
+      return d >= now-60*60*1000;
+    });
+    const from = startIdx>=0 ? startIdx : 0;
+    for(let i=from;i<Math.min(from+4,times.length);i++){
+      const mt = marineTimes.indexOf(times[i]);
+      hourly.push({
+        time: times[i],
+        wind_speed_10m: forecast.hourly.wind_speed_10m ? forecast.hourly.wind_speed_10m[i] : null,
+        wind_direction_10m: forecast.hourly.wind_direction_10m ? forecast.hourly.wind_direction_10m[i] : null,
+        wave_height: mt>=0 && marine.hourly.wave_height ? marine.hourly.wave_height[mt] : null,
+        sea_surface_temperature: mt>=0 && marine.hourly.sea_surface_temperature ? marine.hourly.sea_surface_temperature[mt] : null
+      });
+    }
+    meteoData = {
+      current: current,
+      hourly: hourly,
+      risk: getRiskFromMeteo(current),
+      updatedAt: new Date().toISOString()
+    };
+    meteoLastFetch = Date.now();
+  }catch(err){
+    meteoError = "Dati meteomarini non disponibili";
+  }finally{
+    meteoLoading=false;
+    if(currentScreen==="home") renderPage();
+  }
+}
+function renderMeteoCard(page){
+  const card=document.createElement("div");
+  card.className="meteo-card";
+  if(meteoLoading && !meteoData){
+    card.innerHTML='<div class="meteo-head"><h3>🌊 Meteomare Roseto</h3></div><div class="empty" style="padding:16px 0">Caricamento dati meteomarini...</div>';
+    page.appendChild(card); return;
+  }
+  if(meteoError && !meteoData){
+    card.innerHTML='<div class="meteo-head"><h3>🌊 Meteomare Roseto</h3></div><div class="empty" style="padding:16px 0">'+meteoError+'</div>';
+    page.appendChild(card); return;
+  }
+  const m=meteoData;
+  const risk=m ? m.risk : {flag:"verde",level:"n/d",text:""};
+  const flagCol=FLAG_COLORS[risk.flag]||"#666";
+  const flagLabel=(risk.flag||"verde").toUpperCase();
+  const current = m.current||{};
+  const seaTemp=(current.sea_surface_temperature!=null ? current.sea_surface_temperature : current.temperature_2m);
+  card.innerHTML =
+    '<div class="meteo-head">'+
+      '<div><h3>🌊 Meteomare Roseto</h3><div class="meteo-updated">Aggiornato: '+fmt(m.updatedAt)+'</div></div>'+
+      '<button type="button" class="nearest-btn" id="meteo-refresh-btn">Aggiorna</button>'+
+    '</div>'+
+    '<div class="meteo-grid">'+
+      '<div class="meteo-stat"><div class="k">Vento</div><div class="v">'+knotsFromKmh(current.wind_speed_10m)+' nodi</div><div class="s">'+degToCompass(current.wind_direction_10m)+'</div></div>'+
+      '<div class="meteo-stat"><div class="k">Onda</div><div class="v">'+(current.wave_height!=null?Number(current.wave_height).toFixed(1):"-")+' m</div><div class="s">Periodo '+(current.wave_period!=null?Number(current.wave_period).toFixed(0):"-")+' s</div></div>'+
+      '<div class="meteo-stat"><div class="k">Raffiche</div><div class="v">'+knotsFromKmh(current.wind_gusts_10m)+' nodi</div><div class="s">vento max</div></div>'+
+      '<div class="meteo-stat"><div class="k">Temp. mare</div><div class="v">'+(seaTemp!=null?Number(seaTemp).toFixed(1):"-")+'°</div><div class="s">superficie</div></div>'+
+    '</div>'+
+    '<div class="meteo-risk">'+
+      '<div><strong>Bandiera consigliata: <span style="color:'+flagCol+'">'+flagLabel+'</span></strong><div style="font-size:12px;color:var(--text2);margin-top:3px">'+risk.text+'</div></div>'+
+      '<div class="badge" style="background:'+flagCol+';color:#fff">'+risk.level.toUpperCase()+'</div>'+
+    '</div>'+
+    '<div class="meteo-strip">'+
+      m.hourly.map(function(h){
+        return '<div class="meteo-hour">'+
+          '<div class="t">'+fmtHour(h.time)+'</div>'+
+          '<div class="m">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):"-")+' m</div>'+
+          '<div class="s">'+knotsFromKmh(h.wind_speed_10m)+' nd · '+degToCompass(h.wind_direction_10m)+'</div>'+
+        '</div>';
+      }).join('')+
+    '</div>';
+  page.appendChild(card);
+  card.querySelector("#meteo-refresh-btn").addEventListener("click", function(){ fetchMeteoMarine(true); });
+}
 
 // FIREBASE LISTENERS
 reportsRef.on("value",snap=>{
@@ -495,7 +554,7 @@ window._segnalaPostazione=function(zoneLabel){
 
 
 function callEmergency112(){
-  var ok = confirm(t("emergencyCallConfirm"));
+  var ok = confirm("Stai per chiamare il numero di emergenza 112. Vuoi continuare?");
   if(ok){
     window.location.href = "tel:112";
   }
@@ -519,20 +578,13 @@ function renderHeader(){
   const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
   btns.appendChild(sd);
 
-  const langBtn=document.createElement("button");langBtn.className="lang-btn";
-  langBtn.type="button";
-  langBtn.title=currentLang==="it"?"English":"Italiano";
-  langBtn.textContent="🇬🇧";
-  langBtn.addEventListener("click",toggleLanguage);
-  btns.appendChild(langBtn);
-
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
-    op.textContent="\uD83D\uDD13";op.title=t("logout");
+    op.textContent="\uD83D\uDD13";op.title="Esci";
     op.addEventListener("click",()=>{currentRole=null;newReportCount=0;render("home");});
   }else{
-    op.textContent="\uD83D\uDD10";op.title=t("operatorArea");
+    op.textContent="\uD83D\uDD10";op.title="Area Operatori";
     op.addEventListener("click",()=>render("login"));
   }
   opWrap.appendChild(op);
@@ -593,16 +645,16 @@ function refreshMarkers(){
         var distStr="";
         if(userPos){
           var dm=Math.round(haversine(userPos.lat,userPos.lng,station.lat,station.lng));
-          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(dm)+" "+t("fromYou")+"</span>";
+          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(dm)+" da te</span>";
         } else if(nearestStation&&nearestStation.num===station.num&&nearestDist){
-          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(nearestDist)+" "+t("fromYou")+"</span>";
+          distStr="<br><span style=\"color:#555;font-size:12px\">\uD83D\uDCCD "+fmtDist(nearestDist)+" da te</span>";
         }
         // Colore bandiera
         var flagName=flagsData[station.num]||"verde";
         var flagCol=FLAG_COLORS[flagName];
-        var flagStr="<br><span style=\"font-size:12px\">"+t("flag")+" <span style=\"font-weight:700;color:"+flagCol+"\">"+flagName.toUpperCase()+"</span></span>";
+        var flagStr="<br><span style=\"font-size:12px\">Bandiera <span style=\"font-weight:700;color:"+flagCol+"\">"+flagName.toUpperCase()+"</span></span>";
         // Alert aperti
-        var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" "+t("openReports")+"</span>":"";
+        var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
         var popup=L.popup({maxWidth:220})
           .setContent(
             "<div style=\"font-family:sans-serif;padding:2px\">"
@@ -622,12 +674,12 @@ function refreshMarkers(){
 function renderMapLegend(){
   const leg=document.getElementById("map-legend");leg.style.display="flex";
   leg.innerHTML=
-    `<span><span class="ldot" style="background:#27ae60"></span>${t("green")}</span>`+
-    `<span><span class="ldot" style="background:#F5C800"></span>${t("yellow")}</span>`+
-    `<span><span class="ldot" style="background:#e74c3c"></span>${t("red")}</span>`+
-    `<span style="border-left:1px solid var(--border);padding-left:11px"><span class="ldot" style="background:#D81B8C"></span>${t("emergency")}</span>`+
-    `<span><span class="ldot" style="background:#1a1a1a"></span>${t("danger")}</span>`+
-    `<span style="margin-left:auto;color:var(--text3);font-size:10px">${t("you")}</span>`;
+    `<span><span class="ldot" style="background:#27ae60"></span>Verde</span>`+
+    `<span><span class="ldot" style="background:#F5C800"></span>Gialla</span>`+
+    `<span><span class="ldot" style="background:#e74c3c"></span>Rossa</span>`+
+    `<span style="border-left:1px solid var(--border);padding-left:11px"><span class="ldot" style="background:#D81B8C"></span>Emergenza</span>`+
+    `<span><span class="ldot" style="background:#1a1a1a"></span>Pericolo</span>`+
+    `<span style="margin-left:auto;color:var(--text3);font-size:10px">\u25cf sei tu</span>`;
 }
 
 
@@ -647,16 +699,16 @@ function ensureLocamareMarker(){
   const locamarePopup = `
     <div style="font-family:sans-serif;min-width:220px;line-height:1.45">
       <div style="font-size:14px;font-weight:700;color:#153E8C;margin-bottom:6px">
-        ${t("locamareTitle")}
+        Ufficio LOCAMARE Marittimo di Roseto degli Abruzzi
       </div>
       <div style="font-size:12px;color:#333;margin-bottom:4px">
-        <strong>${t("address")}:</strong> Lungomare Trieste, 1 - 64026 Roseto degli Abruzzi (TE)
+        <strong>Indirizzo:</strong> Lungomare Trieste, 1 - 64026 Roseto degli Abruzzi (TE)
       </div>
       <div style="font-size:12px;color:#333;margin-bottom:4px">
-        <strong>${t("phone")}:</strong> <a href="tel:0858942437" style="color:#153E8C;text-decoration:none">085 8942437</a>
+        <strong>Telefono:</strong> <a href="tel:0858942437" style="color:#153E8C;text-decoration:none">085 8942437</a>
       </div>
       <div style="font-size:12px;color:#333;margin-bottom:4px">
-        <strong>${t("email")}:</strong> <a href="mailto:rosetodegliabruzzi@guardiacostiera.it" style="color:#153E8C;text-decoration:none">rosetodegliabruzzi@guardiacostiera.it</a>
+        <strong>Email:</strong> <a href="mailto:rosetodegliabruzzi@guardiacostiera.it" style="color:#153E8C;text-decoration:none">rosetodegliabruzzi@guardiacostiera.it</a>
       </div>
       <div style="font-size:12px;color:#333;margin-bottom:8px">
         <strong>Email MIT:</strong> <a href="mailto:lcroseto@mit.gov.it" style="color:#153E8C;text-decoration:none">lcroseto@mit.gov.it</a>
@@ -664,7 +716,7 @@ function ensureLocamareMarker(){
       <a href="https://www.google.com/maps/dir/?api=1&destination=42.6694063,14.0239469"
          target="_blank"
          style="display:block;text-align:center;background:#153E8C;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">
-         ${t("directions")}
+         Apri indicazioni
       </a>
     </div>
   `;
@@ -701,6 +753,8 @@ function renderPage(){
 
 // HOME
 function renderHome(page){
+  fetchMeteoMarine(false);
+  renderMeteoCard(page);
 
   const emergencyBox=document.createElement("div");
   emergencyBox.style.cssText="margin-bottom:14px";
