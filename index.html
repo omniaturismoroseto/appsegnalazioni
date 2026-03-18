@@ -611,7 +611,6 @@ function renderPage(){
   else if(currentScreen==="login")renderLogin(page);
   else if(currentScreen==="submit")renderSubmit(page);
   else if(currentScreen==="done")renderDone(page);
-  else if(currentScreen==="forecast")renderForecastPage(page);
   else if(currentScreen==="dashboard"){if(currentRole!=="operator"){render("login");return;}renderDashboard(page);}
 }
 
@@ -751,81 +750,6 @@ function renderHome(page){
 }
 
 // LOGIN
-
-function renderForecastPage(page){
-  fetchMeteoMarine(true);
-  const wrap=document.createElement("div");
-  wrap.className="page-inner";
-
-  const back=document.createElement("button");
-  back.className="back-btn";
-  back.textContent="← Torna alla home";
-  back.onclick=function(){render("home");};
-  page.appendChild(back);
-
-  const title=document.createElement("div");
-  title.style.cssText="margin-bottom:14px";
-  title.innerHTML='<h2 style="font-size:20px;color:var(--navy);margin-bottom:4px">🌊 Previsioni meteomarine</h2><div style="font-size:13px;color:var(--text2)">Roseto degli Abruzzi - dettaglio operativo</div>';
-  page.appendChild(title);
-
-  if(meteoLoading && !meteoData){
-    const box=document.createElement("div");
-    box.className="meteo-card";
-    box.innerHTML='<div class="empty" style="padding:22px 0">Caricamento previsioni...</div>';
-    page.appendChild(box);
-    return;
-  }
-
-  if(meteoError && !meteoData){
-    const box=document.createElement("div");
-    box.className="meteo-card";
-    box.innerHTML='<div class="empty" style="padding:22px 0">'+meteoError+'</div>';
-    page.appendChild(box);
-    return;
-  }
-
-  if(meteoData){
-    renderMeteoCard(page);
-
-    const ext=document.createElement("div");
-    ext.className="meteo-card";
-    const current=meteoData.current||{};
-    const risk=meteoData.risk||{flag:"verde",level:"n/d",text:""};
-    const flagCol=FLAG_COLORS[risk.flag]||"#666";
-
-    ext.innerHTML =
-      '<div class="meteo-head">'+
-        '<div><h3>Dettaglio condizioni</h3><div class="meteo-updated">Ultimo aggiornamento: '+fmt(meteoData.updatedAt)+'</div></div>'+
-      '</div>'+
-      '<div class="meteo-grid">'+
-        '<div class="meteo-stat"><div class="k">Bandiera consigliata</div><div class="v" style="color:'+flagCol+'">'+String(risk.flag||"verde").toUpperCase()+'</div><div class="s">'+risk.text+'</div></div>'+
-        '<div class="meteo-stat"><div class="k">Livello rischio</div><div class="v">'+String(risk.level||"n/d").toUpperCase()+'</div><div class="s">valutazione automatica</div></div>'+
-        '<div class="meteo-stat"><div class="k">Direzione onda</div><div class="v">'+degToCompass(current.wave_direction)+'</div><div class="s">'+(current.wave_direction!=null?Math.round(current.wave_direction)+'°':'-')+'</div></div>'+
-        '<div class="meteo-stat"><div class="k">Codice meteo</div><div class="v">'+(current.weather_code!=null?current.weather_code:'-')+'</div><div class="s">condizioni meteo</div></div>'+
-      '</div>';
-    page.appendChild(ext);
-
-    const timeline=document.createElement("div");
-    timeline.className="meteo-card";
-    timeline.innerHTML='<div class="meteo-head"><div><h3>Prossime ore</h3><div class="meteo-updated">Vento, onda e pioggia</div></div></div>';
-
-    const strip=document.createElement("div");
-    strip.style.cssText="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px";
-    (meteoData.hourly||[]).forEach(function(h){
-      const item=document.createElement("div");
-      item.className="meteo-stat";
-      item.innerHTML =
-        '<div class="k">'+fmtHour(h.time)+'</div>'+
-        '<div class="v">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):'-')+' m</div>'+
-        '<div class="s">Vento '+knotsFromKmh(h.wind_speed_10m)+' nodi · '+degToCompass(h.wind_direction_10m)+'</div>'+
-        '<div class="s">Pioggia '+(h.precipitation!=null?Number(h.precipitation).toFixed(1):'-')+' mm</div>';
-      strip.appendChild(item);
-    });
-    timeline.appendChild(strip);
-    page.appendChild(timeline);
-  }
-}
-
 function renderLogin(page){
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render("home"));page.appendChild(back);
