@@ -332,7 +332,15 @@ const TYPES={
 
 };
 
+let suppressHistory=false;
 let currentScreen="home",currentRole=null;
+
+window.onpopstate=function(event){
+  suppressHistory=true;
+  currentScreen=(event.state&&event.state.screen)?event.state.screen:"home";
+  render(currentScreen);
+  suppressHistory=false;
+};
 let activeFilter="aperte",activeStation=null,activeDashTab="segnalazioni";
 let mapObj=null,mapMarkers=[],userMarker=null,locamareMarker=null;
 let nearestStation=null,nearestDist=null;
@@ -760,10 +768,14 @@ function ensureLocamareMarker(){
 
 // RENDER
 function render(screen){
-  currentScreen = screen;
-  history.pushState({screen: screen}, "", "");
-
   currentScreen=screen;
+  if(!suppressHistory){
+    try{
+      if(!history.state || history.state.screen!==screen){
+        history.pushState({screen:screen},"","");
+      }
+    }catch(e){}
+  }
   renderHeader();
   const mapEl=document.getElementById("main-map");
   const showMap=["home","dashboard"].includes(screen);
