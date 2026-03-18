@@ -361,6 +361,7 @@ async function fetchMeteoMarine(force){
         time: times[i],
         wind_speed_10m: forecast.hourly.wind_speed_10m ? forecast.hourly.wind_speed_10m[i] : null,
         wind_direction_10m: forecast.hourly.wind_direction_10m ? forecast.hourly.wind_direction_10m[i] : null,
+        precipitation: forecast.hourly.precipitation ? forecast.hourly.precipitation[i] : null,
         wave_height: mt>=0 && marine.hourly.wave_height ? marine.hourly.wave_height[mt] : null,
         sea_surface_temperature: mt>=0 && marine.hourly.sea_surface_temperature ? marine.hourly.sea_surface_temperature[mt] : null
       });
