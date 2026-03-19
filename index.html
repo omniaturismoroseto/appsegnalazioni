@@ -756,7 +756,17 @@ function initMap(){
   if(mapObj){ensureLocamareMarker();refreshMarkers();mapObj.invalidateSize(true);return;}
   el.style.height="280px";el.style.width="100%";
   mapObj=L.map(el,{zoomControl:true,preferCanvas:true,updateWhenIdle:true,tap:true}).setView([42.686,14.010],13);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+  // 🌍 SFONDO SATELLITE (ESRI) - Opzione A
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
+      attribution: "Tiles © Esri",
+      maxZoom: 20
+    }
+  ).addTo(mapObj);
+
+// (fallback stile chiaro commentato)
+// L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
     attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:20,updateWhenIdle:true,keepBuffer:3
   }).addTo(mapObj);
   ensureLocamareMarker();
