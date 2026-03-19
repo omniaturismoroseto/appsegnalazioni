@@ -120,23 +120,53 @@ label:first-child{margin-top:0}
 .empty{text-align:center;color:var(--text3);padding:32px;font-size:13px}
 @media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
 
-.meteo-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px}
-.meteo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
-.meteo-head h3{font-size:15px;font-weight:700;color:var(--navy);margin:0}
+.meteo-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px}
+.meteo-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.meteo-head h3{font-size:12px;font-weight:700;color:var(--text3);margin:0;letter-spacing:.06em;text-transform:uppercase}
 .meteo-updated{font-size:11px;color:var(--text3)}
-.meteo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
-.meteo-stat{background:var(--bg2);border-radius:10px;padding:10px}
-.meteo-stat .k{font-size:11px;color:var(--text2);margin-bottom:3px}
-.meteo-stat .v{font-size:18px;font-weight:700;line-height:1.1}
-.meteo-stat .s{font-size:11px;color:var(--text2);margin-top:2px}
-.meteo-risk{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--info-bg);border:1px solid var(--info-border);border-radius:10px;padding:10px;margin-bottom:10px}
-.meteo-risk strong{font-size:13px}
-.meteo-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.meteo-hour{background:var(--bg2);border-radius:10px;padding:8px;text-align:center}
-.meteo-hour .t{font-size:11px;color:var(--text2);margin-bottom:4px}
-.meteo-hour .m{font-size:12px;font-weight:600}
-.meteo-hour .s{font-size:11px;color:var(--text2);margin-top:2px}
-@media(max-width:520px){.meteo-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Hero */
+.mhero{border-radius:var(--radius-lg);padding:18px 16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.mhero-flag{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;z-index:1;position:relative}
+.mhero-body{flex:1;z-index:1;position:relative}
+.mhero-name{font-size:28px;font-weight:900;line-height:1;margin-bottom:2px}
+.mhero-desc{font-size:13px;font-weight:500;margin-bottom:5px;opacity:.9}
+.mhero-time{font-size:11px;opacity:.6}
+/* Stats */
+.mgrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mgrid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mstat{background:var(--bg2);border-radius:12px;padding:12px 10px;text-align:center}
+.mstat .mi{font-size:22px;line-height:1;margin-bottom:5px}
+.mstat .mk{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.mstat .mv{font-size:19px;font-weight:800;line-height:1;color:var(--text)}
+.mstat .ms{font-size:11px;color:var(--text2);margin-top:3px}
+/* Timeline scroll orizzontale */
+.mscroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.mscroll::-webkit-scrollbar{display:none}
+.mslot{flex:0 0 72px;background:var(--bg2);border-radius:12px;padding:10px 8px;text-align:center;border:1.5px solid transparent}
+.mslot.amber{border-color:#F5C800;background:#fffde7}
+.mslot.red{border-color:#e74c3c;background:#fff5f5}
+.mslot .sh{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:5px}
+.mslot .si{font-size:18px;line-height:1;margin-bottom:3px}
+.mslot .sw{font-size:14px;font-weight:800}
+.mslot .sd{font-size:10px;color:var(--text2);margin-top:3px;line-height:1.5}
+/* Lista 24h */
+.mlist{display:grid;gap:6px}
+.mrow{background:var(--bg2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-left:4px solid transparent}
+.mrow .rh{font-size:12px;font-weight:700;color:var(--text3);min-width:38px}
+.mrow .ri{font-size:20px;flex-shrink:0}
+.mrow .rb{flex:1;min-width:0}
+.mrow .rb .rw{font-size:13px;font-weight:600}
+.mrow .rb .rs{font-size:11px;color:var(--text2);margin-top:2px}
+.mrow .rf{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* Satellite */
+.sat-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px}
+.sat-tabs{display:flex;background:var(--bg2)}
+.sat-tab{flex:1;padding:9px 2px;font-size:11px;font-weight:700;background:transparent;border:none;border-bottom:2.5px solid transparent;cursor:pointer;color:var(--text3);margin-bottom:-1px;transition:all .15s}
+.sat-tab.active{color:var(--red);border-bottom-color:var(--red);background:var(--bg)}
+.sat-body{border-top:1px solid var(--border)}
+.sat-body iframe{width:100%;height:290px;border:none;display:block}
+.sat-foot{padding:7px 12px;font-size:10px;color:var(--text3);display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border)}
+@media(max-width:380px){.mgrid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 
 .meteo-home-btn{
@@ -167,6 +197,53 @@ label:first-child{margin-top:0}
   display:inline-flex;align-items:center;gap:6px;
   font-size:18px;line-height:1;
 }
+
+
+.forecast-intro{
+  background:linear-gradient(135deg,rgba(26,59,140,.08),rgba(214,43,31,.06));
+  border:1px solid rgba(26,59,140,.12);
+  border-radius:16px;
+  padding:14px 15px;
+  margin-bottom:12px;
+}
+.forecast-intro-top{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+}
+.forecast-intro h2{
+  font-size:22px;font-weight:900;color:var(--navy);margin:0 0 4px;
+}
+.forecast-intro p{
+  font-size:12px;color:var(--text2);margin:0;
+}
+.forecast-chip-row{
+  display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;
+}
+.forecast-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 10px;border-radius:999px;
+  background:rgba(255,255,255,.75);
+  border:1px solid rgba(26,59,140,.08);
+  font-size:11px;font-weight:700;color:var(--text2);
+}
+.forecast-section-title{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:2px 0 10px;
+}
+.forecast-section-title h3{
+  font-size:13px;font-weight:800;color:var(--text3);
+  letter-spacing:.06em;text-transform:uppercase;margin:0;
+}
+.forecast-credit{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+  margin:6px 0 16px;
+  font-size:11px;
+  color:var(--text3);
+  text-align:center;
+}
+.forecast-credit a{color:var(--info-text);font-weight:700;text-decoration:none}
 
 </style>
 </head>
@@ -268,6 +345,7 @@ window.addEventListener("load",function(){
   }
 });
 function startApp(){
+  history.replaceState({screen:"home"}, "", "");
 // Debug: mostra subito che startApp è partito
 var dbg=document.getElementById("page");
 if(dbg)dbg.innerHTML='<p style="padding:10px;font-size:12px;color:#888">Avvio app...</p>';
@@ -331,7 +409,15 @@ const TYPES={
 
 };
 
+let suppressHistory=false;
 let currentScreen="home",currentRole=null;
+
+window.onpopstate=function(event){
+  suppressHistory=true;
+  currentScreen=(event.state&&event.state.screen)?event.state.screen:"home";
+  render(currentScreen);
+  suppressHistory=false;
+};
 let activeFilter="aperte",activeStation=null,activeDashTab="segnalazioni";
 let mapObj=null,mapMarkers=[],userMarker=null,locamareMarker=null;
 let nearestStation=null,nearestDist=null;
@@ -385,7 +471,7 @@ async function fetchMeteoMarine(force){
       return d >= now-60*60*1000;
     });
     const from = startIdx>=0 ? startIdx : 0;
-    for(let i=from;i<Math.min(from+4,times.length);i++){
+    for(let i=from;i<Math.min(from+24,times.length);i++){
       const mt = marineTimes.indexOf(times[i]);
       hourly.push({
         time: times[i],
@@ -410,50 +496,86 @@ async function fetchMeteoMarine(force){
     
   }
 }
+function wIcon(kmh){
+  if(kmh==null)return"🌬️";
+  const n=Math.round((kmh||0)*0.54);
+  if(n<4)return"🌀";if(n<11)return"🍃";if(n<17)return"💨";if(n<22)return"🌬️";if(n<34)return"⛵";return"⚡";
+}
+function wmoIcon(code){
+  if(code==null)return"🌤️";
+  if(code<=1)return"☀️";if(code<=3)return"⛅";if(code<=49)return"🌫️";
+  if(code<=67)return"🌧️";if(code<=77)return"❄️";if(code<=82)return"🌦️";
+  if(code<=86)return"🌨️";return"⛈️";
+}
 function renderMeteoCard(page){
-  const card=document.createElement("div");
-  card.className="meteo-card";
-  if(meteoLoading && !meteoData){
-    card.innerHTML='<div class="meteo-head"><h3>🌊 Meteomare Roseto</h3></div><div class="empty" style="padding:16px 0">Caricamento dati meteomarini...</div>';
-    page.appendChild(card); return;
+  if(meteoLoading&&!meteoData){
+    const c=document.createElement("div");c.className="meteo-card";
+    c.innerHTML="<div style='padding:24px;text-align:center;color:var(--text3)'>⏳ Caricamento dati meteomarini...</div>";
+    page.appendChild(c);return;
   }
-  if(meteoError && !meteoData){
-    card.innerHTML='<div class="meteo-head"><h3>🌊 Meteomare Roseto</h3></div><div class="empty" style="padding:16px 0">'+meteoError+'</div>';
-    page.appendChild(card); return;
+  if(meteoError&&!meteoData){
+    const c=document.createElement("div");c.className="meteo-card";
+    c.innerHTML="<div style='padding:16px;text-align:center;color:var(--danger-text)'>⚠️ "+meteoError+"</div>";
+    page.appendChild(c);return;
   }
   const m=meteoData;
-  const risk=m ? m.risk : {flag:"verde",level:"n/d",text:""};
-  const flagCol=FLAG_COLORS[risk.flag]||"#666";
-  const flagLabel=(risk.flag||"verde").toUpperCase();
-  const current = m.current||{};
-  const seaTemp=(current.sea_surface_temperature!=null ? current.sea_surface_temperature : current.temperature_2m);
-  card.innerHTML =
-    '<div class="meteo-head">'+
-      '<div><h3>🌊 Meteomare Roseto</h3><div class="meteo-updated">Aggiornato: '+fmt(m.updatedAt)+'</div></div>'+
-      '<button type="button" class="nearest-btn" id="meteo-refresh-btn">Aggiorna</button>'+
+  const risk=m?m.risk:{flag:"verde",level:"n/d",text:""};
+  const fc=FLAG_COLORS[risk.flag]||"#27ae60";
+  const fEmoji={"verde":"🟢","gialla":"🟡","rossa":"🔴"}[risk.flag]||"🟢";
+  const cur=m.current||{};
+  const seaT=(cur.sea_surface_temperature!=null?cur.sea_surface_temperature:cur.temperature_2m);
+
+  // Hero bandiera
+  const hero=document.createElement("div");
+  hero.className="mhero";
+  hero.style.cssText="background:linear-gradient(135deg,"+fc+"22,"+fc+"08);border:1.5px solid "+fc+"44;border-radius:var(--radius-lg);padding:18px 16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden";
+  hero.innerHTML=
+    '<div style="position:absolute;right:-10px;bottom:-10px;font-size:100px;opacity:.06;line-height:1;pointer-events:none">'+fEmoji+'</div>'+
+    '<div class="mhero-flag" style="background:'+fc+'28;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;z-index:1">'+fEmoji+'</div>'+
+    '<div class="mhero-body" style="flex:1;z-index:1">'+
+      '<div class="mhero-name" style="font-size:28px;font-weight:900;line-height:1;margin-bottom:2px;color:'+fc+'">'+String(risk.flag||"verde").toUpperCase()+'</div>'+
+      '<div class="mhero-desc" style="font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)">'+risk.text+'</div>'+
+      '<div class="mhero-time" style="font-size:11px;color:var(--text3)">Aggiornato: '+fmt(m.updatedAt)+'</div>'+
     '</div>'+
-    '<div class="meteo-grid">'+
-      '<div class="meteo-stat"><div class="k">Vento</div><div class="v">'+knotsFromKmh(current.wind_speed_10m)+' nodi</div><div class="s">'+degToCompass(current.wind_direction_10m)+'</div></div>'+
-      '<div class="meteo-stat"><div class="k">Onda</div><div class="v">'+(current.wave_height!=null?Number(current.wave_height).toFixed(1):"-")+' m</div><div class="s">Periodo '+(current.wave_period!=null?Number(current.wave_period).toFixed(0):"-")+' s</div></div>'+
-      '<div class="meteo-stat"><div class="k">Raffiche</div><div class="v">'+knotsFromKmh(current.wind_gusts_10m)+' nodi</div><div class="s">vento max</div></div>'+
-      '<div class="meteo-stat"><div class="k">Temp. mare</div><div class="v">'+(seaTemp!=null?Number(seaTemp).toFixed(1):"-")+'°</div><div class="s">superficie</div></div>'+
-      '<div class="meteo-stat"><div class="k">Pioggia</div><div class="v">'+(current.precipitation!=null?Number(current.precipitation).toFixed(1):"-")+' mm</div><div class="s">ultima ora</div></div>'+
-    '</div>'+
-    '<div class="meteo-risk">'+
-      '<div><strong>Bandiera consigliata: <span style="color:'+flagCol+'">'+flagLabel+'</span></strong><div style="font-size:12px;color:var(--text2);margin-top:3px">'+risk.text+'</div></div>'+
-      '<div class="badge" style="background:'+flagCol+';color:#fff">'+risk.level.toUpperCase()+'</div>'+
-    '</div>'+
-    '<div class="meteo-strip">'+
-      m.hourly.map(function(h){
-        return '<div class="meteo-hour">'+
-          '<div class="t">'+fmtHour(h.time)+'</div>'+
-          '<div class="m">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):"-")+' m</div>'+
-          '<div class="s">'+knotsFromKmh(h.wind_speed_10m)+' nd · '+degToCompass(h.wind_direction_10m)+'<br>'+(h.precipitation!=null?Number(h.precipitation).toFixed(1)+' mm':'-')+'</div>'+
-        '</div>';
-      }).join('')+
+    '<button id="meteo-refresh-btn" type="button" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:36px;height:36px;font-size:17px;cursor:pointer;flex-shrink:0;z-index:1">↻</button>';
+  page.appendChild(hero);
+  hero.querySelector("#meteo-refresh-btn").addEventListener("click",function(){fetchMeteoMarine(true);});
+
+  // Grid 6 dati
+  const grid=document.createElement("div");grid.className="meteo-card";
+  grid.innerHTML=
+    '<div class="meteo-head"><h3>📊 Condizioni ora</h3></div>'+
+    '<div class="mgrid3">'+
+      '<div class="mstat"><div class="mi">💨</div><div class="mk">Vento</div><div class="mv">'+knotsFromKmh(cur.wind_speed_10m)+'<small style="font-size:11px;font-weight:500"> nd</small></div><div class="ms">'+degToCompass(cur.wind_direction_10m)+'</div></div>'+
+      '<div class="mstat"><div class="mi">🌊</div><div class="mk">Onda</div><div class="mv">'+(cur.wave_height!=null?Number(cur.wave_height).toFixed(1):"-")+'<small style="font-size:11px;font-weight:500"> m</small></div><div class="ms">T:'+(cur.wave_period!=null?Math.round(cur.wave_period)+"s":"-")+'</div></div>'+
+      '<div class="mstat"><div class="mi">⚡</div><div class="mk">Raffiche</div><div class="mv">'+knotsFromKmh(cur.wind_gusts_10m)+'<small style="font-size:11px;font-weight:500"> nd</small></div><div class="ms">max</div></div>'+
+      '<div class="mstat"><div class="mi">🌡️</div><div class="mk">Temp. mare</div><div class="mv">'+(seaT!=null?Number(seaT).toFixed(1):"-")+'<small style="font-size:11px;font-weight:500">°C</small></div><div class="ms">superficie</div></div>'+
+      '<div class="mstat"><div class="mi">💧</div><div class="mk">Pioggia</div><div class="mv">'+(cur.precipitation!=null?Number(cur.precipitation).toFixed(1):"-")+'<small style="font-size:11px;font-weight:500"> mm</small></div><div class="ms">ultima ora</div></div>'+
+      '<div class="mstat"><div class="mi">↗️</div><div class="mk">Dir. onda</div><div class="mv" style="font-size:16px">'+degToCompass(cur.wave_direction)+'</div><div class="ms">'+(cur.wave_direction!=null?Math.round(cur.wave_direction)+"°":"-")+'</div></div>'+
     '</div>';
-  page.appendChild(card);
-  card.querySelector("#meteo-refresh-btn").addEventListener("click", function(){ fetchMeteoMarine(true); });
+  page.appendChild(grid);
+
+  // Striscia oraria scorrevole
+  if(m.hourly&&m.hourly.length){
+    const tl=document.createElement("div");tl.className="meteo-card";
+    tl.innerHTML='<div class="meteo-head"><h3>⏱ Prossime ore</h3><span style="font-size:10px;color:var(--text3)">← scorri →</span></div>';
+    const strip=document.createElement("div");strip.className="mscroll";
+    m.hourly.slice(0,12).forEach(function(h){
+      const wv=h.wave_height!=null?Number(h.wave_height):0;
+      const wnd=knotsFromKmh(h.wind_speed_10m);
+      const cls=wv>2||wnd>25?" red":wv>1.2||wnd>15?" amber":"";
+      const sl=document.createElement("div");sl.className="mslot"+cls;
+      sl.innerHTML=
+        '<div class="sh">'+fmtHour(h.time)+'</div>'+
+        '<div class="si">'+wIcon(h.wind_speed_10m)+'</div>'+
+        '<div class="sw">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):"-")+'m</div>'+
+        '<div class="sd">'+wnd+' nd<br>'+degToCompass(h.wind_direction_10m)+'</div>'+
+        (h.precipitation>0.1?'<div class="sd">💧'+Number(h.precipitation).toFixed(1)+'</div>':'');
+      strip.appendChild(sl);
+    });
+    tl.appendChild(strip);
+    page.appendChild(tl);
+  }
 }
 
 // FIREBASE LISTENERS
@@ -637,24 +759,21 @@ function initMap(){
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
-      attribution: "Tiles © Esri",
-      maxZoom: 20,
-      updateWhenIdle: true,
-      keepBuffer: 3
+      attribution:"Tiles © Esri",
+      maxZoom:20,
+      updateWhenIdle:true,
+      keepBuffer:3
     }
   ).addTo(mapObj);
 
-  // 🏷️ ETICHETTE (nomi vie e luoghi)
   L.tileLayer(
     "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
     {
-      attribution: "Labels © Esri",
-      maxZoom: 20,
-      pane: "overlayPane"
+      attribution:"Labels © Esri",
+      maxZoom:20,
+      pane:"overlayPane"
     }
   ).addTo(mapObj);
-    attribution:"&copy; OpenStreetMap &copy; CARTO",subdomains:"abcd",maxZoom:20,updateWhenIdle:true,keepBuffer:3
-  }).addTo(mapObj);
   ensureLocamareMarker();
   refreshMarkers();
   mapObj.whenReady(function(){
@@ -778,6 +897,13 @@ function ensureLocamareMarker(){
 // RENDER
 function render(screen){
   currentScreen=screen;
+  if(!suppressHistory){
+    try{
+      if(!history.state || history.state.screen!==screen){
+        history.pushState({screen:screen},"","");
+      }
+    }catch(e){}
+  }
   renderHeader();
   const mapEl=document.getElementById("main-map");
   const showMap=["home","dashboard"].includes(screen);
@@ -948,78 +1074,116 @@ function renderHome(page){
 
 // LOGIN
 
+function renderSatelliteCard(page){
+  const card=document.createElement("div");card.className="sat-card";
+  const tabs=document.createElement("div");tabs.className="sat-tabs";
+  const defs=[
+    {id:"r",lbl:"🌧️ Radar",u:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=290&zoom=7&level=surface&overlay=rain&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+    {id:"s",lbl:"🛰️ Satellite",u:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=290&zoom=6&level=surface&overlay=satellite&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+    {id:"w",lbl:"💨 Vento",u:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=290&zoom=7&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+    {id:"o",lbl:"🌊 Onde",u:"https://embed.windy.com/embed2.html?lat=42.68&lon=14.02&detailLat=42.68&detailLon=14.02&width=650&height=290&zoom=7&level=surface&overlay=waves&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"},
+  ];
+  var cur="r";
+  const body=document.createElement("div");body.className="sat-body";
+  const ifr=document.createElement("iframe");ifr.src=defs[0].u;ifr.allow="fullscreen";ifr.setAttribute("loading","lazy");body.appendChild(ifr);
+  defs.forEach(function(d){
+    var btn=document.createElement("button");btn.className="sat-tab"+(d.id==="r"?" active":"");btn.textContent=d.lbl;
+    btn.addEventListener("click",function(){
+      if(cur===d.id)return;cur=d.id;
+      tabs.querySelectorAll(".sat-tab").forEach(function(b){b.classList.remove("active");});
+      btn.classList.add("active");ifr.src=d.u;
+    });tabs.appendChild(btn);
+  });
+  const foot=document.createElement("div");foot.className="sat-foot";
+  foot.innerHTML='<span>Dati in tempo reale · animazione loop</span><a href="https://windy.com" target="_blank" style="color:var(--info-text);font-weight:700">Windy.com ↗</a>';
+  card.appendChild(tabs);card.appendChild(body);card.appendChild(foot);
+  page.appendChild(card);
+}
+
 function renderForecastPage(page){
   fetchMeteoMarine(true);
 
-  const back=document.createElement("button");
-  back.className="back-btn";
-  back.textContent="← Torna alla home";
-  back.onclick=function(){render("home");};
+  const back=document.createElement("button");back.className="back-btn";
+  back.textContent="← Torna alla home";back.onclick=function(){render("home");};
   page.appendChild(back);
 
-  const title=document.createElement("div");
-  title.style.cssText="margin-bottom:14px";
-  title.innerHTML='<h2 style="font-size:20px;color:var(--navy);margin-bottom:4px">🌊 Previsioni meteomarine</h2><div style="font-size:13px;color:var(--text2)">Roseto degli Abruzzi - dettaglio operativo</div>';
-  page.appendChild(title);
-
-  if(meteoLoading && !meteoData){
-    const box=document.createElement("div");
-    box.className="meteo-card";
-    box.innerHTML='<div class="empty" style="padding:22px 0">Caricamento previsioni...</div>';
-    page.appendChild(box);
-    return;
-  }
-
-  if(meteoError && !meteoData){
-    const box=document.createElement("div");
-    box.className="meteo-card";
-    box.innerHTML='<div class="empty" style="padding:22px 0">'+meteoError+'</div>';
-    page.appendChild(box);
-    return;
-  }
-
-  if(meteoData){
-    
-
-    const ext=document.createElement("div");
-    ext.className="meteo-card";
-    const current=meteoData.current||{};
-    const risk=meteoData.risk||{flag:"verde",level:"n/d",text:""};
-    const flagCol=FLAG_COLORS[risk.flag]||"#666";
-
-    ext.innerHTML =
-      '<div class="meteo-head">'+
-        '<div><h3>Dettaglio condizioni</h3><div class="meteo-updated">Ultimo aggiornamento: '+fmt(meteoData.updatedAt)+'</div></div>'+
+  const hdr=document.createElement("div");
+  hdr.className="forecast-intro";
+  const updatedTxt=(meteoData&&meteoData.updatedAt)?fmt(meteoData.updatedAt):"aggiornamento in corso";
+  hdr.innerHTML=
+    '<div class="forecast-intro-top">'+
+      '<div>'+
+        '<h2>🌊 Previsioni meteomarine</h2>'+
+        '<p>Roseto degli Abruzzi · vista operativa per spiaggia, mare e sicurezza balneare</p>'+
       '</div>'+
-      '<div class="meteo-grid">'+
-        '<div class="meteo-stat"><div class="k">Bandiera consigliata</div><div class="v" style="color:'+flagCol+'">'+String(risk.flag||"verde").toUpperCase()+'</div><div class="s">'+risk.text+'</div></div>'+
-        '<div class="meteo-stat"><div class="k">Livello rischio</div><div class="v">'+String(risk.level||"n/d").toUpperCase()+'</div><div class="s">valutazione automatica</div></div>'+
-        '<div class="meteo-stat"><div class="k">Direzione onda</div><div class="v">'+degToCompass(current.wave_direction)+'</div><div class="s">'+(current.wave_direction!=null?Math.round(current.wave_direction)+'°':'-')+'</div></div>'+
-        '<div class="meteo-stat"><div class="k">Pioggia</div><div class="v">'+(current.precipitation!=null?Number(current.precipitation).toFixed(1):"-")+' mm</div><div class="s">ultima ora</div></div>'+
-      '</div>';
-    page.appendChild(ext);
+      '<div class="badge" style="background:var(--info-bg);color:var(--info-text);border:1px solid var(--info-border)">LIVE</div>'+
+    '</div>'+
+    '<div class="forecast-chip-row">'+
+      '<div class="forecast-chip">📍 Adriatico centrale</div>'+
+      '<div class="forecast-chip">⏱ '+updatedTxt+'</div>'+
+      '<div class="forecast-chip">🧭 Vento · onde · pioggia</div>'+
+    '</div>';
+  page.appendChild(hdr);
 
-    const timeline=document.createElement("div");
-    timeline.className="meteo-card";
-    timeline.innerHTML='<div class="meteo-head"><div><h3>Prossime ore</h3><div class="meteo-updated">Vento, onda e pioggia</div></div></div>';
+  // Satellite in cima - NON modificato
+  renderSatelliteCard(page);
 
-    const strip=document.createElement("div");
-    strip.style.cssText="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px";
-    (meteoData.hourly||[]).forEach(function(h){
-      const item=document.createElement("div");
-      item.className="meteo-stat";
-      item.innerHTML =
-        '<div class="k">'+fmtHour(h.time)+'</div>'+
-        '<div class="v">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):'-')+' m</div>'+
-        '<div class="s">Vento '+knotsFromKmh(h.wind_speed_10m)+' nodi · '+degToCompass(h.wind_direction_10m)+'</div>'+
-        '<div class="s">Pioggia '+(h.precipitation!=null?Number(h.precipitation).toFixed(1):'-')+' mm</div>';
-      strip.appendChild(item);
-    });
-    timeline.appendChild(strip);
-    page.appendChild(timeline);
+  if(meteoLoading&&!meteoData){
+    const b=document.createElement("div");b.className="meteo-card";
+    b.innerHTML="<div style='padding:24px;text-align:center;color:var(--text3)'>⏳ Caricamento previsioni...</div>";
+    page.appendChild(b);return;
   }
-}
+  if(meteoError&&!meteoData){
+    const b=document.createElement("div");b.className="meteo-card";
+    b.innerHTML="<div style='padding:16px;text-align:center;color:var(--danger-text)'>⚠️ "+meteoError+"</div>";
+    page.appendChild(b);return;
+  }
 
+  const sec1=document.createElement("div");
+  sec1.className="forecast-section-title";
+  sec1.innerHTML='<h3>Quadro generale</h3><span style="font-size:11px;color:var(--text3)">Sintesi immediata</span>';
+  page.appendChild(sec1);
+
+  // Dati attuali + striscia ore
+  renderMeteoCard(page);
+
+  if(meteoData&&meteoData.hourly&&meteoData.hourly.length>4){
+    const sec2=document.createElement("div");
+    sec2.className="forecast-section-title";
+    sec2.innerHTML='<h3>Evoluzione della giornata</h3><span style="font-size:11px;color:var(--text3)">Lettura rapida delle prossime ore</span>';
+    page.appendChild(sec2);
+
+    const c24=document.createElement("div");c24.className="meteo-card";
+    c24.innerHTML='<div class="meteo-head"><h3>📅 Prossime 24 ore</h3><div class="meteo-updated">Selezione ogni 3 ore</div></div>';
+    const list=document.createElement("div");list.className="mlist";
+    meteoData.hourly.forEach(function(h,i){
+      if(i%3!==0||i>21)return;
+      const wv=h.wave_height!=null?Number(h.wave_height):0;
+      const wnd=knotsFromKmh(h.wind_speed_10m);
+      const fl=wv>2||wnd>25?"rossa":wv>1||wnd>15?"gialla":"verde";
+      const fc2=FLAG_COLORS[fl];
+      const row=document.createElement("div");row.className="mrow";
+      row.style.borderLeftColor=fc2;
+      row.innerHTML=
+        '<div class="rh">'+fmtHour(h.time)+'</div>'+
+        '<div class="ri">'+wIcon(h.wind_speed_10m)+'</div>'+
+        '<div class="rb">'+
+          '<div class="rw">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):"–")+' m onda &nbsp;·&nbsp; '+wnd+' nodi '+degToCompass(h.wind_direction_10m)+'</div>'+
+          '<div class="rs">'+(h.precipitation>0.1?'💧 '+Number(h.precipitation).toFixed(1)+' mm &nbsp;·&nbsp; ':'')+
+            (h.sea_surface_temperature!=null?'🌡️ '+Number(h.sea_surface_temperature).toFixed(1)+' °C mare':'')+'</div>'+
+        '</div>'+
+        '<div class="rf" style="background:'+fc2+'"></div>';
+      list.appendChild(row);
+    });
+    c24.appendChild(list);
+    page.appendChild(c24);
+  }
+
+  const credit=document.createElement("div");
+  credit.className="forecast-credit";
+  credit.innerHTML='Dati previsionali: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · Mappe live: <a href="https://windy.com" target="_blank">Windy</a>';
+  page.appendChild(credit);
+}
 
 function renderLogin(page){
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
