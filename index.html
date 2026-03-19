@@ -245,6 +245,41 @@ label:first-child{margin-top:0}
 }
 .forecast-credit a{color:var(--info-text);font-weight:700;text-decoration:none}
 
+
+.wx-map-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:5000;
+  display:none;align-items:center;justify-content:center;padding:14px;
+}
+.wx-map-overlay.open{display:flex}
+.wx-map-panel{
+  width:min(980px,100%);height:min(78vh,760px);background:var(--bg);
+  border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;
+}
+.wx-map-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;background:var(--navy);color:#fff;
+}
+.wx-map-head strong{font-size:14px}
+.wx-map-close{
+  width:36px;height:36px;border:none;border-radius:50%;background:rgba(255,255,255,.16);
+  color:#fff;font-size:18px;font-weight:700;cursor:pointer;
+}
+.wx-map-iframe{flex:1;border:0;width:100%;background:#eef4fb}
+.wx-map-foot{
+  padding:10px 14px;font-size:11px;color:var(--text2);background:var(--bg2);
+  border-top:1px solid var(--border);
+}
+.wx-leaflet-btn{
+  background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);padding:0;overflow:hidden;
+}
+.wx-leaflet-btn button{
+  display:block;width:100%;border:none;background:#fff;color:#123;padding:8px 10px;
+  font-size:12px;font-weight:700;cursor:pointer;min-width:74px;
+}
+.wx-leaflet-btn button+button{border-top:1px solid #e8e8e8}
+
 </style>
 </head>
 <body>
@@ -254,6 +289,18 @@ label:first-child{margin-top:0}
   <div class="map-legend" id="map-legend" style="display:none"></div>
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
+
+<div id="wx-map-overlay" class="wx-map-overlay" aria-hidden="true">
+  <div class="wx-map-panel">
+    <div class="wx-map-head">
+      <strong id="wx-map-title">Overlay meteo live</strong>
+      <button type="button" class="wx-map-close" onclick="closeWeatherOverlay()">×</button>
+    </div>
+    <iframe id="wx-map-iframe" class="wx-map-iframe" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <div class="wx-map-foot">Vista live esterna in overlay sopra la mappa principale · dati visuali Windy</div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 // Meteomare integrato con Open-Meteo Marine API e Forecast API
@@ -749,6 +796,29 @@ function renderHeader(){
   hdr.appendChild(btns);
 }
 
+
+function getWindyEmbedUrl(type){
+  var base="https://embed.windy.com/embed2.html?lat=42.6866&lon=14.0118&detailLat=42.6866&detailLon=14.0118&width=900&height=650&zoom=8&level=surface&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=true&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1";
+  if(type==="waves") return base.replace("product=ecmwf","product=waves").replace("&pressure=&type=map","&overlay=waves&pressure=&type=map");
+  return base.replace("&pressure=&type=map","&overlay=wind&pressure=&type=map");
+}
+function openWeatherOverlay(type){
+  var title=document.getElementById("wx-map-title");
+  var frame=document.getElementById("wx-map-iframe");
+  var wrap=document.getElementById("wx-map-overlay");
+  title.textContent = type==="waves" ? "🌊 Onde live" : "💨 Vento live";
+  frame.src = getWindyEmbedUrl(type);
+  wrap.classList.add("open");
+  wrap.setAttribute("aria-hidden","false");
+}
+function closeWeatherOverlay(){
+  var wrap=document.getElementById("wx-map-overlay");
+  var frame=document.getElementById("wx-map-iframe");
+  wrap.classList.remove("open");
+  wrap.setAttribute("aria-hidden","true");
+  frame.src = "";
+}
+
 // MAPPA
 function initMap(){
   var el=document.getElementById("main-map");
@@ -756,6 +826,20 @@ function initMap(){
   if(mapObj){ensureLocamareMarker();refreshMarkers();mapObj.invalidateSize(true);return;}
   el.style.height="280px";el.style.width="100%";
   mapObj=L.map(el,{zoomControl:true,preferCanvas:true,updateWhenIdle:true,tap:true}).setView([42.686,14.010],13);
+
+  var weatherControl=L.control({position:"topright"});
+  weatherControl.onAdd=function(){
+    var div=L.DomUtil.create("div","wx-leaflet-btn");
+    div.innerHTML='<button type="button" data-wx="wind">💨 Vento</button><button type="button" data-wx="waves">🌊 Onde</button>';
+    L.DomEvent.disableClickPropagation(div);
+    div.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        openWeatherOverlay(btn.getAttribute("data-wx"));
+      });
+    });
+    return div;
+  };
+  weatherControl.addTo(mapObj);
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
