@@ -720,11 +720,11 @@ function requestGPS(){
       const bounds=L.latLngBounds([[lat,lng],[station.lat,station.lng]]);
       mapObj.fitBounds(bounds,{padding:[50,50],maxZoom:16});
     }
-    if(currentScreen==="home")renderPage();
+    if(currentScreen==="home"||currentScreen==="forecast")renderPage();
   },function(e){
     // GPS non disponibile - mostra strip cliccabile
     nearestStation=null;
-    if(currentScreen==="home")renderPage();
+    if(currentScreen==="home"||currentScreen==="forecast")renderPage();
   },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
 
@@ -935,7 +935,9 @@ function render(screen){
     else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
     renderMapLegend();
     if(!nearestStation)requestGPS();
-  }else{
+  } else if(screen==="forecast"){
+    // Richiedi GPS anche nella pagina meteo per la bandiera della postazione
+    if(!nearestStation)requestGPS();
   }
   renderPage();
 }
