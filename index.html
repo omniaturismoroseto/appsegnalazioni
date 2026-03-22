@@ -519,7 +519,36 @@ function renderMeteoCard(page){
     page.appendChild(c);return;
   }
   const m=meteoData;
-  const risk=m?m.risk:{flag:"verde",level:"n/d",text:""};
+
+  // ── Calcola bandiera da mostrare ──────────────────────────────────────────
+  // 1. GPS attivo → bandiera della postazione più vicina
+  // 2. GPS non attivo → bandiera più comune tra tutte le postazioni di Roseto
+  var displayFlag, displaySource, displaySub, gpsActive=false;
+
+  if(nearestStation && flagsData[nearestStation.num]){
+    // GPS attivo: usa bandiera reale della postazione più vicina
+    gpsActive=true;
+    displayFlag=flagsData[nearestStation.num]||"verde";
+    displaySource="📍 P."+nearestStation.num+" – "+nearestStation.name+(nearestDist?" · "+fmtDist(nearestDist):"");
+    displaySub=null; // nessun avviso
+  } else {
+    // GPS non attivo: calcola bandiera più comune tra le postazioni
+    var counts={verde:0,gialla:0,rossa:0};
+    STATIONS.forEach(function(s){
+      var f=flagsData[s.num]||"verde";
+      if(counts[f]!==undefined)counts[f]++;
+    });
+    // Priorità: rossa > gialla > verde (sicurezza prima)
+    if(counts.rossa>=counts.gialla&&counts.rossa>=counts.verde) displayFlag="rossa";
+    else if(counts.gialla>=counts.verde) displayFlag="gialla";
+    else displayFlag="verde";
+    var tot=STATIONS.length;
+    var pct=Math.round((counts[displayFlag]/tot)*100);
+    displaySource="📊 Bandiera prevalente a Roseto ("+pct+"% postazioni)";
+    displaySub="⚠️ Attiva il GPS per vedere la bandiera della postazione più vicina a te";
+  }
+
+  const risk={flag:displayFlag,level:"",text:displaySource};
   const fc=FLAG_COLORS[risk.flag]||"#27ae60";
   const fEmoji={"verde":"🟢","gialla":"🟡","rossa":"🔴"}[risk.flag]||"🟢";
   const cur=m.current||{};
@@ -533,10 +562,11 @@ function renderMeteoCard(page){
     '<div style="position:absolute;right:-10px;bottom:-10px;font-size:100px;opacity:.06;line-height:1;pointer-events:none">'+fEmoji+'</div>'+
     '<div class="mhero-flag" style="background:'+fc+'28;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;z-index:1">'+fEmoji+'</div>'+
     '<div class="mhero-body" style="flex:1;z-index:1">'+
-      '<div class="mhero-name" style="font-size:28px;font-weight:900;line-height:1;margin-bottom:2px;color:'+fc+'">'+String(risk.flag||"verde").toUpperCase()+'</div>'+
-      '<div class="mhero-desc" style="font-size:13px;font-weight:600;margin-bottom:5px;color:var(--text)">'+risk.text+'</div>'+
-      '<div class="mhero-time" style="font-size:11px;color:var(--text3)">Aggiornato: '+fmt(m.updatedAt)+'</div>'+
-    '</div>'+
+      '<div class="mhero-name" style="font-size:28px;font-weight:900;line-height:1;margin-bottom:4px;color:'+fc+'">'+String(risk.flag||"verde").toUpperCase()+'</div>'+
+      '<div class="mhero-desc" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:'+(displaySub?"6px":"4px")+'">'+risk.text+'</div>'+
+      '<div class="mhero-time" style="font-size:11px;color:var(--text3);margin-bottom:'+( displaySub?"4px":"0")+'">Aggiornato: '+fmt(m.updatedAt)+'</div>'+
+      (displaySub?'<div style="font-size:11px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 8px;line-height:1.4">'+ displaySub+'</div>':'')
+    +'</div>'+
     '<button id="meteo-refresh-btn" type="button" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:36px;height:36px;font-size:17px;cursor:pointer;flex-shrink:0;z-index:1">↻</button>';
   page.appendChild(hero);
   hero.querySelector("#meteo-refresh-btn").addEventListener("click",function(){fetchMeteoMarine(true);});
