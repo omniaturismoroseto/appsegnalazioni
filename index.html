@@ -588,26 +588,99 @@ function renderMeteoCard(page){
     '</div>';
   page.appendChild(grid);
 
-  // Striscia oraria scorrevole
+  // Grafico barre onda + vento (Canvas)
   if(m.hourly&&m.hourly.length){
-    const tl=document.createElement("div");tl.className="meteo-card";
-    tl.innerHTML='<div class="meteo-head"><h3>⏱ Prossime ore</h3><span style="font-size:10px;color:var(--text3)">← scorri →</span></div>';
-    const strip=document.createElement("div");strip.className="mscroll";
-    m.hourly.slice(0,12).forEach(function(h){
-      const wv=h.wave_height!=null?Number(h.wave_height):0;
-      const wnd=knotsFromKmh(h.wind_speed_10m);
-      const cls=wv>2||wnd>25?" red":wv>1.2||wnd>15?" amber":"";
-      const sl=document.createElement("div");sl.className="mslot"+cls;
-      sl.innerHTML=
-        '<div class="sh">'+fmtHour(h.time)+'</div>'+
-        '<div class="si">'+wIcon(h.wind_speed_10m)+'</div>'+
-        '<div class="sw">'+(h.wave_height!=null?Number(h.wave_height).toFixed(1):"-")+'m</div>'+
-        '<div class="sd">'+wnd+' nd<br>'+degToCompass(h.wind_direction_10m)+'</div>'+
-        (h.precipitation>0.1?'<div class="sd">💧'+Number(h.precipitation).toFixed(1)+'</div>':'');
-      strip.appendChild(sl);
-    });
-    tl.appendChild(strip);
-    page.appendChild(tl);
+    const chartCard=document.createElement("div");chartCard.className="meteo-card";
+    chartCard.innerHTML='<div class="meteo-head"><h3>📈 Prossime 12 ore</h3><div style="display:flex;align-items:center;gap:12px;font-size:10px;color:var(--text3)"><span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#1697e6;margin-right:3px;vertical-align:middle"></span>Onda (m)</span><span><span style="display:inline-block;width:10px;height:3px;background:#F5C800;margin-right:3px;vertical-align:middle"></span>Vento (nd)</span></div></div>';
+    const canvas=document.createElement("canvas");
+    canvas.height=110;
+    canvas.style.cssText="width:100%;display:block";
+    chartCard.appendChild(canvas);
+    page.appendChild(chartCard);
+
+    // Disegna grafico dopo mount
+    setTimeout(function(){
+      canvas.width=canvas.offsetWidth||canvas.parentElement.offsetWidth||320;
+      const W=canvas.width, H=canvas.height;
+      const ctx=canvas.getContext("2d");
+      const hrs=m.hourly.slice(0,12);
+      const PAD={t:10,r:8,b:28,l:36};
+      const gW=W-PAD.l-PAD.r, gH=H-PAD.t-PAD.b;
+
+      // Scala onda (barre)
+      const waves=hrs.map(function(h){return h.wave_height!=null?Number(h.wave_height):0;});
+      const winds=hrs.map(function(h){return knotsFromKmh(h.wind_speed_10m);});
+      const maxWave=Math.max.apply(null,waves.concat([0.5]));
+      const maxWind=Math.max.apply(null,winds.concat([5]));
+
+      const barW=gW/hrs.length;
+
+      // Griglia orizzontale
+      ctx.strokeStyle="rgba(0,0,0,.06)";ctx.lineWidth=1;
+      [0.25,0.5,0.75,1].forEach(function(f){
+        const y=PAD.t+gH*(1-f);
+        ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(PAD.l+gW,y);ctx.stroke();
+      });
+
+      // Barre onda
+      hrs.forEach(function(h,i){
+        const wv=h.wave_height!=null?Number(h.wave_height):0;
+        const x=PAD.l+i*barW+barW*0.12;
+        const bw=barW*0.52;
+        const bh=(wv/maxWave)*gH;
+        const y=PAD.t+gH-bh;
+        // Colore barra per rischio
+        const wnd=knotsFromKmh(h.wind_speed_10m);
+        var col= (wv>2||wnd>25)?"#e74c3c":(wv>1||wnd>15)?"#F5C800":"#1697e6";
+        ctx.fillStyle=col+"cc";
+        // Arrotondamento sopra
+        const r=Math.min(4,bw/2,bh);
+        ctx.beginPath();
+        ctx.moveTo(x+r,y);
+        ctx.lineTo(x+bw-r,y);
+        ctx.quadraticCurveTo(x+bw,y,x+bw,y+r);
+        ctx.lineTo(x+bw,y+bh);
+        ctx.lineTo(x,y+bh);
+        ctx.lineTo(x,y+r);
+        ctx.quadraticCurveTo(x,y,x+r,y);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // Linea vento (sopra le barre)
+      ctx.strokeStyle="#F5C800";ctx.lineWidth=2.5;ctx.lineJoin="round";
+      ctx.beginPath();
+      hrs.forEach(function(h,i){
+        const wnd=knotsFromKmh(h.wind_speed_10m);
+        const cx=PAD.l+i*barW+barW*0.5;
+        const cy=PAD.t+gH-(wnd/maxWind)*gH*0.9;
+        if(i===0) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+      });
+      ctx.stroke();
+      // Punti linea vento
+      hrs.forEach(function(h,i){
+        const wnd=knotsFromKmh(h.wind_speed_10m);
+        const cx=PAD.l+i*barW+barW*0.5;
+        const cy=PAD.t+gH-(wnd/maxWind)*gH*0.9;
+        ctx.fillStyle="#F5C800";
+        ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fill();
+      });
+
+      // Asse Y onda (sinistra)
+      ctx.fillStyle="rgba(0,0,0,.35)";ctx.font="10px sans-serif";ctx.textAlign="right";
+      [0,maxWave*0.5,maxWave].forEach(function(v){
+        const y=PAD.t+gH-(v/maxWave)*gH;
+        ctx.fillText(v.toFixed(1)+"m",PAD.l-4,y+3);
+      });
+
+      // Etichette ore (basso)
+      ctx.fillStyle="rgba(0,0,0,.4)";ctx.textAlign="center";ctx.font="9px sans-serif";
+      hrs.forEach(function(h,i){
+        if(i%2!==0)return; // ogni 2 ore
+        const cx=PAD.l+i*barW+barW*0.5;
+        ctx.fillText(fmtHour(h.time),cx,H-6);
+      });
+    },60);
   }
 }
 
@@ -1290,15 +1363,8 @@ function renderForecastPage(page){
           (hasRain?' &nbsp;·&nbsp; 💧 '+Number(avgPrec).toFixed(1)+'mm':'')+
           '</span>';
         // Bandiera
-        var flagRow=document.createElement("div");
-        flagRow.style.cssText="display:flex;align-items:center;gap:5px";
-        flagRow.innerHTML=
-          '<div style="width:10px;height:10px;border-radius:50%;background:'+fc2+'"></div>'+
-          '<span style="font-size:11px;font-weight:700;color:'+fc2+'">'+fl.toUpperCase()+'</span>'+
-          '<span style="font-size:10px;color:var(--text3)">(stima)</span>';
         rc.appendChild(windRow);
         rc.appendChild(seaRow);
-        rc.appendChild(flagRow);
         row.appendChild(lc);
         row.appendChild(rc);
         card.appendChild(row);
