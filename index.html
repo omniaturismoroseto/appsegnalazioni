@@ -56,7 +56,7 @@ label:first-child{margin-top:0}
 .notif-badge{position:absolute;top:-4px;right:-4px;background:#F5C800;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--red)}
 .hbtn-wrap{position:relative}
 #main-map{height:420px;width:100%;display:block;z-index:1;background:#e8e8e8}
-.leaflet-popup-content-wrapper{border-radius:12px!important;box-shadow:0 4px 20px rgba(0,0,0,.3)!important;max-height:340px!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}.leaflet-popup-content{margin:0!important;padding:12px 14px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;max-height:300px!important;flex:1!important}.leaflet-popup-content::-webkit-scrollbar{width:3px}.leaflet-popup-content::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:2px}.leaflet-popup-close-button{font-size:22px!important;padding:6px 10px!important;top:2px!important;right:2px!important;z-index:1!important}.map-legend{display:flex;gap:11px;flex-wrap:wrap;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);align-items:center}
+.leaflet-popup-content-wrapper{border-radius:12px!important;box-shadow:0 4px 20px rgba(0,0,0,.3)!important;max-height:240px!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}.leaflet-popup-content{margin:0!important;padding:12px 14px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;max-height:180px!important;flex:1!important}.leaflet-popup-content::-webkit-scrollbar{width:3px}.leaflet-popup-content::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:2px}.leaflet-popup-close-button{font-size:22px!important;padding:6px 10px!important;top:2px!important;right:2px!important;z-index:1!important}.map-legend{display:flex;gap:11px;flex-wrap:wrap;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);align-items:center}
 .ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:3px;vertical-align:middle}
 #content{padding:16px}.page-inner{max-width:660px;margin:0 auto}
 .nearest-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--radius-lg);margin-bottom:14px}
@@ -1021,9 +1021,9 @@ function addCCMarker(){
   ccMarker=L.marker([CC_POINT.lat,CC_POINT.lng],{icon:ccIcon}).addTo(mapObj);
   var ccHtml='<div style="font-family:sans-serif;min-width:220px;line-height:1.45">'
     +'<div style="font-size:14px;font-weight:700;color:#1a237e;margin-bottom:6px">Carabinieri - Stazione di Roseto degli Abruzzi</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:4px"><strong>Indirizzo:</strong> Via Gramsci, 34 - 64026 Roseto degli Abruzzi (TE)</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:4px"><strong>Emergenze:</strong> <a href="tel:112" style="color:#1a237e;text-decoration:none;font-weight:700">112</a></div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:4px"><strong>Tel. locale:</strong> <a href="tel:0858990131" style="color:#1a237e;text-decoration:none">085 899 0131</a></div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Via Gramsci, 34 - 64026 Roseto degli Abruzzi (TE)</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Emergenze:</strong> <a href="tel:112" style="color:#1a237e;text-decoration:none;font-weight:700">112</a></div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Tel. locale:</strong> <a href="tel:0858990131" style="color:#1a237e;text-decoration:none">085 899 0131</a></div>'
     +'<div style="font-size:12px;color:#333;margin-bottom:8px"><strong>Orari sportello:</strong> Tutti i giorni 08:30–13:00 / 15:00–19:00</div>'
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6690839,14.0202191"'
     +' target="_blank" style="display:block;text-align:center;background:#1a237e;color:#fff;'
@@ -1042,15 +1042,15 @@ function addComuneMarker(){
   });
   comuneMarker=L.marker([COMUNE_POINT.lat,COMUNE_POINT.lng],{icon:comuneIcon}).addTo(mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
-    +'<div style="font-size:14px;font-weight:700;color:#1565c0;margin-bottom:6px">Comune di Roseto degli Abruzzi</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Piazza della Repubblica - 64026 Roseto degli Abruzzi (TE)</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:3px"><strong>Tel.:</strong> 085 894531</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:3px"><strong>Email:</strong> protocollo@comune.roseto.te.it</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:3px"><strong>Sito:</strong> <a href="https://www.comune.roseto.te.it/" target="_blank" style="color:#1565c0">www.comune.roseto.te.it</a></div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:4px;margin-top:4px"><strong>Orari sportello:</strong><br>'
+    +'<div style="font-size:13px;font-weight:700;color:#1565c0;margin-bottom:4px">Comune di Roseto degli Abruzzi</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:1px"><strong>Indirizzo:</strong> Piazza della Repubblica - 64026 Roseto degli Abruzzi (TE)</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Tel.:</strong> 085 894531</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Email:</strong> protocollo@comune.roseto.te.it</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Sito:</strong> <a href="https://www.comune.roseto.te.it/" target="_blank" style="color:#1565c0">www.comune.roseto.te.it</a></div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px;margin-top:4px"><strong>Orari sportello:</strong><br>'
     +'Lun: 08:30\u201312:30<br>Mar: 08:30\u201312:30 / 16:30\u201317:30<br>Mer: Chiuso<br>Gio: 08:30\u201312:30 / 16:30\u201317:30<br>Ven: 08:30\u201312:30<br>Sab: 09:00\u201311:45<br>Dom: Chiuso</div>'
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6796819,14.0110622&travelmode=walking" target="_blank" '
-    +'style="display:block;text-align:center;background:#1565c0;color:white;padding:8px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">'
+    +'style="display:block;text-align:center;background:#1565c0;color:white;padding:6px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">'
     +'\uD83E\uDDED Apri indicazioni</a></div>';
   comuneMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
@@ -1065,15 +1065,15 @@ function addIATMarker(){
   });
   iatMarker=L.marker([IAT_POINT.lat,IAT_POINT.lng],{icon:iatIcon}).addTo(mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
-    +'<div style="font-size:14px;font-weight:700;color:#b8860b;margin-bottom:6px">IAT Roseto degli Abruzzi</div>'
-    +'<div style="font-size:11px;color:#888;margin-bottom:6px">Ufficio Informazioni e Accoglienza Turistica</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Piazza della Libert\u00e0, 37/38 - 64026 Roseto degli Abruzzi (TE)</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:3px"><strong>Tel.:</strong> 0858991157</div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:3px"><strong>Facebook:</strong> <a href="https://www.facebook.com/iatrosetodegliabruzzi/" target="_blank" style="color:#1877f2">iatrosetodegliabruzzi</a></div>'
-    +'<div style="font-size:12px;color:#333;margin-bottom:4px;margin-top:4px"><strong>Orari:</strong><br>'
+    +'<div style="font-size:13px;font-weight:700;color:#b8860b;margin-bottom:4px">IAT Roseto degli Abruzzi</div>'
+    +'<div style="font-size:10px;color:#888;margin-bottom:3px">Ufficio Informazioni e Accoglienza Turistica</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:1px"><strong>Indirizzo:</strong> Piazza della Libert\u00e0, 37/38 - 64026 Roseto degli Abruzzi (TE)</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Tel.:</strong> 0858991157</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Facebook:</strong> <a href="https://www.facebook.com/iatrosetodegliabruzzi/" target="_blank" style="color:#1877f2">iatrosetodegliabruzzi</a></div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px;margin-top:4px"><strong>Orari:</strong><br>'
     +'Lun: 14:00\u201319:00<br>Mar: Chiuso<br>Mer: Chiuso<br>Gio: 09:00\u201312:00<br>Ven: 09:00\u201314:00<br>Sab: 09:00\u201314:00<br>Dom: 10:00\u201312:00</div>'
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6775099,14.0139231&travelmode=walking" target="_blank" '
-    +'style="display:block;text-align:center;background:#e6b800;color:#1a1a1a;padding:8px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">'
+    +'style="display:block;text-align:center;background:#e6b800;color:#1a1a1a;padding:6px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">'
     +'\uD83E\uDDED Apri indicazioni</a></div>';
   iatMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
@@ -1095,13 +1095,13 @@ function ensureLocamareMarker(){
       <div style="font-size:14px;font-weight:700;color:#153E8C;margin-bottom:6px">
         Ufficio LOCAMARE Marittimo di Roseto degli Abruzzi
       </div>
-      <div style="font-size:12px;color:#333;margin-bottom:4px">
+      <div style="font-size:11px;color:#333;margin-bottom:2px">
         <strong>Indirizzo:</strong> Lungomare Trieste, 1 - 64026 Roseto degli Abruzzi (TE)
       </div>
-      <div style="font-size:12px;color:#333;margin-bottom:4px">
+      <div style="font-size:11px;color:#333;margin-bottom:2px">
         <strong>Telefono:</strong> <a href="tel:0858942437" style="color:#153E8C;text-decoration:none">085 8942437</a>
       </div>
-      <div style="font-size:12px;color:#333;margin-bottom:4px">
+      <div style="font-size:11px;color:#333;margin-bottom:2px">
         <strong>Email:</strong> <a href="mailto:rosetodegliabruzzi@guardiacostiera.it" style="color:#153E8C;text-decoration:none">rosetodegliabruzzi@guardiacostiera.it</a>
       </div>
       <div style="font-size:12px;color:#333;margin-bottom:8px">
