@@ -254,7 +254,36 @@ label:first-child{margin-top:0}
   <div class="map-legend" id="map-legend" style="display:none"></div>
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js">
+// === ROSETANA NUOTO ===
+var rosetanaIcon = L.icon({
+    iconUrl: 'rosetana.jpg',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    className: 'no-border-icon'
+});
+
+L.marker([42.6749, 14.0105], {icon: rosetanaIcon}).addTo(map)
+.bindPopup(`
+<b>Rosetana Nuoto</b><br>
+Via Fonte dell'Olmo, 10<br>
+64026 Roseto degli Abruzzi<br><br>
+
+<a href="https://rosetananuoto.it" target="_blank">🌐 Sito</a><br>
+<a href="https://www.facebook.com/rosetananuoto75" target="_blank">📘 Facebook</a><br>
+📞 085 893 1454<br><br>
+
+<b>Orari:</b><br>
+Sabato: 08:30–12:30<br>
+Domenica: 08:30–12:30<br>
+Lunedì: 06:45–22<br>
+Martedì: 06:45–22<br>
+Mercoledì: 06:45–22<br>
+Giovedì: 07–22<br>
+Venerdì: 07–22
+`);
+
+</script>
 <script>
 // Meteomare integrato con Open-Meteo Marine API e Forecast API
 
@@ -403,12 +432,11 @@ const STATIONS=[
 ];
 const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
 ZONES.push("Spiaggia libera / Area non concessionata");
-var lang="it";
-var T={
-it:{langBtn:"\uD83C\uDDEC\uD83C\uDDE7",langBtnTitle:"Switch to English",lockTitle:"Area Operatori",unlockTitle:"Esci",tapGPS:"Tocca per rilevare la postazione pi\u00f9 vicina",at:"A",fromYou:"da te",flagLabel:"Bandiera",outOfService:"FUORI SERVIZIO",reportHere:"\uD83D\uDEA8 Segnala qui",goTo:"\uD83E\uDDED Vai \u2192",daeDirections:"\uD83E\uDDED Indicazioni al DAE \u2192",daeLabel:"Defibrillatore DAE",serviceOff:"\u26A0\uFE0F Servizio non attivo",serviceHours:"Orario: 09:00 \u2013 19:00",reportDanger:"\uD83D\uDEA8 Segnala un pericolo",reportSub:"Accesso pubblico \u00b7 senza registrazione",callOmnia:"Chiama Omnia",whatsappMsg:"Scrivi su WhatsApp",forecastTitle:"Previsioni Meteo",forecastSub:"Meteo mare e condizioni operative",followUs:"Segui Omnia su",waChannel:"Canale WA",emergency112:"\uD83D\uDEA8 IN CASO DI PERICOLO CHIAMA IL 112 IMMEDIATAMENTE \uD83D\uDEA8",flagMeaning:"SIGNIFICATO DELLE BANDIERE",flagGreen:"VERDE – Mare calmo, bagno sicuro",flagYellow:"GIALLA – Mare mosso, prestare attenzione",flagRed:"ROSSA – Pericolo, divieto di balneazione",legendGreen:"Verde",legendYellow:"Gialla",legendRed:"Rossa",legendEmergency:"Emergenza",legendDanger:"Pericolo",legendYou:"sei tu",meteoNow:"\uD83D\uDCCA Condizioni ora",meteoNext:"\uD83D\uDCC8 Prossime 12 ore",meteoWave:"Onda (m)",meteoWind:"Vento (nd)",meteoLoading:"\u23F3 Caricamento dati meteomarini...",meteoError:"Dati meteomarini non disponibili",nearestPre:"Postazione pi\u00f9 vicina preselezionata",backBtn:"\u2190 Indietro",newReport:"Nuova segnalazione",reportType:"Tipo segnalazione",reportDetail:"Dettaglio",reportStation:"Postazione",reportNotes:"Descrizione",reportNotesOpt:"(opzionale)",reportPhoto:"Foto (opzionale)",reportName:"Nome (opzionale)",reportPhone:"Telefono",reportPhoneReq:"(obbligatorio)",reportPhonePlaceholder:"Es. 3281234567",reportPhoneHint:"Il numero di telefono sar\u00e0 utilizzato esclusivamente per eventuali comunicazioni relative alla segnalazione inviata.",selectDots:"Seleziona...",privacyTitle:"Informativa privacy",privacyText1:"Ai sensi del Regolamento UE 2016/679 (GDPR), i dati personali eventualmente forniti tramite questo servizio, incluso il numero di telefono, saranno trattati da Omnia Servizi al Turismo SRLS esclusivamente per la gestione della segnalazione, eventuali verifiche e ricontatto dell'utente, se necessario.",privacyText2:"I dati saranno utilizzati solo dal personale incaricato del servizio e conservati per il tempo strettamente necessario alla gestione della segnalazione.",privacyCheck:"Ho letto l'informativa privacy e acconsento al trattamento dei dati personali per la gestione della segnalazione.",emergencyRealNote:"Per emergenze reali contattare immediatamente il 112 o il servizio di salvataggio pi\u00f9 vicino.",submitBtn:"Invia segnalazione",submitting:"Invio...",whatsappNote:"\uD83D\uDCAC Dopo l'invio si aprir\u00e0 WhatsApp per notificare gli operatori",alertNoSub:"Seleziona il tipo di segnalazione.",alertPhone:"Inserisci un numero di telefono valido per procedere.",alertPrivacy:"Devi leggere e accettare l'informativa privacy per procedere.",alertError:"Errore: ",doneSent:"Segnalazione inviata",doneThanks:"Grazie. Gli operatori sono stati avvisati.",doneWA:"\uD83D\uDCAC Notifica WhatsApp inviata",doneNewReport:"Nuova segnalazione",doneBack:"← Torna alla home",loginTitle:"Accesso operatori",loginPin:"PIN di accesso",loginError:"PIN non corretto",loginBtn:"Accedi",loginHint:"PIN demo: 1234",dashTitle:"Dashboard Operatori",dashSub:"Roseto degli Abruzzi \u00b7 P.10 \u2013 P.35",dashNew:"+ Segnala",dashOpen:"APERTE",dashEmergencies:"EMERGENZE",dashDangers:"PERICOLI",dashTabReports:"Segnalazioni",dashTabFlags:"Bandiere",dashNone:"Nessuna segnalazione",dashFilterOpen:"Aperte",dashFilterEmergency:"Emergenze",dashFilterDanger:"Pericoli",dashFilterAll:"Tutte",dashSyncOn:"Sync Firebase attivo",dashSyncOff:"Connessione...",openDirections:"\uD83E\uDDED Apri indicazioni",typeEmergency:"Emergenza",typeDanger:"Pericolo",subEmergency:["Annegamento / soccorso","Persona dispersa","Infortunio grave","Bandiera rossa / divieto bagno"],subDanger:["Vento Garbino","Correnti pericolose","Mare molto mosso","Meduse","Oggetti pericolosi in acqua"],prevFlagLabel:"Bandiera prevalente a Roseto",prevFlagPct:"% postazioni",prevFlagHint:"⚠️ Attiva il GPS per vedere la bandiera della postazione più vicina a te",operatorPlaceholder:"Operatore",namePlaceholder:"Nome"},
-en:{langBtn:"\uD83C\uDDEE\uD83C\uDDF9",langBtnTitle:"Passa all'italiano",lockTitle:"Operators Area",unlockTitle:"Logout",tapGPS:"Tap to detect nearest lifeguard station",at:"",fromYou:"from you",flagLabel:"Flag",outOfService:"OUT OF SERVICE",reportHere:"\uD83D\uDEA8 Report here",goTo:"\uD83E\uDDED Go \u2192",daeDirections:"\uD83E\uDDED Directions to AED \u2192",daeLabel:"AED Defibrillator",serviceOff:"\u26A0\uFE0F Service inactive",serviceHours:"Hours: 09:00 \u2013 19:00",reportDanger:"\uD83D\uDEA8 Report a hazard",reportSub:"Public access \u00b7 no registration needed",callOmnia:"Call Omnia",whatsappMsg:"Write on WhatsApp",forecastTitle:"Weather Forecast",forecastSub:"Sea weather & operational conditions",followUs:"Follow Omnia on",waChannel:"WA Channel",emergency112:"\uD83D\uDEA8 IN CASE OF DANGER CALL 112 IMMEDIATELY \uD83D\uDEA8",flagMeaning:"FLAG COLOUR MEANINGS",flagGreen:"GREEN \u2013 Calm sea, safe swimming",flagYellow:"YELLOW \u2013 Rough sea, use caution",flagRed:"RED \u2013 Danger, swimming prohibited",legendGreen:"Green",legendYellow:"Yellow",legendRed:"Red",legendEmergency:"Emergency",legendDanger:"Hazard",legendYou:"you are here",meteoNow:"\uD83D\uDCCA Current conditions",meteoNext:"\uD83D\uDCC8 Next 12 hours",meteoWave:"Wave (m)",meteoWind:"Wind (kn)",meteoLoading:"\u23F3 Loading marine weather data...",meteoError:"Marine weather data unavailable",nearestPre:"Nearest station pre-selected",backBtn:"\u2190 Back",newReport:"New report",reportType:"Report type",reportDetail:"Detail",reportStation:"Station",reportNotes:"Description",reportNotesOpt:"(optional)",reportPhoto:"Photo (optional)",reportName:"Name (optional)",reportPhone:"Phone",reportPhoneReq:"(required)",reportPhonePlaceholder:"e.g. 3281234567",reportPhoneHint:"Your phone number will be used exclusively for communications related to this report.",selectDots:"Select...",privacyTitle:"Privacy notice",privacyText1:"Pursuant to EU Regulation 2016/679 (GDPR), any personal data provided through this service, including your phone number, will be processed by Omnia Servizi al Turismo SRLS solely for the purpose of managing the report and contacting you if necessary.",privacyText2:"Data will be used only by authorised service staff and retained only for as long as strictly necessary to handle the report.",privacyCheck:"I have read the privacy notice and consent to the processing of my personal data for the management of this report.",emergencyRealNote:"For real emergencies contact 112 or the nearest lifeguard service immediately.",submitBtn:"Submit report",submitting:"Sending...",whatsappNote:"\uD83D\uDCAC After sending, WhatsApp will open to notify the operators",alertNoSub:"Please select the report type.",alertPhone:"Please enter a valid phone number to proceed.",alertPrivacy:"You must read and accept the privacy notice to proceed.",alertError:"Error: ",doneSent:"Report submitted",doneThanks:"Thank you. Operators have been notified.",doneWA:"\uD83D\uDCAC WhatsApp notification sent",doneNewReport:"New report",doneBack:"\u2190 Back to home",loginTitle:"Operators login",loginPin:"Access PIN",loginError:"Incorrect PIN",loginBtn:"Login",loginHint:"Demo PIN: 1234",dashTitle:"Operators Dashboard",dashSub:"Roseto degli Abruzzi \u00b7 P.10 \u2013 P.35",dashNew:"+ Report",dashOpen:"OPEN",dashEmergencies:"EMERGENCIES",dashDangers:"HAZARDS",dashTabReports:"Reports",dashTabFlags:"Flags",dashNone:"No reports",dashFilterOpen:"Open",dashFilterEmergency:"Emergencies",dashFilterDanger:"Hazards",dashFilterAll:"All",dashSyncOn:"Sync active",dashSyncOff:"Connecting...",openDirections:"\uD83E\uDDED Get directions",typeEmergency:"Emergency",typeDanger:"Hazard",subEmergency:["Drowning / rescue","Missing person","Serious injury","Red flag / swimming ban"],subDanger:["Garbino wind","Dangerous currents","Very rough sea","Jellyfish","Dangerous objects in water"],prevFlagLabel:"Prevailing flag in Roseto",prevFlagPct:"% stations",prevFlagHint:"\u26A0\uFE0F Enable GPS to see the flag of the nearest station to you",operatorPlaceholder:"Operator",namePlaceholder:"Name"}
+const TYPES={
+  emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio grave","Bandiera rossa / divieto bagno"]},
+  pericolo: {label:"Pericolo", sub:["Vento Garbino","Correnti pericolose","Mare molto mosso","Meduse","Oggetti pericolosi in acqua"]},
+
 };
-function getTYPES(){return{emergenza:{label:T[lang].typeEmergency,sub:T[lang].subEmergency},pericolo:{label:T[lang].typeDanger,sub:T[lang].subDanger}};}
 
 let suppressHistory=false;
 let currentScreen="home",currentRole=null;
@@ -867,20 +895,16 @@ function renderHeader(){
   };
   logoWrap.appendChild(logoImg);hdr.appendChild(logoWrap);
   const btns=document.createElement("div");btns.className="header-btns";
-  const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?T[lang].dashSyncOn:T[lang].dashSyncOff;
+  const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
   btns.appendChild(sd);
-  var langBtn=document.createElement("button");
-  langBtn.style.cssText="background:none;border:none;font-size:22px;cursor:pointer;padding:0 4px;line-height:1";
-  langBtn.title=T[lang].langBtnTitle;langBtn.textContent=T[lang].langBtn;
-  langBtn.addEventListener("click",function(){lang=lang==="it"?"en":"it";renderHeader();render(currentScreen);});
-  btns.appendChild(langBtn);
+
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
-    op.textContent="\uD83D\uDD13";op.title=T[lang].unlockTitle;
+    op.textContent="\uD83D\uDD13";op.title="Esci";
     op.addEventListener("click",()=>{currentRole=null;newReportCount=0;render("home");});
   }else{
-    op.textContent="\uD83D\uDD10";op.title=T[lang].lockTitle;
+    op.textContent="\uD83D\uDD10";op.title="Area Operatori";
     op.addEventListener("click",()=>render("login"));
   }
   opWrap.appendChild(op);
@@ -980,12 +1004,12 @@ function refreshMarkers(){
 function renderMapLegend(){
   const leg=document.getElementById("map-legend");leg.style.display="flex";
   leg.innerHTML=
-    `<span><span class="ldot" style="background:#27ae60"></span>${T[lang].legendGreen}</span>`+
-    `<span><span class="ldot" style="background:#F5C800"></span>${T[lang].legendYellow}</span>`+
-    `<span><span class="ldot" style="background:#e74c3c"></span>${T[lang].legendRed}</span>`+
-    `<span style="border-left:1px solid var(--border);padding-left:11px"><span class="ldot" style="background:#D81B8C"></span>${T[lang].legendEmergency}</span>`+
-    `<span><span class="ldot" style="background:#1a1a1a"></span>${T[lang].legendDanger}</span>`+
-    `<span style="margin-left:auto;color:var(--text3);font-size:10px">\u25cf ${T[lang].legendYou}</span>`;
+    `<span><span class="ldot" style="background:#27ae60"></span>Verde</span>`+
+    `<span><span class="ldot" style="background:#F5C800"></span>Gialla</span>`+
+    `<span><span class="ldot" style="background:#e74c3c"></span>Rossa</span>`+
+    `<span style="border-left:1px solid var(--border);padding-left:11px"><span class="ldot" style="background:#D81B8C"></span>Emergenza</span>`+
+    `<span><span class="ldot" style="background:#1a1a1a"></span>Pericolo</span>`+
+    `<span style="margin-left:auto;color:var(--text3);font-size:10px">\u25cf sei tu</span>`;
 }
 
 
@@ -1198,7 +1222,7 @@ function renderHome(page){
       infoRow.innerHTML='<span style="font-size:22px">\uD83D\uDCCD</span>'
         +'<div style="flex:1;min-width:0">'
         +'<p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 2px">P.'+nearestStation.num+' \u2013 '+nearestStation.name+'</p>'
-        +'<p style="font-size:12px;color:var(--text2);margin:0">'+(T[lang].at?T[lang].at+' ':'')+' <strong>'+fmtDist(nearestDist)+'</strong> '+T[lang].fromYou+' &nbsp;\u00b7&nbsp; '+T[lang].flagLabel+' <span style="font-weight:700;color:'+fc2+'">'+fn+'</span>'+(svc?'':' &nbsp;\u00b7&nbsp; <span style="color:#b91c1c;font-weight:700">'+T[lang].outOfService+'</span>')+'</p>'
+        +'<p style="font-size:12px;color:var(--text2);margin:0">A <strong>'+fmtDist(nearestDist)+'</strong> da te &nbsp;\u00b7&nbsp; Bandiera <span style="font-weight:700;color:'+fc2+'">'+fn+'</span>'+(svc?'':' &nbsp;\u00b7&nbsp; <span style="color:#b91c1c;font-weight:700">FUORI SERVIZIO</span>')+'</p>'
         +'</div>';
       ns.appendChild(infoRow);
       // Buttons row
@@ -1207,7 +1231,7 @@ function renderHome(page){
       // Segnala qui
       var btnSeg=document.createElement("button");
       btnSeg.style.cssText="padding:11px 8px;background:transparent;border:none;border-right:1px solid "+(svc?"#bbf7d0":"#fecaca")+";font-size:13px;font-weight:600;color:"+(svc?"#166534":"#991b1b")+";cursor:pointer";
-      btnSeg.innerHTML=T[lang].reportHere;
+      btnSeg.innerHTML='\uD83D\uDEA8 Segnala qui';
       btnSeg.addEventListener("click",function(){
         currentRole="public";
         activeStation="P."+nearestStation.num+" \u2013 "+nearestStation.name;
@@ -1216,7 +1240,7 @@ function renderHome(page){
       // Vai (apre navigatore)
       var btnNav=document.createElement("button");
       btnNav.style.cssText="padding:11px 8px;background:transparent;border:none;font-size:13px;font-weight:600;color:"+(svc?"#166534":"#991b1b")+";cursor:pointer";
-      btnNav.innerHTML=T[lang].goTo;
+      btnNav.innerHTML='\uD83E\uDDED Vai \u2192';
       btnNav.addEventListener("click",function(){
         var lat=nearestStation.lat;
         var lng=nearestStation.lng;
@@ -1235,7 +1259,7 @@ function renderHome(page){
       ns.appendChild(btnRow);
     } else {
       ns.style.cssText="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);cursor:pointer";
-      ns.innerHTML='<span style="font-size:18px">\uD83D\uDCCD</span><span style="font-size:13px;color:var(--text2)">'+T[lang].tapGPS+'</span>';
+      ns.innerHTML='<span style="font-size:18px">\uD83D\uDCCD</span><span style="font-size:13px;color:var(--text2)">Tocca per rilevare la postazione pi\u00f9 vicina</span>';
       ns.addEventListener("click",function(){requestGPS();});
     }
     page.appendChild(ns);
@@ -1251,14 +1275,14 @@ function renderHome(page){
         +'<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>'
         +'<div style="flex:1;min-width:0">'
         +'<p style="font-size:13px;font-weight:700;color:#14532d;margin:0 0 1px">'+nearestDAE.name+'</p>'
-        +'<p style="font-size:12px;color:var(--text2);margin:0">'+T[lang].daeLabel+' &nbsp;\u00b7&nbsp; '+(T[lang].at?T[lang].at+' ':'')+' <strong>'+fmtDist(nearestDAEDist)+'</strong> '+T[lang].fromYou+'</p>'
+        +'<p style="font-size:12px;color:var(--text2);margin:0">Defibrillatore DAE &nbsp;\u00b7&nbsp; A <strong>'+fmtDist(nearestDAEDist)+'</strong> da te</p>'
         +'</div>';
       daeCard.appendChild(daeInfoRow);
       var daeBtnRow=document.createElement("div");
       daeBtnRow.style.cssText="border-top:1px solid #bbf7d0";
       var daeBtnNav=document.createElement("button");
       daeBtnNav.style.cssText="width:100%;padding:11px 8px;background:transparent;border:none;font-size:13px;font-weight:600;color:#166534;cursor:pointer";
-      daeBtnNav.innerHTML=T[lang].daeDirections;
+      daeBtnNav.innerHTML='\uD83E\uDDED Indicazioni al DAE \u2192';
       daeBtnNav.addEventListener("click",function(){
         var ua=navigator.userAgent||"";
         var url;
@@ -1278,14 +1302,14 @@ function renderHome(page){
       var d2=new Date();
       var ob=document.createElement("div");
       ob.style.cssText="padding:10px 14px;border-radius:var(--radius);background:#fef2f2;border:1px solid #fecaca;margin-bottom:14px;font-size:13px;color:#991b1b;text-align:center;font-weight:500";
-      ob.innerHTML='\u26A0\uFE0F Servizio non attivo ('+String(d2.getHours()).padStart(2,"0")+':'+String(d2.getMinutes()).padStart(2,"0")+') &middot; '+T[lang].serviceHours;
+      ob.innerHTML='\u26A0\uFE0F Servizio non attivo ('+String(d2.getHours()).padStart(2,"0")+':'+String(d2.getMinutes()).padStart(2,"0")+') &middot; Orario: <strong>09:00 &ndash; 19:00</strong>';
       page.appendChild(ob);
     }
   })();
   // pulsante segnala
   const btns=document.createElement("div");btns.className="home-btns";
   const b1=document.createElement("button");b1.className="home-btn primary";
-  b1.innerHTML=`<h3>${T[lang].reportDanger}</h3><p>${T[lang].reportSub}</p>`;
+  b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
   b1.addEventListener("click",()=>{currentRole="public";render("submit");});
   btns.appendChild(b1);page.appendChild(btns);
 
@@ -1294,10 +1318,10 @@ function renderHome(page){
   contacts.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px";
   const aCall=document.createElement("a");aCall.href="tel:"+PHONE;
   aCall.style.cssText="display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);text-decoration:none;font-size:13px;font-weight:600;color:var(--text)";
-  aCall.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>${T[lang].callOmnia}`;
+  aCall.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Chiama Omnia`;
   const aWAMsg=document.createElement("a");aWAMsg.href=`https://wa.me/${WA_NOTIFY}`;aWAMsg.target="_blank";
   aWAMsg.style.cssText="display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);text-decoration:none;font-size:13px;font-weight:600;color:var(--text)";
-  aWAMsg.innerHTML=`<svg width="18" height="18" viewBox="0 0 32 32" fill="#25D366"><path d="M16 .5C7.44.5.5 7.44.5 16c0 2.82.74 5.47 2.03 7.78L.5 31.5l7.93-2.08A15.43 15.43 0 0 0 16 31.5c8.56 0 15.5-6.94 15.5-15.5S24.56.5 16 .5zm0 28.18a12.6 12.6 0 0 1-6.43-1.76l-.46-.27-4.71 1.24 1.25-4.6-.3-.48A12.68 12.68 0 1 1 16 28.68zm6.95-9.5c-.38-.19-2.26-1.12-2.61-1.24-.35-.13-.6-.19-.86.19-.25.38-1 1.24-1.22 1.5-.22.25-.45.28-.83.1-.38-.19-1.61-.6-3.07-1.91-1.13-1.01-1.9-2.26-2.12-2.64-.22-.38-.02-.58.17-.77.17-.17.38-.44.57-.66.19-.22.25-.38.38-.63.13-.25.06-.47-.03-.66-.1-.19-.86-2.08-1.18-2.85-.31-.75-.63-.65-.86-.66h-.73c-.25 0-.66.1-1 .47-.35.38-1.32 1.29-1.32 3.14s1.35 3.64 1.54 3.9c.19.25 2.66 4.06 6.44 5.69.9.39 1.6.62 2.15.79.9.29 1.73.25 2.38.15.73-.11 2.26-.92 2.58-1.82.32-.9.32-1.67.22-1.82-.09-.16-.34-.25-.72-.44z"/></svg>${T[lang].whatsappMsg}`;
+  aWAMsg.innerHTML=`<svg width="18" height="18" viewBox="0 0 32 32" fill="#25D366"><path d="M16 .5C7.44.5.5 7.44.5 16c0 2.82.74 5.47 2.03 7.78L.5 31.5l7.93-2.08A15.43 15.43 0 0 0 16 31.5c8.56 0 15.5-6.94 15.5-15.5S24.56.5 16 .5zm0 28.18a12.6 12.6 0 0 1-6.43-1.76l-.46-.27-4.71 1.24 1.25-4.6-.3-.48A12.68 12.68 0 1 1 16 28.68zm6.95-9.5c-.38-.19-2.26-1.12-2.61-1.24-.35-.13-.6-.19-.86.19-.25.38-1 1.24-1.22 1.5-.22.25-.45.28-.83.1-.38-.19-1.61-.6-3.07-1.91-1.13-1.01-1.9-2.26-2.12-2.64-.22-.38-.02-.58.17-.77.17-.17.38-.44.57-.66.19-.22.25-.38.38-.63.13-.25.06-.47-.03-.66-.1-.19-.86-2.08-1.18-2.85-.31-.75-.63-.65-.86-.66h-.73c-.25 0-.66.1-1 .47-.35.38-1.32 1.29-1.32 3.14s1.35 3.64 1.54 3.9c.19.25 2.66 4.06 6.44 5.69.9.39 1.6.62 2.15.79.9.29 1.73.25 2.38.15.73-.11 2.26-.92 2.58-1.82.32-.9.32-1.67.22-1.82-.09-.16-.34-.25-.72-.44z"/></svg>Scrivi su WhatsApp`;
   contacts.appendChild(aCall);contacts.appendChild(aWAMsg);
   page.appendChild(contacts);
 
@@ -1311,7 +1335,7 @@ function renderHome(page){
   // segui omnia
   const followTitle=document.createElement("p");
   followTitle.style.cssText="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px";
-  followTitle.textContent=T[lang].followUs;
+  followTitle.textContent="Segui Omnia su";
   page.appendChild(followTitle);
 
   const social=document.createElement("div");
@@ -1547,12 +1571,12 @@ function renderForecastPage(page){
 }
 
 function renderLogin(page){
-  const back=document.createElement("button");back.className="back-btn";back.textContent=T[lang].backBtn;
+  const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render("home"));page.appendChild(back);
-  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent=T[lang].loginTitle;page.appendChild(h);
-  const lbl=document.createElement("label");lbl.textContent=T[lang].loginPin;page.appendChild(lbl);
+  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Accesso operatori";page.appendChild(h);
+  const lbl=document.createElement("label");lbl.textContent="PIN di accesso";page.appendChild(lbl);
   const inp=document.createElement("input");inp.type="password";inp.placeholder="\u2022\u2022\u2022\u2022";inp.maxLength=6;page.appendChild(inp);
-  const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent=T[lang].loginError;page.appendChild(err);
+  const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent="PIN non corretto";page.appendChild(err);
   function go(){
     if(inp.value===PIN){
       currentRole="operator";newReportCount=0;if(window._requestNotifPermission)_requestNotifPermission();
@@ -1561,23 +1585,23 @@ function renderLogin(page){
     }else{err.style.display="block";}
   }
   inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
-  const btn=document.createElement("button");btn.className="btn-primary";btn.textContent=T[lang].loginBtn;btn.addEventListener("click",go);page.appendChild(btn);
-  const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--text3);text-align:center;margin-top:12px";hint.textContent=T[lang].loginHint;page.appendChild(hint);
+  const btn=document.createElement("button");btn.className="btn-primary";btn.textContent="Accedi";btn.addEventListener("click",go);page.appendChild(btn);
+  const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--text3);text-align:center;margin-top:12px";hint.textContent="PIN demo: 1234";page.appendChild(hint);
 }
 
 // SUBMIT
 function renderSubmit(page){
   let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
   const wrap=document.createElement("div");wrap.className="form-wrap";
-  const back=document.createElement("button");back.className="back-btn";back.textContent=T[lang].backBtn;
+  const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
-  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent=T[lang].newReport;wrap.appendChild(h);
-  const lbT=document.createElement("label");lbT.textContent=T[lang].reportType;wrap.appendChild(lbT);
+  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Nuova segnalazione";wrap.appendChild(h);
+  const lbT=document.createElement("label");lbT.textContent="Tipo segnalazione";wrap.appendChild(lbT);
   const tg=document.createElement("div");tg.className="type-grid";
   const typeBtns={};
   function setType(k){
     type=k;sub="";
-    subSel.innerHTML=`<option value="">${T[lang].selectDots}</option>`+getTYPES()[k].sub.map(s=>`<option value="${s}">${s}</option>`).join("");
+    subSel.innerHTML=`<option value="">Seleziona...</option>`+TYPES[k].sub.map(s=>`<option value="${s}">${s}</option>`).join("");
     const map={emergenza:"danger",pericolo:"warning"};
     Object.entries(typeBtns).forEach(([bk,bb])=>{
       const c=map[bk];bb.style.background=bk===k?`var(--${c}-bg)`:"";
@@ -1586,15 +1610,15 @@ function renderSubmit(page){
       bb.style.fontWeight=bk===k?"600":"400";
     });
   }
-  Object.entries(getTYPES()).forEach(([k,v])=>{
+  Object.entries(TYPES).forEach(([k,v])=>{
     const btn=document.createElement("button");btn.className="type-btn";btn.textContent=v.label;
     btn.addEventListener("click",()=>setType(k));typeBtns[k]=btn;tg.appendChild(btn);
   });
   wrap.appendChild(tg);
-  const lbS=document.createElement("label");lbS.textContent=T[lang].reportDetail;wrap.appendChild(lbS);
+  const lbS=document.createElement("label");lbS.textContent="Dettaglio";wrap.appendChild(lbS);
   const subSel=document.createElement("select");wrap.appendChild(subSel);
   subSel.addEventListener("change",()=>sub=subSel.value);setType("pericolo");
-  const lbZ=document.createElement("label");lbZ.textContent=T[lang].reportStation;wrap.appendChild(lbZ);
+  const lbZ=document.createElement("label");lbZ.textContent="Postazione";wrap.appendChild(lbZ);
   const zoneSel=document.createElement("select");
   ZONES.forEach(z=>{const o=document.createElement("option");o.value=z;o.textContent=z;zoneSel.appendChild(o);});
   const presel=activeStation||(nearestStation?`P.${nearestStation.num} \u2013 ${nearestStation.name}`:null);
@@ -1602,12 +1626,12 @@ function renderSubmit(page){
   zone=zoneSel.value;zoneSel.addEventListener("change",()=>zone=zoneSel.value);wrap.appendChild(zoneSel);
   if(nearestStation&&!activeStation){
     const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--info-text);margin-top:4px";
-    hint.textContent=`\uD83D\uDCCD ${T[lang].nearestPre} (${fmtDist(nearestDist)})`;wrap.appendChild(hint);
+    hint.textContent=`\uD83D\uDCCD Postazione pi\u00f9 vicina preselezionata (${fmtDist(nearestDist)})`;wrap.appendChild(hint);
   }
-  const lbN=document.createElement("label");lbN.innerHTML=T[lang].reportNotes+' <span style="font-size:11px;color:var(--text3);font-weight:400">'+T[lang].reportNotesOpt+'</span>';wrap.appendChild(lbN);
-  const notesEl=document.createElement("textarea");notesEl.placeholder=T[lang].reportNotes+" "+T[lang].reportNotesOpt+"...";notesEl.rows=3;
+  const lbN=document.createElement("label");lbN.innerHTML="Descrizione <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(opzionale)</span>";wrap.appendChild(lbN);
+  const notesEl=document.createElement("textarea");notesEl.placeholder="Aggiungi dettagli (opzionale)...";notesEl.rows=3;
   notesEl.addEventListener("input",()=>notes=notesEl.value);wrap.appendChild(notesEl);
-  const lbF=document.createElement("label");lbF.textContent=T[lang].reportPhoto;wrap.appendChild(lbF);
+  const lbF=document.createElement("label");lbF.textContent="Foto (opzionale)";wrap.appendChild(lbF);
   const fileInp=document.createElement("input");fileInp.type="file";fileInp.accept="image/*";fileInp.setAttribute("capture","environment");
   fileInp.style.cssText="font-size:12px;color:var(--text2);width:100%";
   const photoWrap=document.createElement("div");
@@ -1622,17 +1646,17 @@ function renderSubmit(page){
     });
   });
   wrap.appendChild(fileInp);wrap.appendChild(photoWrap);
-  const lbA=document.createElement("label");lbA.textContent=T[lang].reportName;wrap.appendChild(lbA);
+  const lbA=document.createElement("label");lbA.textContent="Nome (opzionale)";wrap.appendChild(lbA);
   const authorEl=document.createElement("input");authorEl.type="text";
-  authorEl.placeholder=currentRole==="operator"?T[lang].operatorPlaceholder:T[lang].namePlaceholder;
+  authorEl.placeholder=currentRole==="operator"?"Operatore":"Nome";
   authorEl.addEventListener("input",()=>author=authorEl.value);wrap.appendChild(authorEl);
   // Telefono obbligatorio (solo pubblico)
   if(currentRole!=="operator"){
     const lbP=document.createElement("label");
-    lbP.innerHTML=T[lang].reportPhone+' <span style="color:var(--red)">*</span> <span style="font-size:11px;color:var(--text3);font-weight:400">'+T[lang].reportPhoneReq+'</span>';
+    lbP.innerHTML="Telefono <span style=\"color:var(--red)\">*</span> <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(obbligatorio)</span>";
     wrap.appendChild(lbP);
     const phoneEl=document.createElement("input");phoneEl.type="tel";
-    phoneEl.placeholder=T[lang].reportPhonePlaceholder;phoneEl.id="segnalazione-phone";
+    phoneEl.placeholder="Es. 3281234567";phoneEl.id="segnalazione-phone";
     phoneEl.style.cssText="border-color:var(--border2)";
     phoneEl.addEventListener("input",function(){
       phone=phoneEl.value.trim();
@@ -1647,9 +1671,9 @@ function renderSubmit(page){
   const privacyWrap=document.createElement("div");
   privacyWrap.style.cssText="margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2)";
   privacyWrap.innerHTML=
-    '<p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">'+T[lang].privacyTitle+'</p>'
+    '<p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Informativa privacy</p>'
     +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">Ai sensi del Regolamento UE 2016/679 (GDPR), i dati personali eventualmente forniti tramite questo servizio, incluso il numero di telefono, saranno trattati da Omnia Servizi al Turismo SRLS esclusivamente per la gestione della segnalazione, eventuali verifiche e ricontatto dell’utente, se necessario.</p>'
-    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">'+T[lang].privacyText2+'</p>'
+    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">I dati saranno utilizzati solo dal personale incaricato del servizio e conservati per il tempo strettamente necessario alla gestione della segnalazione.</p>'
     +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text);margin:0"><input type="checkbox" id="privacyCheck" style="margin-top:2px;flex-shrink:0"> <span>Ho letto l’informativa privacy e acconsento al trattamento dei dati personali per la gestione della segnalazione.</span></label>';
   wrap.appendChild(privacyWrap);
 
@@ -1658,28 +1682,28 @@ function renderSubmit(page){
   emergencyNote.textContent="Per emergenze reali contattare immediatamente il 112 o il servizio di salvataggio più vicino.";
   wrap.appendChild(emergencyNote);
 
-  const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent=T[lang].submitBtn;
+  const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
   submitBtn.addEventListener("click",()=>{
     sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
     var phoneEl2=document.getElementById("segnalazione-phone");
     if(phoneEl2)phone=phoneEl2.value.trim();
-    if(!sub){alert(T[lang].alertNoSub);return;}
+    if(!sub){alert("Seleziona il tipo di segnalazione.");return;}
     if(currentRole!=="operator"&&phone.length<9){
       if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
-      alert(T[lang].alertPhone);return;
+      alert("Inserisci un numero di telefono valido per procedere.");return;
     }
     var privacyCheck=document.getElementById("privacyCheck");
     if(privacyCheck&&!privacyCheck.checked){
       alert("Devi leggere e accettare l’informativa privacy per procedere.");return;
     }
-    submitBtn.disabled=true;submitBtn.textContent=T[lang].submitting;
+    submitBtn.disabled=true;submitBtn.textContent="Invio...";
     const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
     addReport(r).then(()=>{sendWANotify(r);render("done");})
-    .catch(e=>{submitBtn.disabled=false;submitBtn.textContent=T[lang].submitBtn;alert(T[lang].alertError+e.message);});
+    .catch(e=>{submitBtn.disabled=false;submitBtn.textContent="Invia segnalazione";alert("Errore: "+e.message);});
   });
   wrap.appendChild(submitBtn);
   const wanote=document.createElement("p");wanote.style.cssText="font-size:11px;color:var(--text3);text-align:center;margin-top:10px";
-  wanote.textContent=T[lang].whatsappNote;
+  wanote.textContent="\uD83D\uDCAC Dopo l'invio si aprir\u00e0 WhatsApp per notificare gli operatori";
   wrap.appendChild(wanote);page.appendChild(wrap);
 }
 
@@ -1687,12 +1711,12 @@ function renderSubmit(page){
 function renderDone(page){
   const w=document.createElement("div");w.className="confirm-wrap";
   const ic=document.createElement("div");ic.className="confirm-icon";ic.textContent="\u2713";w.appendChild(ic);
-  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:8px";h.textContent=T[lang].doneSent;w.appendChild(h);
-  const p=document.createElement("p");p.style.cssText="color:var(--text2);font-size:14px;margin-bottom:4px";p.textContent=T[lang].doneThanks;w.appendChild(p);
-  const wn=document.createElement("p");wn.style.cssText="font-size:12px;color:var(--success-text);margin-bottom:20px";wn.textContent=T[lang].doneWA;w.appendChild(wn);
-  const b1=document.createElement("button");b1.className="btn-primary";b1.textContent=T[lang].doneNewReport;b1.addEventListener("click",()=>render("submit"));w.appendChild(b1);
+  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:8px";h.textContent="Segnalazione inviata";w.appendChild(h);
+  const p=document.createElement("p");p.style.cssText="color:var(--text2);font-size:14px;margin-bottom:4px";p.textContent="Grazie. Gli operatori sono stati avvisati.";w.appendChild(p);
+  const wn=document.createElement("p");wn.style.cssText="font-size:12px;color:var(--success-text);margin-bottom:20px";wn.textContent="\uD83D\uDCAC Notifica WhatsApp inviata";w.appendChild(wn);
+  const b1=document.createElement("button");b1.className="btn-primary";b1.textContent="Nuova segnalazione";b1.addEventListener("click",()=>render("submit"));w.appendChild(b1);
   const b2=document.createElement("button");b2.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:10px;width:100%;cursor:pointer";
-  b2.textContent=T[lang].doneBack;b2.addEventListener("click",()=>{currentRole=null;render("home");});w.appendChild(b2);page.appendChild(w);
+  b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{currentRole=null;render("home");});w.appendChild(b2);page.appendChild(w);
 }
 
 // DASHBOARD
@@ -1701,10 +1725,10 @@ function renderDashboard(page){
   const tb=document.createElement("div");tb.className="dash-toolbar";
   const ti=document.createElement("div");
   const sd=fbReady?`<span class="sync-dot" title="Sync attivo"></span>`:`<span class="sync-dot off" title="Connessione..."></span>`;
-  ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">${T[lang].dashTitle} ${sd}</h1><p style="font-size:11px;color:var(--text2)">${T[lang].dashSub}</p>`;
+  ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">Dashboard Operatori ${sd}</h1><p style="font-size:11px;color:var(--text2)">Roseto degli Abruzzi &middot; P.10 \u2013 P.35</p>`;
   tb.appendChild(ti);
   const ac=document.createElement("div");ac.className="dash-actions";
-  const newBtn=document.createElement("button");newBtn.className="btn-primary";newBtn.style.cssText="width:auto;font-size:12px;padding:6px 14px";newBtn.textContent=T[lang].dashNew;
+  const newBtn=document.createElement("button");newBtn.className="btn-primary";newBtn.style.cssText="width:auto;font-size:12px;padding:6px 14px";newBtn.textContent="+ Segnala";
   newBtn.addEventListener("click",()=>render("submit"));ac.appendChild(newBtn);tb.appendChild(ac);page.appendChild(tb);
   const sg=document.createElement("div");sg.className="stats-grid";
   [{label:"APERTE",value:open.length,color:""},{label:"EMERGENZE",value:open.filter(r=>r.type==="emergenza").length,color:"var(--danger-text)"},
@@ -1712,7 +1736,7 @@ function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  [["segnalazioni",T[lang].dashTabReports],["bandiere",T[lang].dashTabFlags]].forEach(([k,l])=>{
+  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"]].forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(activeDashTab===k?" active":"");btn.textContent=l;
     btn.addEventListener("click",()=>{activeDashTab=k;renderPage();});tabBar.appendChild(btn);
   });
@@ -1725,14 +1749,14 @@ function renderDashboard(page){
     clr.addEventListener("click",()=>{activeStation=null;renderPage();});bar.appendChild(clr);page.appendChild(bar);
   }
   const ft=document.createElement("div");ft.className="filters";
-  [["aperte",T[lang].dashFilterOpen],["emergenza",T[lang].dashFilterEmergency],["pericolo",T[lang].dashFilterDanger],["tutte",T[lang].dashFilterAll]].forEach(([k,l])=>{
+  [["aperte","Aperte"],["emergenza","Emergenze"],["pericolo","Pericoli"],["tutte","Tutte"]].forEach(([k,l])=>{
     const b=document.createElement("button");b.className="filter-btn"+(activeFilter===k?" active":"");b.textContent=l;
     b.addEventListener("click",()=>{activeFilter=k;renderPage();});ft.appendChild(b);
   });
   page.appendChild(ft);
   let filtered=activeFilter==="tutte"?reports:activeFilter==="aperte"?open:reports.filter(r=>r.type===activeFilter);
   if(activeStation)filtered=filtered.filter(r=>r.zone===activeStation);
-  if(!filtered.length){const em=document.createElement("p");em.className="empty";em.textContent=T[lang].dashNone;page.appendChild(em);return;}
+  if(!filtered.length){const em=document.createElement("p");em.className="empty";em.textContent="Nessuna segnalazione";page.appendChild(em);return;}
   const list=document.createElement("div");list.className="reports-list";
   filtered.forEach(r=>{
     const res=r.status==="risolta";
