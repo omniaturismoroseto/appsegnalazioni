@@ -255,33 +255,29 @@ label:first-child{margin-top:0}
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js">
-// === ROSETANA NUOTO ===
-var rosetanaIcon = L.icon({
-    iconUrl: 'rosetana.jpg',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    className: 'no-border-icon'
-});
+// ROSETANA NUOTO FIX
+setTimeout(function(){
+  var rosetanaIcon = L.icon({
+      iconUrl: 'rosetana.jpg',
+      iconSize: [42, 42],
+      iconAnchor: [21, 21],
+      className: 'no-border-icon'
+  });
 
-L.marker([42.6749, 14.0105], {icon: rosetanaIcon}).addTo(map)
-.bindPopup(`
-<b>Rosetana Nuoto</b><br>
-Via Fonte dell'Olmo, 10<br>
-64026 Roseto degli Abruzzi<br><br>
-
-<a href="https://rosetananuoto.it" target="_blank">🌐 Sito</a><br>
-<a href="https://www.facebook.com/rosetananuoto75" target="_blank">📘 Facebook</a><br>
-📞 085 893 1454<br><br>
-
-<b>Orari:</b><br>
-Sabato: 08:30–12:30<br>
-Domenica: 08:30–12:30<br>
-Lunedì: 06:45–22<br>
-Martedì: 06:45–22<br>
-Mercoledì: 06:45–22<br>
-Giovedì: 07–22<br>
-Venerdì: 07–22
-`);
+  L.marker([42.6749, 14.0105], {icon: rosetanaIcon})
+    .addTo(mapObj)
+    .bindPopup(`
+    <b>Rosetana Nuoto</b><br>
+    Via Fonte dell'Olmo, 10<br><br>
+    🌐 <a href="https://rosetananuoto.it" target="_blank">Sito</a><br>
+    📘 <a href="https://www.facebook.com/rosetananuoto75" target="_blank">Facebook</a><br>
+    📞 085 893 1454<br><br>
+    <b>Orari:</b><br>
+    Sab-Dom: 08:30–12:30<br>
+    Lun-Mer: 06:45–22<br>
+    Gio-Ven: 07–22
+    `);
+}, 1000);
 
 </script>
 <script>
