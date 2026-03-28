@@ -55,8 +55,8 @@ label:first-child{margin-top:0}
 .hbtn-op:hover{background:rgba(255,255,255,.3)}
 .notif-badge{position:absolute;top:-4px;right:-4px;background:#F5C800;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--red)}
 .hbtn-wrap{position:relative}
-#main-map{height:280px;width:100%;display:block;z-index:1;background:#e8e8e8}
-.leaflet-popup-content-wrapper{border-radius:10px!important;box-shadow:0 4px 16px rgba(0,0,0,.25)!important}.leaflet-popup-content{max-height:55vh;overflow-y:auto;margin:12px 14px!important;-webkit-overflow-scrolling:touch}.leaflet-popup-content::-webkit-scrollbar{width:4px}.leaflet-popup-content::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:2px}.leaflet-popup-close-button{font-size:20px!important;padding:4px 8px!important;top:4px!important;right:4px!important}.map-legend{display:flex;gap:11px;flex-wrap:wrap;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);align-items:center}
+#main-map{height:360px;width:100%;display:block;z-index:1;background:#e8e8e8}
+.leaflet-popup-content-wrapper{border-radius:10px!important;box-shadow:0 4px 16px rgba(0,0,0,.25)!important}.leaflet-popup-content{margin:12px 14px!important}.leaflet-popup-close-button{font-size:20px!important;padding:4px 8px!important;top:4px!important;right:4px!important}.map-legend{display:flex;gap:11px;flex-wrap:wrap;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);align-items:center}
 .ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:3px;vertical-align:middle}
 #content{padding:16px}.page-inner{max-width:660px;margin:0 auto}
 .nearest-card{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--radius-lg);margin-bottom:14px}
@@ -250,7 +250,7 @@ label:first-child{margin-top:0}
 <body>
 <div id="app">
   <div class="header" id="hdr"></div>
-  <div id="main-map" style="height:280px;width:100%;background:#cde;position:relative;z-index:1;"></div>
+  <div id="main-map" style="height:360px;width:100%;background:#cde;position:relative;z-index:1;"></div>
   <div class="map-legend" id="map-legend" style="display:none"></div>
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
@@ -956,7 +956,7 @@ function refreshMarkers(){
         var flagStr="<br><span style=\"font-size:12px\">Bandiera <span style=\"font-weight:700;color:"+flagCol+"\">"+flagName.toUpperCase()+"</span></span>";
         // Alert aperti
         var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
-        var popup=L.popup({maxWidth:220,maxHeight:400})
+        var popup=L.popup({maxWidth:220,keepInView:true,autoPanPadding:[20,20]})
           .setContent(
             "<div style=\"font-family:sans-serif;padding:2px\">"
             +"<b style=\"font-size:14px\">P."+station.num+" \u2013 "+station.name+"</b>"
@@ -1029,7 +1029,7 @@ function addCCMarker(){
     +' target="_blank" style="display:block;text-align:center;background:#1a237e;color:#fff;'
     +'text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">Apri indicazioni</a>'
     +'</div>';
-  ccMarker.bindPopup(ccHtml,{maxWidth:280,maxHeight:400});
+  ccMarker.bindPopup(ccHtml,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
 function addComuneMarker(){
@@ -1052,7 +1052,7 @@ function addComuneMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6796819,14.0110622&travelmode=walking" target="_blank" '
     +'style="display:block;text-align:center;background:#1565c0;color:white;padding:8px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">'
     +'\uD83E\uDDED Apri indicazioni</a></div>';
-  comuneMarker.bindPopup(htmlPopup,{maxWidth:280,maxHeight:400});
+  comuneMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
 function addIATMarker(){
@@ -1075,7 +1075,7 @@ function addIATMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6775099,14.0139231&travelmode=walking" target="_blank" '
     +'style="display:block;text-align:center;background:#e6b800;color:#1a1a1a;padding:8px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">'
     +'\uD83E\uDDED Apri indicazioni</a></div>';
-  iatMarker.bindPopup(htmlPopup,{maxWidth:280,maxHeight:400});
+  iatMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 function ensureLocamareMarker(){
   if(!mapObj || locamareMarker) return;
@@ -1115,7 +1115,7 @@ function ensureLocamareMarker(){
     </div>
   `;
 
-  locamareMarker.bindPopup(locamarePopup,{maxWidth:280,maxHeight:400});
+  locamareMarker.bindPopup(locamarePopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
 
