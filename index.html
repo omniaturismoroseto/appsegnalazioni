@@ -773,6 +773,15 @@ function findNearest(lat,lng){
   STATIONS.forEach(s=>{const d=haversine(lat,lng,s.lat,s.lng);if(d<bestDist){bestDist=d;best=s;}});
   return{station:best,dist:Math.round(bestDist)};
 }
+function findNearestDAE(lat,lng){
+  var best=null,bestDist=Infinity;
+  DAE_POINTS.forEach(function(d){
+    var dist=haversine(lat,lng,d.lat,d.lng);
+    if(dist<bestDist){bestDist=dist;best=d;}
+  });
+  return{dae:best,dist:Math.round(bestDist)};
+}
+var nearestDAE=null,nearestDAEDist=null;
 
 function isServiceActive(){var h=new Date().getHours();return h>=9&&h<19;}
 function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
@@ -803,6 +812,8 @@ function requestGPS(){
     const{latitude:lat,longitude:lng}=pos.coords;
     const{station,dist}=findNearest(lat,lng);
     nearestStation=station;nearestDist=dist;
+    var daeResult=findNearestDAE(lat,lng);
+    nearestDAE=daeResult.dae;nearestDAEDist=daeResult.dist;
     if(mapObj){
       if(userMarker){try{userMarker.remove();}catch(e){}}
       const icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
@@ -1169,6 +1180,41 @@ function renderHome(page){
       ns.addEventListener("click",function(){requestGPS();});
     }
     page.appendChild(ns);
+
+    // Card DAE piu vicino
+    if(nearestDAE&&nearestDAEDist){
+      var daeCard=document.createElement("div");
+      daeCard.style.cssText="border-radius:var(--radius-lg);margin-bottom:14px;background:#f0fdf4;border:1px solid #bbf7d0;overflow:hidden";
+      var daeInfoRow=document.createElement("div");
+      daeInfoRow.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 14px 10px";
+      daeInfoRow.innerHTML=
+        '<div style="width:34px;height:34px;border-radius:6px;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.25)">'
+        +'<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<p style="font-size:13px;font-weight:700;color:#14532d;margin:0 0 1px">'+nearestDAE.name+'</p>'
+        +'<p style="font-size:12px;color:var(--text2);margin:0">Defibrillatore DAE &nbsp;\u00b7&nbsp; A <strong>'+fmtDist(nearestDAEDist)+'</strong> da te</p>'
+        +'</div>';
+      daeCard.appendChild(daeInfoRow);
+      var daeBtnRow=document.createElement("div");
+      daeBtnRow.style.cssText="border-top:1px solid #bbf7d0";
+      var daeBtnNav=document.createElement("button");
+      daeBtnNav.style.cssText="width:100%;padding:11px 8px;background:transparent;border:none;font-size:13px;font-weight:600;color:#166534;cursor:pointer";
+      daeBtnNav.innerHTML='\uD83E\uDDED Indicazioni al DAE \u2192';
+      daeBtnNav.addEventListener("click",function(){
+        var ua=navigator.userAgent||"";
+        var url;
+        if(/iPhone|iPad|iPod/i.test(ua)){
+          url="maps://maps.apple.com/?daddr="+nearestDAE.lat+","+nearestDAE.lng+"&dirflg=w";
+        } else {
+          url="https://www.google.com/maps/dir/?api=1&destination="+nearestDAE.lat+","+nearestDAE.lng+"&travelmode=walking";
+        }
+        window.open(url,"_blank");
+      });
+      daeBtnRow.appendChild(daeBtnNav);
+      daeCard.appendChild(daeBtnRow);
+      page.appendChild(daeCard);
+    }
+
     if(!isServiceActive()){
       var d2=new Date();
       var ob=document.createElement("div");
