@@ -1036,9 +1036,9 @@ function addComuneMarker(){
   if(!mapObj||comuneMarker)return;
   var comuneIcon=L.divIcon({
     className:"",
-    html:'<div style="width:38px;height:38px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1565c0;background:#fff;">'
-        +'<img src="data:image/png;base64,'+STEMMA_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;padding:2px;box-sizing:border-box;"/></div>',
-    iconSize:[38,38],iconAnchor:[19,19],popupAnchor:[0,-20]
+    html:'<div style="width:36px;height:42px;border-radius:6px;overflow:visible;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1565c0;background:#fff;display:flex;align-items:center;justify-content:center;box-sizing:border-box;">'
+        +'<img src="data:image/png;base64,'+STEMMA_B64+'" style="width:30px;height:36px;object-fit:contain;display:block;"/></div>',
+    iconSize:[36,42],iconAnchor:[18,21],popupAnchor:[0,-22]
   });
   comuneMarker=L.marker([COMUNE_POINT.lat,COMUNE_POINT.lng],{icon:comuneIcon}).addTo(mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
