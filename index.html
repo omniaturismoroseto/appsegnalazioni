@@ -472,7 +472,7 @@ function _refreshNotePanel(){
     var badge=document.getElementById("_noteBadge_"+s.num);
     var addBtn=document.getElementById("_noteAddBtn_"+s.num);
     var delBtn=document.getElementById("_noteDelBtn_"+s.num);
-    var note=stationNotesData[s.num];
+    var note=stationNotesData[String(s.num)];
     if(dot)dot.style.background=note?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"];
     if(badge){badge.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"";
       badge.style.display=note?"inline-block":"none";}
@@ -800,7 +800,9 @@ reportsRef.on("value",snap=>{
   renderHeader();
 });
 stationNotesRef.on("value",function(snap){
-  stationNotesData=snap.val()||{};
+  var raw=snap.val()||{};
+  stationNotesData={};
+  Object.keys(raw).forEach(function(k){stationNotesData[k]=raw[k];});
   refreshMarkers();
   if(currentScreen==="home")renderPage();
   // Note tab: no auto-rerender to avoid losing keyboard/input
@@ -1026,7 +1028,7 @@ function getMarkerColor(s){
   const zr=open.filter(r=>r.zone===zl);
   if(zr.some(r=>r.type==="emergenza"))return{bg:ALERT_COLORS.emergenza,ring:true};
   if(zr.some(r=>r.type==="pericolo"))return{bg:ALERT_COLORS.pericolo,ring:true};
-  if(stationNotesData[s.num])return{bg:"#1a1a1a",ring:true,note:stationNotesData[s.num]};
+  if(stationNotesData[String(s.num)])return{bg:"#1a1a1a",ring:true,note:stationNotesData[String(s.num)]};
   return{bg:FLAG_COLORS[flagsData[s.num]||"verde"],ring:false,flag:flagsData[s.num]||"verde"};
 }
 function refreshMarkers(){
@@ -1065,10 +1067,10 @@ function refreshMarkers(){
         // Alert aperti
         var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
         var noteStr="";
-        if(stationNotesData[station.num]){
+        if(stationNotesData[String(station.num)]){
           noteStr='<div style="margin:6px 0;padding:7px 10px;background:#1a1a1a;border-radius:6px;color:white;font-size:12px;line-height:1.4">'
             +'<span style="font-weight:700;display:block;margin-bottom:2px">\u26a0\ufe0f Nota operatore</span>'
-            +String(stationNotesData[station.num]).replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</div>";
+            +String(stationNotesData[String(station.num)]).replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</div>";
         }
         var popup=L.popup({maxWidth:220,keepInView:true,autoPanPadding:[20,20]})
           .setContent(
@@ -1978,7 +1980,7 @@ function renderNote(page){
   STATIONS.forEach(function(s){
     var row=document.createElement("div");
     row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
-    var note=stationNotesData[s.num];
+    var note=stationNotesData[String(s.num)];
     // Dot
     var dot=document.createElement("div");
     dot.id="_noteDot_"+s.num;
@@ -2007,7 +2009,7 @@ function renderNote(page){
     editBtn.style.cssText="font-size:12px;padding:5px 8px;background:var(--bg2);border-color:var(--border2);flex-shrink:0;color:var(--text);display:"+(note?"inline-block":"none");
     editBtn.textContent="\u270f\ufe0f";
     (function(sNum,sName){
-      editBtn.addEventListener("click",function(){_openNoteModal(sNum,sName,stationNotesData[sNum]);});
+      editBtn.addEventListener("click",function(){_openNoteModal(sNum,sName,stationNotesData[String(sNum)]);});
     })(s.num,s.name);
     row.appendChild(editBtn);
     var delBtn=document.createElement("button");
