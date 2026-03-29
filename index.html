@@ -452,6 +452,7 @@ function _openNoteModal(stationNum, stationName, existingNote){
     if(!txt){alert("Scrivi una nota prima di salvare.");return;}
     stationNotesRef.child(String(stationNum)).set(txt);
     stationNotesData[String(stationNum)]=txt; // aggiorna subito locale
+    try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");_sn[String(stationNum)]=txt;localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
     overlay.remove();
     refreshMarkers();
     if(currentScreen==="home")renderPage();
@@ -968,8 +969,8 @@ function renderHeader(){
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
-    op.textContent="\uD83D\uDD13";op.title="Esci";
-    op.addEventListener("click",()=>{currentRole=null;newReportCount=0;try{localStorage.removeItem("omnia_op_auth");}catch(e){}render("home");});
+    op.textContent="\uD83D\uDD13";op.title="Dashboard operatori";
+    op.addEventListener("click",()=>{render("dashboard");});
   }else{
     op.textContent="\uD83D\uDD10";op.title="Area Operatori";
     op.addEventListener("click",()=>render("login"));
@@ -1914,6 +1915,17 @@ function renderDashboard(page){
   const ti=document.createElement("div");
   const sd=fbReady?`<span class="sync-dot" title="Sync attivo"></span>`:`<span class="sync-dot off" title="Connessione..."></span>`;
   ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">Dashboard Operatori ${sd}</h1><p style="font-size:11px;color:var(--text2)">Roseto degli Abruzzi &middot; P.10 \u2013 P.35</p>`;
+  const logoutBtn=document.createElement("button");
+  logoutBtn.style.cssText="font-size:12px;padding:5px 12px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;border-radius:var(--radius)";
+  logoutBtn.innerHTML="\uD83D\uDD13 Esci";
+  logoutBtn.addEventListener("click",function(){
+    if(confirm("Vuoi uscire dall\u2019area operatori?")){
+      currentRole=null;newReportCount=0;
+      try{localStorage.removeItem("omnia_op_auth");}catch(e){}
+      render("home");
+    }
+  });
+  ti.appendChild(logoutBtn);
   tb.appendChild(ti);
   const ac=document.createElement("div");ac.className="dash-actions";
   const newBtn=document.createElement("button");newBtn.className="btn-primary";newBtn.style.cssText="width:auto;font-size:12px;padding:6px 14px";newBtn.textContent="+ Segnala";
@@ -2032,6 +2044,7 @@ function renderNote(page){
         if(confirm("Rimuovere la nota per P."+sNum+"?")){
           stationNotesRef.child(String(sNum)).remove();
           delete stationNotesData[String(sNum)]; // aggiorna subito locale
+          try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");delete _sn[String(sNum)];localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
           refreshMarkers();
           if(currentScreen==="home")renderPage();
           if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
