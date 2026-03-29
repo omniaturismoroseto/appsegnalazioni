@@ -1777,7 +1777,7 @@ function renderSubmit(page){
 
   const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
   submitBtn.addEventListener("click",()=>{
-    sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
+    notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
     var phoneEl2=document.getElementById("segnalazione-phone");
     if(phoneEl2)phone=phoneEl2.value.trim();
     if(!sub){alert("Seleziona il tipo di segnalazione.");return;}
