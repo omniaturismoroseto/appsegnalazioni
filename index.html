@@ -488,8 +488,8 @@ let currentScreen="home";
 var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
 let currentRole=_savedAuth?"operator":null;
 if(_savedAuth){if(window._requestNotifPermission)setTimeout(function(){try{_requestNotifPermission();}catch(e){}},500);}
-// Se già autenticato, vai direttamente alla dashboard
-if(currentRole==="operator"){render("dashboard");return;}
+// Se già autenticato, rimanda alla dashboard dopo init variabili
+if(currentRole==="operator"){setTimeout(function(){render("dashboard");},0);}
 
 window.onpopstate=function(event){
   suppressHistory=true;
