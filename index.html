@@ -451,7 +451,10 @@ function _openNoteModal(stationNum, stationName, existingNote){
     var txt=ta.value.trim();
     if(!txt){alert("Scrivi una nota prima di salvare.");return;}
     stationNotesRef.child(String(stationNum)).set(txt);
+    stationNotesData[String(stationNum)]=txt; // aggiorna subito locale
     overlay.remove();
+    refreshMarkers();
+    if(currentScreen==="home")renderPage();
     if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
   });
   btns.appendChild(cancelBtn);
@@ -2018,7 +2021,13 @@ function renderNote(page){
     delBtn.textContent="\u2715";
     (function(sNum){
       delBtn.addEventListener("click",function(){
-        if(confirm("Rimuovere la nota per P."+sNum+"?"))stationNotesRef.child(String(sNum)).remove();
+        if(confirm("Rimuovere la nota per P."+sNum+"?")){
+          stationNotesRef.child(String(sNum)).remove();
+          delete stationNotesData[String(sNum)]; // aggiorna subito locale
+          refreshMarkers();
+          if(currentScreen==="home")renderPage();
+          if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
+        }
       });
     })(s.num);
     row.appendChild(delBtn);
