@@ -1116,27 +1116,29 @@ function addDAEMarkers(){
   if(!mapObj)return;
   daeMarkers.forEach(function(m){try{m.remove();}catch(e){}});
   daeMarkers=[];
-  const daeIcon=L.divIcon({
+  var daeIcon=L.divIcon({
     className:"",
-    html:'<div style="width:22px;height:22px;border-radius:4px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.5);border:1.5px solid #fff;">'+
-         '<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
+    html:'<div style="width:22px;height:22px;border-radius:4px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.5);border:1.5px solid #fff;">'
+        +'<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
     iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-13]
   });
   DAE_POINTS.forEach(function(d){
     var m=L.marker([d.lat,d.lng],{icon:daeIcon}).addTo(mapObj);
-    m.bindPopup(
-      '<div style="font-family:sans-serif;min-width:180px">'+
-      '<div style="font-size:13px;font-weight:700;color:#1a6b1a;margin-bottom:6px">'+
-      '❤️‍🩹 '+d.name+'</div>'+
-      '<div style="font-size:12px;color:#333;margin-bottom:4px">Defibrillatore DAE disponibile</div>'+(d.avail?'<div style="font-size:11px;font-weight:600;color:#333;margin-bottom:8px">'+d.avail+'</div>':'<div style="margin-bottom:8px"></div>')+
-      '<a href="https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lng+'&travelmode=walking"'+
-      ' target="_blank" style="display:block;text-align:center;background:#1a6b1a;color:#fff;text-decoration:none;'+
-      'padding:7px 10px;border-radius:7px;font-size:12px;font-weight:700">🧭 Indicazioni</a>'+
-      '</div>'
-    );
+    var availHtml=d.avail?'<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px">'+d.avail+'</div>':'';
+    var popHtml=
+      '<div style="font-family:sans-serif;min-width:180px">'
+      +'<div style="font-size:13px;font-weight:700;color:#1a6b1a;margin-bottom:6px">'
+      +'\u2764\ufe0f\u200d\ud83e\ude79 '+d.name+'</div>'
+      +'<div style="font-size:12px;color:#333;margin-bottom:4px">Defibrillatore DAE disponibile</div>'
+      +availHtml
+      +'<a href="https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lng+'&travelmode=walking"'
+      +' target="_blank" style="display:block;text-align:center;background:#1a6b1a;color:#fff;text-decoration:none;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:700">\ud83e\uddad Indicazioni</a>'
+      +'</div>';
+    m.bindPopup(popHtml);
     daeMarkers.push(m);
   });
 }
+
 function addCCMarker(){
   if(!mapObj||ccMarker)return;
   var ccIcon=L.divIcon({
