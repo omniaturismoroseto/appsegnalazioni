@@ -255,6 +255,11 @@ label:first-child{margin-top:0}
 .note-modal textarea{width:100%;min-height:80px;font-size:14px;padding:10px 12px;border:1.5px solid var(--border2);border-radius:var(--radius);resize:none;font-family:inherit;display:block;margin-bottom:12px}
 .note-modal textarea:focus{border-color:#1a1a1a;outline:none}
 .note-modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ann-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}
+.ann-modal{background:#b91c1c;border-radius:16px;padding:28px 22px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.ann-modal h2{font-size:22px;font-weight:900;color:white;line-height:1.3;margin-bottom:20px;letter-spacing:.01em}
+.ann-modal .ann-call{display:block;width:100%;padding:14px;background:white;color:#b91c1c;font-size:17px;font-weight:900;border:none;border-radius:10px;cursor:pointer;text-decoration:none;margin-bottom:10px}
+.ann-modal .ann-close{display:block;width:100%;padding:10px;background:transparent;color:rgba(255,255,255,.8);font-size:13px;border:1px solid rgba(255,255,255,.4);border-radius:8px;cursor:pointer}
 
 </style>
 </head>
@@ -416,7 +421,7 @@ const STATIONS=[
 const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
 ZONES.push("Spiaggia libera / Area non concessionata");
 const TYPES={
-  emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio grave","Bandiera rossa / divieto bagno"]},
+  emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio","Malore in spiaggia"]},
   pericolo: {label:"Pericolo", sub:["Vento Garbino","Correnti pericolose","Mare molto mosso","Meduse","Oggetti pericolosi in acqua"]},
 
 };
@@ -465,6 +470,33 @@ function _openNoteModal(stationNum, stationName, existingNote){
   overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
   document.body.appendChild(overlay);
   setTimeout(function(){ta.focus();},80);
+}
+
+function _openAnnegamentoAlert(){
+  var existing=document.getElementById("_annModal");
+  if(existing)existing.remove();
+  var overlay=document.createElement("div");
+  overlay.className="ann-overlay";
+  overlay.id="_annModal";
+  var modal=document.createElement("div");
+  modal.className="ann-modal";
+  modal.innerHTML=
+    '<div style="font-size:48px;margin-bottom:12px">\uD83D\uDEA8</div>'
+    +'<h2>VAI SUBITO DAL BAGNINO PI\u00d9 VICINO!!!</h2>';
+  var callBtn=document.createElement("a");
+  callBtn.href="tel:+393284769641";
+  callBtn.className="ann-call";
+  callBtn.innerHTML="\uD83D\uDCDE CHIAMA OMNIA";
+  callBtn.addEventListener("click",function(){setTimeout(function(){overlay.remove();},300);});
+  var closeBtn=document.createElement("button");
+  closeBtn.className="ann-close";
+  closeBtn.textContent="Chiudi";
+  closeBtn.addEventListener("click",function(){overlay.remove();});
+  modal.appendChild(callBtn);
+  modal.appendChild(closeBtn);
+  overlay.appendChild(modal);
+  overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
 }
 
 function _refreshNotePanel(){
@@ -1784,6 +1816,7 @@ function renderSubmit(page){
       chip.addEventListener("mouseleave",function(){if(sub!==s){chip.style.background="var(--bg)";chip.style.color="var(--text2)";}});
       chip.addEventListener("click",function(){
         sub=s;
+        if(s==="Annegamento / soccorso")_openAnnegamentoAlert();
         Array.from(subChipsWrap.children).forEach(function(c){
           const active=c.textContent===s;
           const col=k==="emergenza"?"var(--danger-bg)":"var(--warning-bg)";
