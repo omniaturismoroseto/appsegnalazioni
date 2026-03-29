@@ -29,6 +29,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   --verde:#27ae60;--gialla:#F5C800;--rossa:#e74c3c;
 }
 input,select,textarea,button{font-family:inherit;font-size:14px;outline:none}
+.leaflet-control-attribution{display:none!important}
 input[type=text],input[type=password],select{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);display:block}
 input:focus,select:focus,textarea:focus{border-color:var(--navy)}
 textarea{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);resize:vertical;background:var(--bg);color:var(--text);line-height:1.5}
@@ -903,21 +904,29 @@ function initMap(){
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
-      attribution:"Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+      attribution:"",
       maxZoom:20,
       updateWhenIdle:true,
       keepBuffer:3
     }
   ).addTo(mapObj);
-  // Layer etichette strade sopra satellite
+  // Layer etichette strade e nomi vie
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+    {
+      attribution:"",
+      maxZoom:20,
+      opacity:1,
+      updateWhenIdle:true
+    }
+  ).addTo(mapObj);
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
     {
       attribution:"",
       maxZoom:20,
       opacity:1,
-      updateWhenIdle:true,
-      pane:"overlayPane"
+      updateWhenIdle:true
     }
   ).addTo(mapObj);
   ensureLocamareMarker();
