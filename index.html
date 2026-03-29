@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-M3PSWKEYCJ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-M3PSWKEYCJ');
-</script>
-
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
@@ -75,7 +66,7 @@ label:first-child{margin-top:0}
 .nearest-info span{font-size:12px;color:var(--text2)}
 .nearest-btn{font-size:12px;padding:5px 11px;color:var(--info-text);background:white;border-color:var(--info-border);white-space:nowrap;flex-shrink:0}
 .home-btns{display:grid;gap:10px;margin-bottom:18px}
-.home-btn{padding:16px;border-radius:var(--radius-lg);border:2px solid var(--border);background:var(--bg);cursor:pointer;text-align:left;width:100%;transition:border-color .15s}
+.home-btn{padding:16px;border-radius:var(--radius-lg);border:2px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;width:100%;transition:border-color .15s}
 .home-btn:hover{background:var(--bg)}.home-btn.primary{border-color:var(--red)}
 .home-btn h3{font-size:15px;font-weight:600;margin-bottom:3px}.home-btn.primary h3{color:var(--red)}
 .home-btn p{font-size:12px;color:var(--text2);margin:0}
@@ -186,20 +177,20 @@ label:first-child{margin-top:0}
   background:linear-gradient(135deg,#67d6ff 0%,#36b8f5 45%,#1697e6 100%);
   color:#fff;
   box-shadow:0 8px 20px rgba(22,151,230,.28);
-  text-align:left;
+  text-align:center;
   margin-top:10px;
   margin-bottom:24px;
 }
 .meteo-home-btn:hover{background:linear-gradient(135deg,#67d6ff 0%,#36b8f5 45%,#1697e6 100%)}
 .meteo-home-btn h3{
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
   color:#fff !important;
   margin:0 0 4px 0;
   font-size:16px;font-weight:700;
 }
 .meteo-home-btn p{
   color:rgba(255,255,255,.92) !important;
-  margin:0;
+  margin:0;text-align:center;
   font-size:12px;
 }
 .meteo-home-icons{
@@ -1189,7 +1180,6 @@ function ensureLocamareMarker(){
 // RENDER
 function render(screen){
   currentScreen=screen;
-  if (typeof gtag==='function'){ gtag('event','page_view',{page_title:screen,page_path:'/'+screen}); }
   if(!suppressHistory){
     try{
       if(!history.state || history.state.screen!==screen){
@@ -1348,7 +1338,7 @@ function renderHome(page){
   // pulsante segnala
   const btns=document.createElement("div");btns.className="home-btns";
   const b1=document.createElement("button");b1.className="home-btn primary";
-  b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
+  b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo \u26A0\uFE0F</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
   b1.addEventListener("click",()=>{currentRole="public";render("submit");});
   btns.appendChild(b1);page.appendChild(btns);
 
@@ -1631,6 +1621,22 @@ function renderLogin(page){
 // SUBMIT
 function renderSubmit(page){
   let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
+
+  // Banner 112
+  const banner112=document.createElement("div");
+  banner112.style.cssText="display:flex;align-items:center;gap:10px;padding:13px 15px;background:#b91c1c;border-radius:var(--radius-lg);margin-bottom:16px;cursor:pointer";
+  banner112.innerHTML='<span style="font-size:22px;flex-shrink:0">\uD83D\uDEA8</span>'
+    +'<div style="flex:1;min-width:0">'
+    +'<p style="font-size:12px;font-weight:800;color:white;letter-spacing:.02em;margin:0;line-height:1.4;text-align:center">'
+    +'\u26a0\ufe0f IN CASO DI PERICOLO PER LA PROPRIA O ALTRUI INCOLUMIT\u00c0 CHIAMA IMMEDIATAMENTE IL 112 O IL SERVIZIO DI SALVATAGGIO PI\u00d9 VICINO \u26a0\ufe0f</p>'
+    +'</div>'
+    +'<a href="tel:112" onclick="event.stopPropagation()" '
+    +'style="flex-shrink:0;background:white;color:#b91c1c;font-weight:900;font-size:15px;padding:8px 14px;border-radius:8px;text-decoration:none;white-space:nowrap">\uD83D\uDCDE 112</a>';
+  banner112.addEventListener("click",function(){
+    if(confirm("Stai per chiamare il 112. Continuare?")){window.location.href="tel:112";}
+  });
+  page.appendChild(banner112);
+
   const wrap=document.createElement("div");wrap.className="form-wrap";
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
