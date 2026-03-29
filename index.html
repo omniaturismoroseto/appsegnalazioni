@@ -248,6 +248,13 @@ label:first-child{margin-top:0}
   text-align:center;
 }
 .forecast-credit a{color:var(--info-text);font-weight:700;text-decoration:none}
+.note-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
+.note-modal{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 18px 32px;width:100%;max-width:520px;box-shadow:0 -4px 24px rgba(0,0,0,.25)}
+.note-modal h3{font-size:16px;font-weight:700;margin-bottom:4px}
+.note-modal p{font-size:12px;color:var(--text2);margin-bottom:14px}
+.note-modal textarea{width:100%;min-height:80px;font-size:14px;padding:10px 12px;border:1.5px solid var(--border2);border-radius:var(--radius);resize:none;font-family:inherit;display:block;margin-bottom:12px}
+.note-modal textarea:focus{border-color:#1a1a1a;outline:none}
+.note-modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
 </style>
 </head>
@@ -415,6 +422,65 @@ const TYPES={
 };
 
 let suppressHistory=false;
+
+// Modal globale per inserimento note — non distrutto dal re-render
+function _openNoteModal(stationNum, stationName, existingNote){
+  var existing=document.getElementById("_noteModal");
+  if(existing)existing.remove();
+  var overlay=document.createElement("div");
+  overlay.className="note-modal-overlay";
+  overlay.id="_noteModal";
+  var modal=document.createElement("div");
+  modal.className="note-modal";
+  modal.innerHTML='<h3>\u26a0\ufe0f Nota pericolo &mdash; P.'+stationNum+'</h3>'
+    +'<p>'+stationName+'</p>';
+  var ta=document.createElement("textarea");
+  ta.placeholder="Es: Secca pericolosa, corrente laterale...";
+  ta.value=existingNote||"";
+  modal.appendChild(ta);
+  var btns=document.createElement("div");
+  btns.className="note-modal-btns";
+  var cancelBtn=document.createElement("button");
+  cancelBtn.textContent="Annulla";
+  cancelBtn.style.cssText="padding:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg2);font-size:14px;cursor:pointer";
+  cancelBtn.addEventListener("click",function(){overlay.remove();});
+  var saveBtn=document.createElement("button");
+  saveBtn.style.cssText="padding:12px;border-radius:var(--radius);border:none;background:#1a1a1a;color:white;font-size:14px;font-weight:700;cursor:pointer";
+  saveBtn.textContent="Salva nota";
+  saveBtn.addEventListener("click",function(){
+    var txt=ta.value.trim();
+    if(!txt){alert("Scrivi una nota prima di salvare.");return;}
+    stationNotesRef.child(String(stationNum)).set(txt);
+    overlay.remove();
+    if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
+  });
+  btns.appendChild(cancelBtn);
+  btns.appendChild(saveBtn);
+  modal.appendChild(btns);
+  overlay.appendChild(modal);
+  overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+  setTimeout(function(){ta.focus();},80);
+}
+
+function _refreshNotePanel(){
+  // Aggiorna solo i dot e badge senza toccare eventuali modal aperti
+  var panel=document.getElementById("_notePanelRows");
+  if(!panel)return;
+  STATIONS.forEach(function(s){
+    var dot=document.getElementById("_noteDot_"+s.num);
+    var badge=document.getElementById("_noteBadge_"+s.num);
+    var addBtn=document.getElementById("_noteAddBtn_"+s.num);
+    var delBtn=document.getElementById("_noteDelBtn_"+s.num);
+    var note=stationNotesData[s.num];
+    if(dot)dot.style.background=note?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"];
+    if(badge){badge.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"";
+      badge.style.display=note?"inline-block":"none";}
+    if(addBtn)addBtn.style.display=note?"none":"inline-block";
+    if(delBtn)delBtn.style.display=note?"inline-block":"none";
+  });
+}
+
 let currentScreen="home",currentRole=null;
 
 window.onpopstate=function(event){
@@ -737,7 +803,8 @@ stationNotesRef.on("value",function(snap){
   stationNotesData=snap.val()||{};
   refreshMarkers();
   if(currentScreen==="home")renderPage();
-  if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
+  // Note tab: no auto-rerender to avoid losing keyboard/input
+  if(currentScreen==="dashboard"&&activeDashTab==="note")_refreshNotePanel();
 });
 
 flagsRef.on("value",snap=>{
@@ -1902,64 +1969,57 @@ function renderDashboard(page){
 
 function renderNote(page){
   var panel=document.createElement("div");panel.className="bandiere-panel";
+  panel.id="_notePanelRows";
   var hdr=document.createElement("div");hdr.className="bandiere-header";
   var title=document.createElement("h3");title.textContent="Note di pericolo postazioni";hdr.appendChild(title);
   var sub=document.createElement("p");sub.style.cssText="font-size:11px;color:var(--text2);margin:2px 0 0";
-  sub.textContent="Aggiungi una nota: il marker diventa nero e la nota è visibile a tutti.";
+  sub.textContent="La postazione con nota diventa nera sulla mappa — visibile a tutti.";
   hdr.appendChild(sub);panel.appendChild(hdr);
   STATIONS.forEach(function(s){
     var row=document.createElement("div");
     row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
-    var hasNote=!!stationNotesData[s.num];
+    var note=stationNotesData[s.num];
     // Dot
     var dot=document.createElement("div");
-    dot.style.cssText="width:12px;height:12px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.15);background:"+(hasNote?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"]);
+    dot.id="_noteDot_"+s.num;
+    dot.style.cssText="width:12px;height:12px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.15);background:"+(note?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"]);
     row.appendChild(dot);
-    // Name
+    // Name + badge
     var nm=document.createElement("div");nm.style.cssText="flex:1;min-width:0";
     nm.innerHTML='<span style="font-size:13px">'+s.name+'</span> <span style="font-size:11px;color:var(--text3)">P.'+s.num+'</span>';
-    if(hasNote){
-      var noteBadge=document.createElement("div");
-      noteBadge.style.cssText="font-size:11px;color:#fff;background:#1a1a1a;border-radius:4px;padding:1px 6px;margin-top:2px;display:inline-block";
-      noteBadge.textContent=String(stationNotesData[s.num]).substring(0,40)+(stationNotesData[s.num].length>40?"...":"");
-      nm.appendChild(noteBadge);
-    }
+    var noteBadge=document.createElement("div");
+    noteBadge.id="_noteBadge_"+s.num;
+    noteBadge.style.cssText="font-size:11px;color:#fff;background:#1a1a1a;border-radius:4px;padding:2px 7px;margin-top:3px;display:"+(note?"inline-block":"none");
+    noteBadge.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"";
+    nm.appendChild(noteBadge);
     row.appendChild(nm);
-    // Button
-    if(hasNote){
-      var delBtn=document.createElement("button");
-      delBtn.style.cssText="font-size:12px;padding:5px 10px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;flex-shrink:0";
-      delBtn.textContent="✕ Rimuovi";
+    // Add button
+    var addBtn=document.createElement("button");
+    addBtn.id="_noteAddBtn_"+s.num;
+    addBtn.style.cssText="font-size:12px;padding:5px 10px;background:var(--bg2);border-color:var(--border2);flex-shrink:0;color:var(--text);display:"+(note?"none":"inline-block");
+    addBtn.textContent="+ Nota";
+    (function(sNum,sName,btn){
+      btn.addEventListener("click",function(){_openNoteModal(sNum,sName,null);});
+    })(s.num,s.name,addBtn);
+    row.appendChild(addBtn);
+    // Edit + delete buttons
+    var editBtn=document.createElement("button");
+    editBtn.style.cssText="font-size:12px;padding:5px 8px;background:var(--bg2);border-color:var(--border2);flex-shrink:0;color:var(--text);display:"+(note?"inline-block":"none");
+    editBtn.textContent="\u270f\ufe0f";
+    (function(sNum,sName){
+      editBtn.addEventListener("click",function(){_openNoteModal(sNum,sName,stationNotesData[sNum]);});
+    })(s.num,s.name);
+    row.appendChild(editBtn);
+    var delBtn=document.createElement("button");
+    delBtn.id="_noteDelBtn_"+s.num;
+    delBtn.style.cssText="font-size:12px;padding:5px 10px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;flex-shrink:0;display:"+(note?"inline-block":"none");
+    delBtn.textContent="\u2715";
+    (function(sNum){
       delBtn.addEventListener("click",function(){
-        stationNotesRef.child(String(s.num)).remove();
+        if(confirm("Rimuovere la nota per P."+sNum+"?"))stationNotesRef.child(String(sNum)).remove();
       });
-      row.appendChild(delBtn);
-    } else {
-      var addBtn=document.createElement("button");
-      addBtn.style.cssText="font-size:12px;padding:5px 10px;background:var(--bg2);border-color:var(--border2);flex-shrink:0;color:var(--text)";
-      addBtn.textContent="+ Nota";
-      addBtn.addEventListener("click",function(){
-        // Show inline input
-        row.innerHTML="";
-        var inp=document.createElement("textarea");
-        inp.placeholder="Scrivi la nota di pericolo per P."+s.num+"...";
-        inp.style.cssText="flex:1;min-height:54px;font-size:13px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);resize:none;font-family:inherit";
-        row.style.alignItems="flex-start";
-        row.appendChild(dot);
-        row.appendChild(inp);
-        var saveBtn=document.createElement("button");
-        saveBtn.style.cssText="padding:8px 12px;background:#1a1a1a;color:white;border-color:#1a1a1a;font-weight:700;font-size:12px;flex-shrink:0;align-self:flex-end";
-        saveBtn.textContent="Salva";
-        saveBtn.addEventListener("click",function(){
-          var txt=inp.value.trim();
-          if(!txt){alert("Scrivi una nota prima di salvare.");return;}
-          stationNotesRef.child(String(s.num)).set(txt);
-        });
-        row.appendChild(saveBtn);
-        setTimeout(function(){inp.focus();},50);
-      });
-      row.appendChild(addBtn);
-    }
+    })(s.num);
+    row.appendChild(delBtn);
     panel.appendChild(row);
   });
   page.appendChild(panel);
