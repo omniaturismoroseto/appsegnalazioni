@@ -1644,9 +1644,34 @@ function renderSubmit(page){
   const lbT=document.createElement("label");lbT.textContent="Tipo segnalazione";wrap.appendChild(lbT);
   const tg=document.createElement("div");tg.className="type-grid";
   const typeBtns={};
+  // Container chips dettaglio
+  const subChipsWrap=document.createElement("div");
+  subChipsWrap.style.cssText="display:flex;flex-direction:column;gap:0;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;margin-top:2px";
+
   function setType(k){
     type=k;sub="";
-    subSel.innerHTML=`<option value="">Seleziona...</option>`+TYPES[k].sub.map(s=>`<option value="${s}">${s}</option>`).join("");
+    subChipsWrap.innerHTML="";
+    TYPES[k].sub.forEach(function(s,i){
+      const chip=document.createElement("button");
+      chip.type="button";
+      chip.textContent=s;
+      const isLast=i===TYPES[k].sub.length-1;
+      chip.style.cssText="width:100%;text-align:left;padding:11px 14px;background:var(--bg);border:none;"+(isLast?"":"border-bottom:1px solid var(--border);")+"font-size:14px;color:var(--text2);cursor:pointer;transition:background .12s,color .12s";
+      chip.addEventListener("mouseenter",function(){if(sub!==s)chip.style.background="var(--bg2)";});
+      chip.addEventListener("mouseleave",function(){if(sub!==s){chip.style.background="var(--bg)";chip.style.color="var(--text2)";}});
+      chip.addEventListener("click",function(){
+        sub=s;
+        Array.from(subChipsWrap.children).forEach(function(c){
+          const active=c.textContent===s;
+          const col=k==="emergenza"?"var(--danger-bg)":"var(--warning-bg)";
+          const tc=k==="emergenza"?"var(--danger-text)":"var(--warning-text)";
+          c.style.background=active?col:"var(--bg)";
+          c.style.color=active?tc:"var(--text2)";
+          c.style.fontWeight=active?"700":"400";
+        });
+      });
+      subChipsWrap.appendChild(chip);
+    });
     const map={emergenza:"danger",pericolo:"warning"};
     Object.entries(typeBtns).forEach(([bk,bb])=>{
       const c=map[bk];bb.style.background=bk===k?`var(--${c}-bg)`:"";
@@ -1661,8 +1686,8 @@ function renderSubmit(page){
   });
   wrap.appendChild(tg);
   const lbS=document.createElement("label");lbS.textContent="Dettaglio";wrap.appendChild(lbS);
-  const subSel=document.createElement("select");wrap.appendChild(subSel);
-  subSel.addEventListener("change",()=>sub=subSel.value);setType("pericolo");
+  wrap.appendChild(subChipsWrap);
+  setType("pericolo");
   const lbZ=document.createElement("label");lbZ.textContent="Postazione";wrap.appendChild(lbZ);
   const zoneSel=document.createElement("select");
   ZONES.forEach(z=>{const o=document.createElement("option");o.value=z;o.textContent=z;zoneSel.appendChild(o);});
