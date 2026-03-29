@@ -505,12 +505,12 @@ let fbReady=false,newReportCount=0;
 let reportsData={},flagsData={},stationNotesData={};
 let meteoData=null,meteoLoading=false,meteoError="",meteoLastFetch=0;
 const DAE_POINTS=[
-  {name:"DAE Palazzo del Mare",lat:42.66946,lng:14.02375},
-  {name:"DAE Lido La Paranzella",lat:42.67685,lng:14.01753},
-  {name:"DAE Pineta della Stazione",lat:42.67823,lng:14.01595},
-  {name:"DAE Lido Azzurra",lat:42.68292,lng:14.01305},
-  {name:"DAE Lido Aragosta",lat:42.68732,lng:14.00986},
-  {name:"DAE Camping Nino",lat:42.72520,lng:13.98673},
+  {name:"DAE Palazzo del Mare",lat:42.66946,lng:14.02375,avail:"\uD83D\uDFE2 Disponibile sempre — area pubblica"},
+  {name:"DAE Lido La Paranzella",lat:42.67685,lng:14.01753,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
+  {name:"DAE Pineta della Stazione",lat:42.67823,lng:14.01595,avail:"\uD83D\uDFE2 Disponibile sempre — area pubblica"},
+  {name:"DAE Lido Azzurra",lat:42.68292,lng:14.01305,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
+  {name:"DAE Lido Aragosta",lat:42.68732,lng:14.00986,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
+  {name:"DAE Camping Nino",lat:42.72520,lng:13.98673,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
 ];
 const DAE_B64="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";
 var daeMarkers=[];
@@ -1126,7 +1126,7 @@ function addDAEMarkers(){
       '<div style="font-family:sans-serif;min-width:180px">'+
       '<div style="font-size:13px;font-weight:700;color:#1a6b1a;margin-bottom:6px">'+
       '❤️‍🩹 '+d.name+'</div>'+
-      '<div style="font-size:12px;color:#333;margin-bottom:8px">Defibrillatore DAE disponibile</div>'+
+      '<div style="font-size:12px;color:#333;margin-bottom:4px">Defibrillatore DAE disponibile</div>'+(d.avail?'<div style="font-size:11px;font-weight:600;color:#333;margin-bottom:8px">'+d.avail+'</div>':'<div style="margin-bottom:8px"></div>')+
       '<a href="https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lng+'&travelmode=walking"'+
       ' target="_blank" style="display:block;text-align:center;background:#1a6b1a;color:#fff;text-decoration:none;'+
       'padding:7px 10px;border-radius:7px;font-size:12px;font-weight:700">🧭 Indicazioni</a>'+
