@@ -484,7 +484,12 @@ function _refreshNotePanel(){
   });
 }
 
-let currentScreen="home",currentRole=null;
+let currentScreen="home";
+var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
+let currentRole=_savedAuth?"operator":null;
+if(_savedAuth){if(window._requestNotifPermission)setTimeout(function(){try{_requestNotifPermission();}catch(e){}},500);}
+// Se già autenticato, vai direttamente alla dashboard
+if(currentRole==="operator"){render("dashboard");return;}
 
 window.onpopstate=function(event){
   suppressHistory=true;
@@ -964,7 +969,7 @@ function renderHeader(){
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
     op.textContent="\uD83D\uDD13";op.title="Esci";
-    op.addEventListener("click",()=>{currentRole=null;newReportCount=0;render("home");});
+    op.addEventListener("click",()=>{currentRole=null;newReportCount=0;try{localStorage.removeItem("omnia_op_auth");}catch(e){}render("home");});
   }else{
     op.textContent="\uD83D\uDD10";op.title="Area Operatori";
     op.addEventListener("click",()=>render("login"));
@@ -1719,7 +1724,9 @@ function renderLogin(page){
   const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent="PIN non corretto";page.appendChild(err);
   function go(){
     if(inp.value===PIN){
-      currentRole="operator";newReportCount=0;if(window._requestNotifPermission)_requestNotifPermission();
+      currentRole="operator";newReportCount=0;
+      try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
+      if(window._requestNotifPermission)_requestNotifPermission();
       if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
       render("dashboard");
     }else{err.style.display="block";}
@@ -1897,7 +1904,7 @@ function renderDone(page){
   const wn=document.createElement("p");wn.style.cssText="font-size:12px;color:var(--success-text);margin-bottom:20px";wn.textContent="\uD83D\uDCAC Notifica WhatsApp inviata";w.appendChild(wn);
   const b1=document.createElement("button");b1.className="btn-primary";b1.textContent="Nuova segnalazione";b1.addEventListener("click",()=>render("submit"));w.appendChild(b1);
   const b2=document.createElement("button");b2.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:10px;width:100%;cursor:pointer";
-  b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{currentRole=null;render("home");});w.appendChild(b2);page.appendChild(w);
+  b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{render("home");});w.appendChild(b2);page.appendChild(w);
 }
 
 // DASHBOARD
