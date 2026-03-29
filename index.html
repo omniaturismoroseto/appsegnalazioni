@@ -367,6 +367,7 @@ const firebaseConfig={
 const db=firebase.database();
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
+const stationNotesRef=db.ref("stationNotes");
 
 const PHONE="+393284769641";
 const WA_NOTIFY="393284769641";
@@ -426,7 +427,7 @@ let activeFilter="aperte",activeStation=null,activeDashTab="segnalazioni";
 let mapObj=null,mapMarkers=[],userMarker=null,locamareMarker=null;
 let nearestStation=null,nearestDist=null;
 let fbReady=false,newReportCount=0;
-let reportsData={},flagsData={};
+let reportsData={},flagsData={},stationNotesData={};
 let meteoData=null,meteoLoading=false,meteoError="",meteoLastFetch=0;
 const DAE_POINTS=[
   {name:"DAE Palazzo del Mare",lat:42.66946,lng:14.02375},
@@ -732,6 +733,13 @@ reportsRef.on("value",snap=>{
   if(currentScreen==="home")renderPage();
   renderHeader();
 });
+stationNotesRef.on("value",function(snap){
+  stationNotesData=snap.val()||{};
+  refreshMarkers();
+  if(currentScreen==="home")renderPage();
+  if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
+});
+
 flagsRef.on("value",snap=>{
   const fsnap=snap.val()||{};
   flagsData={};
@@ -951,6 +959,7 @@ function getMarkerColor(s){
   const zr=open.filter(r=>r.zone===zl);
   if(zr.some(r=>r.type==="emergenza"))return{bg:ALERT_COLORS.emergenza,ring:true};
   if(zr.some(r=>r.type==="pericolo"))return{bg:ALERT_COLORS.pericolo,ring:true};
+  if(stationNotesData[s.num])return{bg:"#1a1a1a",ring:true,note:stationNotesData[s.num]};
   return{bg:FLAG_COLORS[flagsData[s.num]||"verde"],ring:false,flag:flagsData[s.num]||"verde"};
 }
 function refreshMarkers(){
@@ -988,11 +997,17 @@ function refreshMarkers(){
         var flagStr="<br><span style=\"font-size:12px\">Bandiera <span style=\"font-weight:700;color:"+flagCol+"\">"+flagName.toUpperCase()+"</span></span>";
         // Alert aperti
         var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
+        var noteStr="";
+        if(stationNotesData[station.num]){
+          noteStr='<div style="margin:6px 0;padding:7px 10px;background:#1a1a1a;border-radius:6px;color:white;font-size:12px;line-height:1.4">'
+            +'<span style="font-weight:700;display:block;margin-bottom:2px">\u26a0\ufe0f Nota operatore</span>'
+            +String(stationNotesData[station.num]).replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</div>";
+        }
         var popup=L.popup({maxWidth:220,keepInView:true,autoPanPadding:[20,20]})
           .setContent(
             "<div style=\"font-family:sans-serif;padding:2px\">"
             +"<b style=\"font-size:14px\">P."+station.num+" \u2013 "+station.name+"</b>"
-            +distStr+flagStr+alertStr
+            +noteStr+distStr+flagStr+alertStr
             +"<br><button onclick=\"window._segnalaPostazione('"+zoneLabel+"')\" "
             +"style=\"margin-top:8px;width:100%;padding:7px;background:#D62B1F;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer\">"
             +"\uD83D\uDEA8 Segnala qui</button>"
@@ -1010,7 +1025,7 @@ function renderMapLegend(){
     `<span><span class="ldot" style="background:#27ae60"></span>Verde</span>`+
     `<span><span class="ldot" style="background:#F5C800"></span>Gialla</span>`+
     `<span><span class="ldot" style="background:#e74c3c"></span>Rossa</span>`+
-    `<span style="border-left:1px solid var(--border);padding-left:11px"><span class="ldot" style="background:#D81B8C"></span>Emergenza</span>`+
+    `<span style="border-left:1px solid var(--border);padding-left:11px"><span class="ldot" style="background:#1a1a1a"></span>Nota pericolo</span>`+`<span><span class="ldot" style="background:#D81B8C"></span>Emergenza</span>`+
     `<span><span class="ldot" style="background:#1a1a1a"></span>Pericolo</span>`+
     `<span style="margin-left:auto;color:var(--text3);font-size:10px">\u25cf sei tu</span>`;
 }
@@ -1829,12 +1844,13 @@ function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"]].forEach(([k,l])=>{
+  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"]].forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(activeDashTab===k?" active":"");btn.textContent=l;
     btn.addEventListener("click",()=>{activeDashTab=k;renderPage();});tabBar.appendChild(btn);
   });
   page.appendChild(tabBar);
   if(activeDashTab==="bandiere"){renderBandiere(page);return;}
+  if(activeDashTab==="note"){renderNote(page);return;}
   if(activeStation){
     const bar=document.createElement("div");bar.className="zone-filter-bar";
     bar.innerHTML=`<span style="font-size:12px;flex:1;color:var(--text2)">Filtro: ${activeStation}</span>`;
@@ -1883,6 +1899,72 @@ function renderDashboard(page){
   });
   page.appendChild(list);
 }
+
+function renderNote(page){
+  var panel=document.createElement("div");panel.className="bandiere-panel";
+  var hdr=document.createElement("div");hdr.className="bandiere-header";
+  var title=document.createElement("h3");title.textContent="Note di pericolo postazioni";hdr.appendChild(title);
+  var sub=document.createElement("p");sub.style.cssText="font-size:11px;color:var(--text2);margin:2px 0 0";
+  sub.textContent="Aggiungi una nota: il marker diventa nero e la nota è visibile a tutti.";
+  hdr.appendChild(sub);panel.appendChild(hdr);
+  STATIONS.forEach(function(s){
+    var row=document.createElement("div");
+    row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
+    var hasNote=!!stationNotesData[s.num];
+    // Dot
+    var dot=document.createElement("div");
+    dot.style.cssText="width:12px;height:12px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.15);background:"+(hasNote?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"]);
+    row.appendChild(dot);
+    // Name
+    var nm=document.createElement("div");nm.style.cssText="flex:1;min-width:0";
+    nm.innerHTML='<span style="font-size:13px">'+s.name+'</span> <span style="font-size:11px;color:var(--text3)">P.'+s.num+'</span>';
+    if(hasNote){
+      var noteBadge=document.createElement("div");
+      noteBadge.style.cssText="font-size:11px;color:#fff;background:#1a1a1a;border-radius:4px;padding:1px 6px;margin-top:2px;display:inline-block";
+      noteBadge.textContent=String(stationNotesData[s.num]).substring(0,40)+(stationNotesData[s.num].length>40?"...":"");
+      nm.appendChild(noteBadge);
+    }
+    row.appendChild(nm);
+    // Button
+    if(hasNote){
+      var delBtn=document.createElement("button");
+      delBtn.style.cssText="font-size:12px;padding:5px 10px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;flex-shrink:0";
+      delBtn.textContent="✕ Rimuovi";
+      delBtn.addEventListener("click",function(){
+        stationNotesRef.child(String(s.num)).remove();
+      });
+      row.appendChild(delBtn);
+    } else {
+      var addBtn=document.createElement("button");
+      addBtn.style.cssText="font-size:12px;padding:5px 10px;background:var(--bg2);border-color:var(--border2);flex-shrink:0;color:var(--text)";
+      addBtn.textContent="+ Nota";
+      addBtn.addEventListener("click",function(){
+        // Show inline input
+        row.innerHTML="";
+        var inp=document.createElement("textarea");
+        inp.placeholder="Scrivi la nota di pericolo per P."+s.num+"...";
+        inp.style.cssText="flex:1;min-height:54px;font-size:13px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);resize:none;font-family:inherit";
+        row.style.alignItems="flex-start";
+        row.appendChild(dot);
+        row.appendChild(inp);
+        var saveBtn=document.createElement("button");
+        saveBtn.style.cssText="padding:8px 12px;background:#1a1a1a;color:white;border-color:#1a1a1a;font-weight:700;font-size:12px;flex-shrink:0;align-self:flex-end";
+        saveBtn.textContent="Salva";
+        saveBtn.addEventListener("click",function(){
+          var txt=inp.value.trim();
+          if(!txt){alert("Scrivi una nota prima di salvare.");return;}
+          stationNotesRef.child(String(s.num)).set(txt);
+        });
+        row.appendChild(saveBtn);
+        setTimeout(function(){inp.focus();},50);
+      });
+      row.appendChild(addBtn);
+    }
+    panel.appendChild(row);
+  });
+  page.appendChild(panel);
+}
+
 
 // BANDIERE
 function renderBandiere(page){
