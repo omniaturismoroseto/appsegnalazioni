@@ -404,6 +404,20 @@ window.addEventListener("load",function(){
 });
 function startApp(){
   history.replaceState({screen:"home"}, "", "");
+// Sblocca AudioContext al primo tocco utente (richiesto da browser mobile)
+function _unlockAudio(){
+  if(_alertCtx){try{if(_alertCtx.state==="suspended")_alertCtx.resume();}catch(e){}return;}
+  try{
+    _alertCtx=new(window.AudioContext||window.webkitAudioContext)();
+    // Test tone silenzioso per sbloccare
+    var o=_alertCtx.createOscillator();var g=_alertCtx.createGain();
+    g.gain.value=0;o.connect(g);g.connect(_alertCtx.destination);
+    o.start();o.stop(_alertCtx.currentTime+0.001);
+  }catch(e){}
+}
+document.addEventListener("touchstart",_unlockAudio,{once:true,passive:true});
+document.addEventListener("click",_unlockAudio,{once:true,passive:true});
+
 // Debug: mostra subito che startApp è partito
 var dbg=document.getElementById("page");
 if(dbg)dbg.innerHTML='<p style="padding:10px;font-size:12px;color:#888">Avvio app...</p>';
@@ -918,7 +932,17 @@ function onNewReport(){
     var open=Object.values(reportsData).filter(function(r){return r.status==="aperta";});
     var last=open[0];
     var body=last?last.type.toUpperCase()+": "+last.sub+" \u2014 "+last.zone:"Nuova segnalazione ricevuta";
-    new Notification("\uD83D\uDEA8 Omnia \u2013 Nuova segnalazione",{body:body});
+    var notifOpts={body:body,icon:"logo.png",badge:"logo.png",vibrate:[300,100,300,100,300],tag:"omnia-segnalazione",renotify:true};
+    if("serviceWorker" in navigator){
+      navigator.serviceWorker.ready.then(function(reg){
+        // showNotification via SW funziona anche con app in background
+        return reg.showNotification("\uD83D\uDEA8 Omnia \u2013 Nuova segnalazione",notifOpts);
+      }).catch(function(){
+        if(Notification.permission==="granted")new Notification("\uD83D\uDEA8 Omnia \u2013 Nuova segnalazione",notifOpts);
+      });
+    } else if(Notification.permission==="granted"){
+      new Notification("\uD83D\uDEA8 Omnia \u2013 Nuova segnalazione",notifOpts);
+    }
   }
 }
 
@@ -981,6 +1005,7 @@ function findNearestDAE(lat,lng){
 }
 var nearestDAE=null,nearestDAEDist=null;
 var _gpsWatchId=null;
+var _refreshPending=false;
 
 function isServiceActive(){var h=new Date().getHours();return h>=9&&h<19;}
 function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
@@ -1002,6 +1027,7 @@ function playBeep(){
 function _playAlertTone(type){
   try{
     if(!_alertCtx)_alertCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(_alertCtx.state==="suspended")_alertCtx.resume();
     var freqs=type==="emergenza"?[880,1320,880,660]:[660,880,660];
     freqs.forEach(function(f,i){
       var o=_alertCtx.createOscillator(),g=_alertCtx.createGain();
@@ -1025,8 +1051,13 @@ function _startAlertSound(report){
   _stopAlertSound();
   _alertReportKey=report._key;
   var type=report.type;
-  _playAlertTone(type);
-  _alertInterval=setInterval(function(){_playAlertTone(type);},type==="emergenza"?4000:7000);
+  // Resume AudioContext se sospeso (mobile)
+  if(_alertCtx&&_alertCtx.state==="suspended")_alertCtx.resume().then(function(){_playAlertTone(type);});
+  else _playAlertTone(type);
+  _alertInterval=setInterval(function(){
+    if(_alertCtx&&_alertCtx.state==="suspended")_alertCtx.resume().then(function(){_playAlertTone(type);});
+    else _playAlertTone(type);
+  },type==="emergenza"?4000:7000);
   var banner=document.createElement("div");
   banner.className="alert-banner "+type;banner.id="_alertBanner";
   var icon=type==="emergenza"?"\uD83D\uDEA8":"\u26A0\uFE0F";
@@ -1192,6 +1223,10 @@ function initMap(){
   mapObj.whenReady(function(){
     [50,250,700].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});
   });
+  // Quando si chiude un popup, aggiorna i marker se era in coda
+  mapObj.on("popupclose",function(){
+    if(_refreshPending){setTimeout(function(){refreshMarkers();},50);}
+  });
   mapObj.on("load",function(){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},150);});
 }
 function getMarkerColor(s){
@@ -1206,7 +1241,11 @@ function getMarkerColor(s){
 }
 function refreshMarkers(){
   if(!mapObj)return;
-  mapMarkers.forEach(m=>{try{m.remove();}catch(e){}});
+  // Se un popup è aperto non distruggere i marker - aggiornali al momento della chiusura
+  var _anyOpen=mapMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}});
+  if(_anyOpen){_refreshPending=true;return;}
+  _refreshPending=false;
+  mapMarkers.forEach(function(m){try{m.remove();}catch(e){}});
   mapMarkers=[];
   const open=Object.values(reportsData).filter(r=>r.status==="aperta");
   STATIONS.forEach(s=>{
