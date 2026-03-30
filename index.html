@@ -248,6 +248,39 @@ label:first-child{margin-top:0}
   text-align:center;
 }
 .forecast-credit a{color:var(--info-text);font-weight:700;text-decoration:none}
+.consigli-home-btn{
+  display:block;width:100%;
+  padding:18px 16px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(135deg,#ffd06b 0%,#ffb830 45%,#f5922d 100%);
+  color:#fff;
+  box-shadow:0 8px 20px rgba(245,146,45,.28);
+  text-align:center;
+  margin-bottom:24px;
+  cursor:pointer;
+}
+.consigli-home-btn:hover{background:linear-gradient(135deg,#ffd06b 0%,#ffb830 45%,#f5922d 100%)}
+.consigli-home-btn h3{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  color:#fff !important;
+  margin:0 0 4px 0;
+  font-size:16px;font-weight:700;
+}
+.consigli-home-btn p{
+  color:rgba(255,255,255,.92) !important;
+  margin:0;
+  font-size:12px;text-align:center;
+}
+.consiglio-card{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px;
+  margin-bottom:12px;
+  border-left:4px solid #f5922d;
+}
+.consiglio-card h3{font-size:15px;font-weight:700;color:#f5922d;margin:0 0 6px}
+.consiglio-card p{font-size:13px;color:var(--text2);margin:0;line-height:1.6}
+.consiglio-card .consiglio-icon{font-size:28px;margin-bottom:8px;display:block}
 .note-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
 .note-modal{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 18px 32px;width:100%;max-width:520px;box-shadow:0 -4px 24px rgba(0,0,0,.25)}
 .note-modal h3{font-size:16px;font-weight:700;margin-bottom:4px}
@@ -1455,6 +1488,7 @@ function renderPage(){
   else if(currentScreen==="submit")renderSubmit(page);
   else if(currentScreen==="done")renderDone(page);
   else if(currentScreen==="forecast")renderForecastPage(page);
+  else if(currentScreen==="consigli")renderConsigliPage(page);
   else if(currentScreen==="dashboard"){if(currentRole!=="operator"){render("login");return;}renderDashboard(page);}
 }
 
@@ -1604,6 +1638,12 @@ function renderHome(page){
   forecastBtn.innerHTML=`<h3><span class="meteo-home-icons">🌊 ☀️ 🌧️</span>Previsioni Meteo</h3><p>Meteo mare e condizioni operative</p>`;
   forecastBtn.onclick=function(){render("forecast");};
   page.appendChild(forecastBtn);
+
+  const consigliBtn=document.createElement("button");
+  consigliBtn.className="home-btn consigli-home-btn";
+  consigliBtn.innerHTML=`<h3>😎 I Consigli del Bagnino</h3><p>Sicurezza in acqua e in spiaggia</p>`;
+  consigliBtn.onclick=function(){render("consigli");};
+  page.appendChild(consigliBtn);
 
 
   // segui omnia
@@ -1842,6 +1882,41 @@ function renderForecastPage(page){
   credit.className="forecast-credit";
   credit.innerHTML='Dati previsionali: <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> · Mappe live: <a href="https://windy.com" target="_blank">Windy</a>';
   page.appendChild(credit);
+}
+
+function renderConsigliPage(page){
+  const back=document.createElement("button");back.className="back-btn";
+  back.textContent="\u2190 Torna alla home";back.onclick=function(){render("home");};page.appendChild(back);
+  const hdr=document.createElement("div");
+  hdr.style.cssText="border-radius:16px;padding:18px 16px;margin-bottom:18px;background:linear-gradient(135deg,#ffd06b 0%,#ffb830 45%,#f5922d 100%);text-align:center";
+  hdr.innerHTML='<div style="font-size:42px;margin-bottom:6px">😎</div>'
+    +'<h2 style="font-size:20px;font-weight:900;color:#fff;margin:0 0 4px">I Consigli del Bagnino</h2>'
+    +'<p style="font-size:12px;color:rgba(255,255,255,.9);margin:0">Sicurezza in acqua e in spiaggia</p>';
+  page.appendChild(hdr);
+  var consigli=[
+    {icon:"🌊",title:"Rispetta le bandiere",text:"Verde: puoi fare il bagno. Gialla: mare mosso, fai attenzione. Rossa: divieto di balneazione, non entrare in acqua. Le bandiere sono aggiornate in tempo reale dai nostri bagnini."},
+    {icon:"🏊",title:"Non nuotare mai da solo",text:"Entra in acqua sempre in presenza di altri o sotto la supervisione del bagnino. In caso di difficoltà, chiama subito aiuto alzando il braccio."},
+    {icon:"💨",title:"Attenzione al vento Garbino",text:"Il vento da ovest (Garbino) è insidioso: spinge silenziosamente verso il largo. Vietato l'uso di materassini, gonfiabili e ciambelle con vento Garbino."},
+    {icon:"🚫",title:"Niente materassini con vento forte",text:"Ciambelle, materassini e gonfiabili possono essere trascinati in mare aperto anche con vento moderato. Usali solo con mare calmo e vento assente."},
+    {icon:"☀️",title:"Proteggiti dal sole",text:"Usa protezione solare adeguata, reintegra i liquidi frequentemente e fai una pausa dal sole nelle ore più calde (12:00–15:00). La disidratazione aumenta il rischio di malore in acqua."},
+    {icon:"⏳",title:"Attendi 3 ore dopo i pasti",text:"Non entrare in acqua subito dopo aver mangiato. Attendi almeno 2-3 ore dopo un pasto completo per evitare congestione. Anche uno spuntino leggero richiede almeno 1 ora."},
+    {icon:"👶",title:"Bambini: sorveglianza costante",text:"I bambini devono essere sempre sorvegliati in acqua, anche in acque basse. Non distogliere mai l'attenzione, anche solo per pochi secondi."},
+    {icon:"🆘",title:"In caso di emergenza",text:"Se vedi qualcuno in difficoltà: chiama subito il bagnino o il 112. Non tuffarti per salvare qualcuno se non sei addestrato: potresti mettere a rischio anche te stesso."},
+    {icon:"🪼",title:"Meduse: cosa fare",text:"Se vieni punto da una medusa: esci dall'acqua, non strofinare la zona colpita, sciacqua con acqua di mare (non dolce), rimuovi i tentacoli con un oggetto rigido. Rivolgiti al bagnino per assistenza."},
+    {icon:"🔵",title:"Nuota in parallelo alla riva",text:"Se sei in difficoltà con una corrente, non nuotare contro di essa: nuota in parallela alla riva finché esci dalla corrente, poi rientra verso la spiaggia."},
+  ];
+  consigli.forEach(function(c){
+    var card=document.createElement("div");card.className="consiglio-card";
+    var icon=document.createElement("span");icon.className="consiglio-icon";icon.textContent=c.icon;
+    var title=document.createElement("h3");title.textContent=c.title;
+    var text=document.createElement("p");text.textContent=c.text;
+    card.appendChild(icon);card.appendChild(title);card.appendChild(text);
+    page.appendChild(card);
+  });
+  var footer=document.createElement("p");
+  footer.style.cssText="text-align:center;font-size:11px;color:var(--text3);margin:12px 0 24px";
+  footer.textContent="Omnia Adriatic Safety Lifeguard \u2014 Roseto degli Abruzzi";
+  page.appendChild(footer);
 }
 
 function renderLogin(page){
