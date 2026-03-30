@@ -465,8 +465,8 @@ function _openNoteModal(stationNum, stationName, existingNote){
     var txt=ta.value.trim();
     if(!txt){alert("Scrivi una nota prima di salvare.");return;}
     stationNotesData[String(stationNum)]=txt; // aggiorna locale immediatamente
-    stationNotesRef.set(stationNotesData); // scrivi TUTTO l'oggetto su Firebase
-    try{localStorage.setItem("fb_stationNotes",JSON.stringify(stationNotesData));}catch(e){}
+    stationNotesRef.child(String(stationNum)).set(txt); // scrivi SOLO questa nota
+    try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");_sn[String(stationNum)]=txt;localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
     overlay.remove();
     refreshMarkers();
     if(currentScreen==="home")renderPage();
@@ -859,11 +859,31 @@ stationNotesRef.on("value",function(snap){
   var raw=snap.val()||{};
   stationNotesData={};
   Object.keys(raw).forEach(function(k){stationNotesData[k]=raw[k];});
+  try{localStorage.setItem("fb_stationNotes",JSON.stringify(raw));}catch(e){}
   refreshMarkers();
   if(currentScreen==="home")renderPage();
   // Note tab: no auto-rerender to avoid losing keyboard/input
   if(currentScreen==="dashboard"&&activeDashTab==="note")_refreshNotePanel();
 });
+// Poll frequente dedicato alle note (ogni 2s) per sincronizzazione multi-dispositivo
+setInterval(function(){
+  _fbFetch("stationNotes").then(function(data){
+    if(!data)return;
+    var changed=false;
+    Object.keys(data).forEach(function(k){
+      if(stationNotesData[k]!==data[k]){stationNotesData[k]=data[k];changed=true;}
+    });
+    Object.keys(stationNotesData).forEach(function(k){
+      if(!(k in data)){delete stationNotesData[k];changed=true;}
+    });
+    if(changed){
+      try{localStorage.setItem("fb_stationNotes",JSON.stringify(stationNotesData));}catch(e){}
+      refreshMarkers();
+      if(currentScreen==="home")renderPage();
+      if(currentScreen==="dashboard"&&activeDashTab==="note")_refreshNotePanel();
+    }
+  }).catch(function(){});
+},2000);
 
 flagsRef.on("value",snap=>{
   const fsnap=snap.val()||{};
@@ -2171,8 +2191,8 @@ function renderNote(page){
       delBtn.addEventListener("click",function(){
         if(confirm("Rimuovere la nota per P."+sNum+"?")){
           delete stationNotesData[String(sNum)]; // aggiorna locale immediatamente
-          stationNotesRef.set(stationNotesData); // scrivi TUTTO l'oggetto su Firebase
-          try{localStorage.setItem("fb_stationNotes",JSON.stringify(stationNotesData));}catch(e){}
+          stationNotesRef.child(String(sNum)).remove(); // rimuovi SOLO questa nota
+          try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");delete _sn[String(sNum)];localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
           refreshMarkers();
           if(currentScreen==="home")renderPage();
           if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
