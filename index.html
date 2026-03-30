@@ -2702,7 +2702,7 @@ window._requestNotifPermission=function(){
 };
 setTimeout(function(){
   try{
-    if(currentRole === "operator"){
+    if (typeof currentRole !== "undefined" && currentRole === "operator"){
       enableOperatorPush();
     }
   }catch(e){
