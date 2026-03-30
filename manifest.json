@@ -10,17 +10,17 @@
   "theme_color": "#D62B1F",
   "icons": [
     {
-      "src": "/appsegnalazioni/icon-192.png",
+      "src": "/appsegnalazioni/icon-192-fixed.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/appsegnalazioni/icon-512.png",
+      "src": "/appsegnalazioni/icon-512-fixed.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/appsegnalazioni/icon-maskable.png",
+      "src": "/appsegnalazioni/icon-maskable-fixed.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
