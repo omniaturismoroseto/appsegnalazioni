@@ -644,6 +644,7 @@ let currentScreen="home";
 var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
 let currentRole=_savedAuth?"operator":null;
 if(_savedAuth){if(window._requestNotifPermission)setTimeout(function(){try{_requestNotifPermission();}catch(e){}},500);}
+if(_savedAuth){setTimeout(function(){enableOperatorPush().catch(console.error);},1200);}
 // Se già autenticato, rimanda alla dashboard dopo init variabili
 if(currentRole==="operator"){setTimeout(function(){render("dashboard");},0);}
 
@@ -2700,17 +2701,7 @@ window._requestNotifPermission=function(){
     });
   }
 };
-setTimeout(function(){
-  try{
-    console.log("CHECK ROLE:", typeof currentRole, currentRole);
 
-    // prova ad attivare comunque
-    enableOperatorPush();
-
-  }catch(e){
-    console.log("Push init error", e);
-  }
-}, 2000);
 </script>
 
   <div style="padding:18px 16px 28px;text-align:center;border-top:1px solid #e0e0e0;background:#fafafa">
