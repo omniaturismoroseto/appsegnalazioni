@@ -320,7 +320,7 @@ var firebase={
           }
           poll();
           setTimeout(poll,1500); // secondo tentativo rapido
-          setInterval(poll,5000);
+          setInterval(poll,2000);
         },
         push:function(data){
           var lsKey=this._path;
@@ -865,25 +865,6 @@ stationNotesRef.on("value",function(snap){
   // Note tab: no auto-rerender to avoid losing keyboard/input
   if(currentScreen==="dashboard"&&activeDashTab==="note")_refreshNotePanel();
 });
-// Poll frequente dedicato alle note (ogni 2s) per sincronizzazione multi-dispositivo
-setInterval(function(){
-  _fbFetch("stationNotes").then(function(data){
-    if(!data)return;
-    var changed=false;
-    Object.keys(data).forEach(function(k){
-      if(stationNotesData[k]!==data[k]){stationNotesData[k]=data[k];changed=true;}
-    });
-    Object.keys(stationNotesData).forEach(function(k){
-      if(!(k in data)){delete stationNotesData[k];changed=true;}
-    });
-    if(changed){
-      try{localStorage.setItem("fb_stationNotes",JSON.stringify(stationNotesData));}catch(e){}
-      refreshMarkers();
-      if(currentScreen==="home")renderPage();
-      if(currentScreen==="dashboard"&&activeDashTab==="note")_refreshNotePanel();
-    }
-  }).catch(function(){});
-},2000);
 
 flagsRef.on("value",snap=>{
   const fsnap=snap.val()||{};
@@ -1073,7 +1054,7 @@ function requestGPS(){
       nearestStation=null;
       if(currentScreen==="home"||currentScreen==="forecast")renderPage();
     },
-    {enableHighAccuracy:true,timeout:15000,maximumAge:5000}
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
 
