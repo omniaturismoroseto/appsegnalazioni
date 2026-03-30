@@ -316,6 +316,8 @@ label:first-child{margin-top:0}
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
 <script>
 // Meteomare integrato con Open-Meteo Marine API e Forecast API
 
@@ -435,10 +437,71 @@ const firebaseConfig={
   messagingSenderId:"699028105579",
   appId:"1:699028105579:web:cdc0a432083b7fe18d442e"
 };
+const FCM_VAPID_KEY = "BHJrW95NpOuHuRHcx9uLFrAxOfL6mhhM8JsuYycCFfY0Y9F8LB9skDgKfZ2nYzSjxs_qsgVziMe9zADuH0kvB_E";
 // Firebase REST - no initializeApp needed
 const db=firebase.database();
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
+let _fcmApp = null;
+let _fcmMessaging = null;
+let _fcmToken = null;
+
+function _safeTokenKey(token){
+  return btoa(token).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+}
+
+async function enableOperatorPush(){
+  if (!("serviceWorker" in navigator) || !("Notification" in window)) {
+    console.log("Push non supportate");
+    return;
+  }
+
+  if (!_fcmApp){
+    _fcmApp = firebase.initializeApp(firebaseConfig, "fcmApp");
+  }
+
+  if (!_fcmMessaging){
+    _fcmMessaging = firebase.messaging(_fcmApp);
+  }
+
+  let permission = Notification.permission;
+  if (permission !== "granted"){
+    permission = await Notification.requestPermission();
+  }
+
+  if (permission !== "granted"){
+    console.log("Permesso negato");
+    return;
+  }
+
+  const registration = await navigator.serviceWorker.register(
+    "/appsegnalazioni/firebase-messaging-sw.js",
+    { scope: "/appsegnalazioni/" }
+  );
+
+  const token = await _fcmMessaging.getToken({
+    vapidKey: FCM_VAPID_KEY,
+    serviceWorkerRegistration: registration
+  });
+
+  if (!token){
+    console.log("Token non ottenuto");
+    return;
+  }
+
+  _fcmToken = token;
+
+  const tokenKey = _safeTokenKey(token);
+
+  await _fbFetch("operatorTokens/" + tokenKey, "PUT", {
+    token: token,
+    enabled: true,
+    role: "operator",
+    lastSeen: Date.now()
+  });
+
+  console.log("✅ PUSH ATTIVO");
+}
 const stationNotesRef=db.ref("stationNotes");
 
 const PHONE="+393284769641";
@@ -2637,6 +2700,15 @@ window._requestNotifPermission=function(){
     });
   }
 };
+setTimeout(function(){
+  try{
+    if(currentRole === "operator"){
+      enableOperatorPush();
+    }
+  }catch(e){
+    console.log("Push init error", e);
+  }
+}, 1500);
 </script>
 
   <div style="padding:18px 16px 28px;text-align:center;border-top:1px solid #e0e0e0;background:#fafafa">
