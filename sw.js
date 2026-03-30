@@ -1,5 +1,5 @@
 // Omnia Adriatic Lifeguard Service - Service Worker
-const CACHE_NAME = 'omnia-v3';
+const CACHE_NAME = 'omnia-v4';
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
@@ -15,8 +15,8 @@ self.addEventListener('push', function(e) {
   var title = data.title || '🚨 Omnia – Nuova segnalazione';
   var options = {
     body: data.body || 'Nuova segnalazione ricevuta',
-    icon: 'icon.png',
-    badge: 'icon.png',
+    icon: '/appsegnalazioni/icon-192-fixed.png',
+    badge: '/appsegnalazioni/icon-192-fixed.png',
     vibrate: [300, 100, 300, 100, 300],
     tag: 'omnia-segnalazione',
     renotify: true,
