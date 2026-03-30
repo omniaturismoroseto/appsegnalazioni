@@ -2173,5 +2173,63 @@ window._requestNotifPermission=function(){
 
 
 
+
+<script>
+(function(){
+  function escapeHtml(s){
+    return String(s)
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;");
+  }
+
+  function patchMarkerPopups(){
+    try{
+      if(!window.mapMarkers || !window.mapMarkers.length) return;
+      window.mapMarkers.forEach(function(m){
+        if(!m || !m.stationData || !m.getPopup || !m.getPopup()) return;
+        var station = m.stationData;
+        var noteMap = window.stationNotesData || {};
+        var note = noteMap[String(station.num)] || "";
+        var popup = m.getPopup();
+        var content = String(popup.getContent() || "");
+        if(!note){
+          return;
+        }
+        if(content.indexOf("Nota postazione:") !== -1){
+          return;
+        }
+        var noteHtml = '<div style="margin-top:8px;padding:8px 10px;background:#111;color:#fff;border-radius:8px;font-size:12px;line-height:1.4"><b>⚠️ Nota postazione:</b><br>'+escapeHtml(note)+'</div>';
+        if(content.indexOf("<button") !== -1){
+          content = content.replace("<button", noteHtml + "<button");
+        } else {
+          content += noteHtml;
+        }
+        popup.setContent(content);
+      });
+    }catch(e){}
+  }
+
+  function wrapRefreshMarkers(){
+    if(!window.refreshMarkers || window._refreshMarkersPatched) return;
+    var oldRefresh = window.refreshMarkers;
+    window.refreshMarkers = function(){
+      var result = oldRefresh.apply(this, arguments);
+      setTimeout(patchMarkerPopups, 50);
+      return result;
+    };
+    window._refreshMarkersPatched = true;
+  }
+
+  function startPatchLoop(){
+    wrapRefreshMarkers();
+    patchMarkerPopups();
+    setTimeout(startPatchLoop, 1500);
+  }
+
+  startPatchLoop();
+})();
+</script>
+
 </body>
 </html>
