@@ -1040,7 +1040,7 @@ function _startAlertSound(report){
 
 function _checkForActiveAlerts(){
   if(currentRole!=="operator")return;
-  var open=Object.values(reportsData).filter(function(r){return r.status==="aperta";});
+  var open=getReports().filter(function(r){return r.status==="aperta";});
   var urgent=open.filter(function(r){return r.type==="emergenza"||r.type==="pericolo";});
   if(urgent.length===0){_stopAlertSound();return;}
   var top=urgent.find(function(r){return r.type==="emergenza";})||urgent[0];
@@ -1048,7 +1048,7 @@ function _checkForActiveAlerts(){
 }
 function sendWANotify(r){
   const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO"};
-  const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Segnalazioni`;
+  const photoNote=r.photo?"\n\uD83D\uDCF7 Foto allegata (visualizza in dashboard)":"";const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}${photoNote}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Lifeguard Service`;
   window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
 }
 
@@ -2225,7 +2225,7 @@ function renderSubmit(page){
   const notesEl=document.createElement("textarea");notesEl.placeholder="Aggiungi dettagli (opzionale)...";notesEl.rows=3;
   notesEl.addEventListener("input",()=>notes=notesEl.value);wrap.appendChild(notesEl);
   const lbF=document.createElement("label");lbF.textContent="Foto (opzionale)";wrap.appendChild(lbF);
-  const fileInp=document.createElement("input");fileInp.type="file";fileInp.accept="image/*";fileInp.setAttribute("capture","environment");
+  const fileInp=document.createElement("input");fileInp.type="file";fileInp.accept="image/*";// capture removed - user can choose camera or gallery
   fileInp.style.cssText="font-size:12px;color:var(--text2);width:100%";
   const photoWrap=document.createElement("div");
   fileInp.addEventListener("change",()=>{
@@ -2375,7 +2375,7 @@ function renderDashboard(page){
     if(r.role==="public"){const t=document.createElement("span");t.className="tag-public";t.textContent="pubblico";hr.appendChild(t);}
     body.appendChild(hr);
     const nt=document.createElement("p");nt.style.cssText="font-size:13px;line-height:1.5;margin-bottom:4px";nt.textContent=r.notes;body.appendChild(nt);
-    if(r.photo){const img=document.createElement("img");img.src=r.photo;img.style.cssText="margin:4px 0;max-width:100%;height:90px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block";body.appendChild(img);}
+    if(r.photo){const imgWrap=document.createElement("div");imgWrap.style.cssText="position:relative;display:inline-block;margin:4px 0";const img=document.createElement("img");img.src=r.photo;img.style.cssText="max-width:100%;height:90px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block";const dlBtn=document.createElement("a");dlBtn.href=r.photo;dlBtn.download="segnalazione_"+r.id+".jpg";dlBtn.style.cssText="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.65);color:white;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none";dlBtn.textContent="\u2B07\uFE0F";imgWrap.appendChild(img);imgWrap.appendChild(dlBtn);body.appendChild(imgWrap);}
     const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}${r.phone?" \u00b7 \uD83D\uDCDE "+r.phone:""}`;body.appendChild(mt);
     top.appendChild(body);
     const acts=document.createElement("div");acts.className="report-actions";
