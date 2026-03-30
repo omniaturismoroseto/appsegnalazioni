@@ -29,7 +29,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   --verde:#27ae60;--gialla:#F5C800;--rossa:#e74c3c;
 }
 input,select,textarea,button{font-family:inherit;font-size:14px;outline:none}
-.leaflet-control-attribution{display:none!important}
 input[type=text],input[type=password],select{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);display:block}
 input:focus,select:focus,textarea:focus{border-color:var(--navy)}
 textarea{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);resize:vertical;background:var(--bg);color:var(--text);line-height:1.5}
@@ -56,10 +55,7 @@ label:first-child{margin-top:0}
 .hbtn-op:hover{background:rgba(255,255,255,.3)}
 .notif-badge{position:absolute;top:-4px;right:-4px;background:#F5C800;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--red)}
 .hbtn-wrap{position:relative}
-#main-map{height:38vh;min-height:260px;max-height:420px;width:100%;display:block;z-index:1;background:#e8e8e8}
-@media(min-width:600px){#main-map{height:50vh;max-height:600px}}
-@media(min-width:900px){#main-map{height:60vh;max-height:800px}}
-@media(min-width:1200px){#main-map{height:65vh;max-height:900px}}
+#main-map{height:420px;width:100%;display:block;z-index:1;background:#e8e8e8}
 .leaflet-popup-content-wrapper{border-radius:12px!important;box-shadow:0 4px 20px rgba(0,0,0,.3)!important;max-height:240px!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}.leaflet-popup-content{margin:0!important;padding:12px 14px!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;max-height:180px!important;flex:1!important}.leaflet-popup-content::-webkit-scrollbar{width:3px}.leaflet-popup-content::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2);border-radius:2px}.leaflet-popup-close-button{font-size:22px!important;padding:6px 10px!important;top:2px!important;right:2px!important;z-index:1!important}.map-legend{display:flex;gap:11px;flex-wrap:wrap;padding:6px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);align-items:center}
 .ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;margin-right:3px;vertical-align:middle}
 #content{padding:16px}.page-inner{max-width:660px;margin:0 auto}
@@ -70,7 +66,7 @@ label:first-child{margin-top:0}
 .nearest-info span{font-size:12px;color:var(--text2)}
 .nearest-btn{font-size:12px;padding:5px 11px;color:var(--info-text);background:white;border-color:var(--info-border);white-space:nowrap;flex-shrink:0}
 .home-btns{display:grid;gap:10px;margin-bottom:18px}
-.home-btn{padding:16px;border-radius:var(--radius-lg);border:2px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;width:100%;transition:border-color .15s}
+.home-btn{padding:16px;border-radius:var(--radius-lg);border:2px solid var(--border);background:var(--bg);cursor:pointer;text-align:left;width:100%;transition:border-color .15s}
 .home-btn:hover{background:var(--bg)}.home-btn.primary{border-color:var(--red)}
 .home-btn h3{font-size:15px;font-weight:600;margin-bottom:3px}.home-btn.primary h3{color:var(--red)}
 .home-btn p{font-size:12px;color:var(--text2);margin:0}
@@ -181,20 +177,20 @@ label:first-child{margin-top:0}
   background:linear-gradient(135deg,#67d6ff 0%,#36b8f5 45%,#1697e6 100%);
   color:#fff;
   box-shadow:0 8px 20px rgba(22,151,230,.28);
-  text-align:center;
+  text-align:left;
   margin-top:10px;
   margin-bottom:24px;
 }
 .meteo-home-btn:hover{background:linear-gradient(135deg,#67d6ff 0%,#36b8f5 45%,#1697e6 100%)}
 .meteo-home-btn h3{
-  display:flex;align-items:center;justify-content:center;gap:10px;
+  display:flex;align-items:center;gap:10px;
   color:#fff !important;
   margin:0 0 4px 0;
   font-size:16px;font-weight:700;
 }
 .meteo-home-btn p{
   color:rgba(255,255,255,.92) !important;
-  margin:0;text-align:center;
+  margin:0;
   font-size:12px;
 }
 .meteo-home-icons{
@@ -248,25 +244,13 @@ label:first-child{margin-top:0}
   text-align:center;
 }
 .forecast-credit a{color:var(--info-text);font-weight:700;text-decoration:none}
-.note-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center}
-.note-modal{background:var(--bg);border-radius:16px 16px 0 0;padding:20px 18px 32px;width:100%;max-width:520px;box-shadow:0 -4px 24px rgba(0,0,0,.25)}
-.note-modal h3{font-size:16px;font-weight:700;margin-bottom:4px}
-.note-modal p{font-size:12px;color:var(--text2);margin-bottom:14px}
-.note-modal textarea{width:100%;min-height:80px;font-size:14px;padding:10px 12px;border:1.5px solid var(--border2);border-radius:var(--radius);resize:none;font-family:inherit;display:block;margin-bottom:12px}
-.note-modal textarea:focus{border-color:#1a1a1a;outline:none}
-.note-modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ann-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}
-.ann-modal{background:#b91c1c;border-radius:16px;padding:28px 22px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.5)}
-.ann-modal h2{font-size:22px;font-weight:900;color:white;line-height:1.3;margin-bottom:20px;letter-spacing:.01em}
-.ann-modal .ann-call{display:block;width:100%;padding:14px;background:white;color:#b91c1c;font-size:17px;font-weight:900;border:none;border-radius:10px;cursor:pointer;text-decoration:none;margin-bottom:10px}
-.ann-modal .ann-close{display:block;width:100%;padding:10px;background:transparent;color:rgba(255,255,255,.8);font-size:13px;border:1px solid rgba(255,255,255,.4);border-radius:8px;cursor:pointer}
 
 </style>
 </head>
 <body>
 <div id="app">
   <div class="header" id="hdr"></div>
-  <div id="main-map" style="width:100%;background:#cde;position:relative;z-index:1;"></div>
+  <div id="main-map" style="height:420px;width:100%;background:#cde;position:relative;z-index:1;"></div>
   <div class="map-legend" id="map-legend" style="display:none"></div>
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
@@ -311,7 +295,6 @@ var firebase={
               .catch(function(){/* silenzioso - usa localStorage */});
           }
           poll();
-          setTimeout(poll,1500); // secondo tentativo rapido
           setInterval(poll,5000);
         },
         push:function(data){
@@ -380,12 +363,11 @@ const firebaseConfig={
 const db=firebase.database();
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
-const stationNotesRef=db.ref("stationNotes");
 
 const PHONE="+393284769641";
 const WA_NOTIFY="393284769641";
 const WA_CHANNEL="https://whatsapp.com/channel/0029VbCewQeCMY0PyZ6v5P3z";
-const PIN="151569";
+const PIN="1234";
 const RED="#D62B1F",NAVY="#1A3B8C";
 const FLAG_COLORS={verde:"#27ae60",gialla:"#F5C800",rossa:"#e74c3c"};
 const ALERT_COLORS={emergenza:"#D81B8C",pericolo:"#1a1a1a"};
@@ -422,108 +404,13 @@ const STATIONS=[
 const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
 ZONES.push("Spiaggia libera / Area non concessionata");
 const TYPES={
-  emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio","Malore in spiaggia"]},
+  emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio grave","Bandiera rossa / divieto bagno"]},
   pericolo: {label:"Pericolo", sub:["Vento Garbino","Correnti pericolose","Mare molto mosso","Meduse","Oggetti pericolosi in acqua"]},
 
 };
 
 let suppressHistory=false;
-
-// Modal globale per inserimento note — non distrutto dal re-render
-function _openNoteModal(stationNum, stationName, existingNote){
-  var existing=document.getElementById("_noteModal");
-  if(existing)existing.remove();
-  var overlay=document.createElement("div");
-  overlay.className="note-modal-overlay";
-  overlay.id="_noteModal";
-  var modal=document.createElement("div");
-  modal.className="note-modal";
-  modal.innerHTML='<h3>\u26a0\ufe0f Nota pericolo &mdash; P.'+stationNum+'</h3>'
-    +'<p>'+stationName+'</p>';
-  var ta=document.createElement("textarea");
-  ta.placeholder="Es: Secca pericolosa, corrente laterale...";
-  ta.value=existingNote||"";
-  modal.appendChild(ta);
-  var btns=document.createElement("div");
-  btns.className="note-modal-btns";
-  var cancelBtn=document.createElement("button");
-  cancelBtn.textContent="Annulla";
-  cancelBtn.style.cssText="padding:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg2);font-size:14px;cursor:pointer";
-  cancelBtn.addEventListener("click",function(){overlay.remove();});
-  var saveBtn=document.createElement("button");
-  saveBtn.style.cssText="padding:12px;border-radius:var(--radius);border:none;background:#1a1a1a;color:white;font-size:14px;font-weight:700;cursor:pointer";
-  saveBtn.textContent="Salva nota";
-  saveBtn.addEventListener("click",function(){
-    var txt=ta.value.trim();
-    if(!txt){alert("Scrivi una nota prima di salvare.");return;}
-    stationNotesRef.child(String(stationNum)).set(txt);
-    stationNotesData[String(stationNum)]=txt; // aggiorna subito locale
-    try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");_sn[String(stationNum)]=txt;localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
-    overlay.remove();
-    refreshMarkers();
-    if(currentScreen==="home")renderPage();
-    if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
-  });
-  btns.appendChild(cancelBtn);
-  btns.appendChild(saveBtn);
-  modal.appendChild(btns);
-  overlay.appendChild(modal);
-  overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
-  document.body.appendChild(overlay);
-  setTimeout(function(){ta.focus();},80);
-}
-
-function _openAnnegamentoAlert(){
-  var existing=document.getElementById("_annModal");
-  if(existing)existing.remove();
-  var overlay=document.createElement("div");
-  overlay.className="ann-overlay";
-  overlay.id="_annModal";
-  var modal=document.createElement("div");
-  modal.className="ann-modal";
-  modal.innerHTML=
-    '<div style="font-size:48px;margin-bottom:12px">\uD83D\uDEA8</div>'
-    +'<h2>VAI SUBITO DAL BAGNINO PI\u00d9 VICINO!!!</h2>';
-  var callBtn=document.createElement("a");
-  callBtn.href="tel:+393284769641";
-  callBtn.className="ann-call";
-  callBtn.innerHTML="\uD83D\uDCDE CHIAMA OMNIA";
-  callBtn.addEventListener("click",function(){setTimeout(function(){overlay.remove();},300);});
-  var closeBtn=document.createElement("button");
-  closeBtn.className="ann-close";
-  closeBtn.textContent="Chiudi";
-  closeBtn.addEventListener("click",function(){overlay.remove();});
-  modal.appendChild(callBtn);
-  modal.appendChild(closeBtn);
-  overlay.appendChild(modal);
-  overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
-  document.body.appendChild(overlay);
-}
-
-function _refreshNotePanel(){
-  // Aggiorna solo i dot e badge senza toccare eventuali modal aperti
-  var panel=document.getElementById("_notePanelRows");
-  if(!panel)return;
-  STATIONS.forEach(function(s){
-    var dot=document.getElementById("_noteDot_"+s.num);
-    var badge=document.getElementById("_noteBadge_"+s.num);
-    var addBtn=document.getElementById("_noteAddBtn_"+s.num);
-    var delBtn=document.getElementById("_noteDelBtn_"+s.num);
-    var note=stationNotesData[String(s.num)];
-    if(dot)dot.style.background=note?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"];
-    if(badge){badge.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"";
-      badge.style.display=note?"inline-block":"none";}
-    if(addBtn)addBtn.style.display=note?"none":"inline-block";
-    if(delBtn)delBtn.style.display=note?"inline-block":"none";
-  });
-}
-
-let currentScreen="home";
-var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
-let currentRole=_savedAuth?"operator":null;
-if(_savedAuth){if(window._requestNotifPermission)setTimeout(function(){try{_requestNotifPermission();}catch(e){}},500);}
-// Se già autenticato, rimanda alla dashboard dopo init variabili
-if(currentRole==="operator"){setTimeout(function(){render("dashboard");},0);}
+let currentScreen="home",currentRole=null;
 
 window.onpopstate=function(event){
   suppressHistory=true;
@@ -533,19 +420,18 @@ window.onpopstate=function(event){
 };
 let activeFilter="aperte",activeStation=null,activeDashTab="segnalazioni";
 let mapObj=null,mapMarkers=[],userMarker=null,locamareMarker=null;
+let gpsWatchId=null,lastNearestStationNum=null,lastGpsLat=null,lastGpsLng=null;
 let nearestStation=null,nearestDist=null;
 let fbReady=false,newReportCount=0;
-let reportsData={},flagsData={},stationNotesData={};
+let reportsData={},flagsData={};
 let meteoData=null,meteoLoading=false,meteoError="",meteoLastFetch=0;
 const DAE_POINTS=[
-  {name:"DAE Palazzo del Mare",lat:42.66946,lng:14.02375,avail:"\uD83D\uDFE2 Disponibile sempre — area pubblica"},
-  {name:"DAE Lido La Paranzella",lat:42.67685,lng:14.01753,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
-  {name:"DAE Pineta della Stazione",lat:42.67823,lng:14.01595,avail:"\uD83D\uDFE2 Disponibile sempre — area pubblica"},
-  {name:"DAE Lido Azzurra",lat:42.68292,lng:14.01305,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
-  {name:"DAE Lido Aragosta",lat:42.68732,lng:14.00986,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
-  {name:"DAE Camping Nino",lat:42.72520,lng:13.98673,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
-  {name:"DAE Piscina Comunale",lat:42.662819177556976,lng:14.024564011122939,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
-  {name:"DAE Marina Portorose",lat:42.65608600443248,lng:14.035242756582138,avail:"\uD83D\uDFE1 Disponibile durante gli orari di apertura della struttura"},
+  {name:"DAE Palazzo del Mare",lat:42.66946,lng:14.02375},
+  {name:"DAE Lido La Paranzella",lat:42.67685,lng:14.01753},
+  {name:"DAE Pineta della Stazione",lat:42.67823,lng:14.01595},
+  {name:"DAE Lido Azzurra",lat:42.68292,lng:14.01305},
+  {name:"DAE Lido Aragosta",lat:42.68732,lng:14.00986},
+  {name:"DAE Camping Nino",lat:42.72520,lng:13.98673},
 ];
 const DAE_B64="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";
 var daeMarkers=[];
@@ -843,16 +729,6 @@ reportsRef.on("value",snap=>{
   if(currentScreen==="home")renderPage();
   renderHeader();
 });
-stationNotesRef.on("value",function(snap){
-  var raw=snap.val()||{};
-  stationNotesData={};
-  Object.keys(raw).forEach(function(k){stationNotesData[k]=raw[k];});
-  refreshMarkers();
-  if(currentScreen==="home")renderPage();
-  // Note tab: no auto-rerender to avoid losing keyboard/input
-  if(currentScreen==="dashboard"&&activeDashTab==="note")_refreshNotePanel();
-});
-
 flagsRef.on("value",snap=>{
   const fsnap=snap.val()||{};
   flagsData={};
@@ -946,25 +822,48 @@ function sendWANotify(r){
 // GPS
 function requestGPS(){
   if(!navigator.geolocation)return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const{latitude:lat,longitude:lng}=pos.coords;
-    const{station,dist}=findNearest(lat,lng);
-    nearestStation=station;nearestDist=dist;
-    var daeResult=findNearestDAE(lat,lng);
-    nearestDAE=daeResult.dae;nearestDAEDist=daeResult.dist;
-    if(mapObj){
-      if(userMarker){try{userMarker.remove();}catch(e){}}
-      const icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
-      userMarker=L.marker([lat,lng],{icon}).addTo(mapObj).bindPopup('<b>Sei qui</b>');
-      const bounds=L.latLngBounds([[lat,lng],[station.lat,station.lng]]);
-      mapObj.fitBounds(bounds,{padding:[50,50],maxZoom:16});
+  if(gpsWatchId!==null)return;
+
+  function onPos(pos){
+    var lat=pos.coords.latitude,lng=pos.coords.longitude;
+    lastGpsLat=lat; lastGpsLng=lng;
+
+    var best=null,bestD=1e12;
+    STATIONS.forEach(function(s){
+      var d=distanceMeters(lat,lng,s.lat,s.lng);
+      if(d<bestD){bestD=d;best=s;}
+    });
+    nearestStation=best;
+    nearestDist=bestD;
+
+    if(!mapObj)return;
+
+    if(!userMarker){
+      userMarker=L.circleMarker([lat,lng],{
+        radius:8,color:"#2563eb",weight:3,fillColor:"#60a5fa",fillOpacity:0.95
+      }).addTo(mapObj).bindPopup("📍 La tua posizione");
+    }else{
+      userMarker.setLatLng([lat,lng]);
     }
-    if(currentScreen==="home"||currentScreen==="forecast")renderPage();
-  },function(e){
-    // GPS non disponibile - mostra strip cliccabile
-    nearestStation=null;
-    if(currentScreen==="home"||currentScreen==="forecast")renderPage();
-  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+
+    if(lastNearestStationNum!== (best?best.num:null)){
+      lastNearestStationNum = best?best.num:null;
+      refreshMarkers();
+      if(currentScreen==="home"){ renderPage(); }
+    }
+  }
+
+  function onErr(err){
+    console.warn("GPS error",err);
+  }
+
+  try{
+    gpsWatchId=navigator.geolocation.watchPosition(onPos,onErr,{
+      enableHighAccuracy:true,
+      maximumAge:5000,
+      timeout:10000
+    });
+  }catch(e){}
 }
 
 
@@ -1004,8 +903,8 @@ function renderHeader(){
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
-    op.textContent="\uD83D\uDD13";op.title="Dashboard operatori";
-    op.addEventListener("click",()=>{render("dashboard");});
+    op.textContent="\uD83D\uDD13";op.title="Esci";
+    op.addEventListener("click",()=>{currentRole=null;newReportCount=0;render("home");});
   }else{
     op.textContent="\uD83D\uDD10";op.title="Area Operatori";
     op.addEventListener("click",()=>render("login"));
@@ -1023,34 +922,15 @@ function initMap(){
   var el=document.getElementById("main-map");
   if(!el)return;
   if(mapObj){ensureLocamareMarker();refreshMarkers();mapObj.invalidateSize(true);return;}
-  el.style.width="100%";
+  el.style.height="280px";el.style.width="100%";
   mapObj=L.map(el,{zoomControl:true,preferCanvas:true,updateWhenIdle:true,tap:true}).setView([42.686,14.010],13);
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
-      attribution:"",
+      attribution:"Tiles © Esri",
       maxZoom:20,
       updateWhenIdle:true,
       keepBuffer:3
-    }
-  ).addTo(mapObj);
-  // Layer etichette strade e nomi vie
-  L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
-    {
-      attribution:"",
-      maxZoom:20,
-      opacity:1,
-      updateWhenIdle:true
-    }
-  ).addTo(mapObj);
-  L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-    {
-      attribution:"",
-      maxZoom:20,
-      opacity:1,
-      updateWhenIdle:true
     }
   ).addTo(mapObj);
   ensureLocamareMarker();
@@ -1070,11 +950,9 @@ function getMarkerColor(s){
   const open=Object.values(reportsData).filter(r=>r.status==="aperta");
   const zl=`P.${s.num} \u2013 ${s.name}`;
   const zr=open.filter(r=>r.zone===zl);
-  const flagColor=FLAG_COLORS[flagsData[s.num]||"verde"];
-  if(zr.some(r=>r.type==="emergenza"))return{bg:flagColor,ring:true,ringColor:ALERT_COLORS.emergenza};
-  if(zr.some(r=>r.type==="pericolo"))return{bg:flagColor,ring:true,ringColor:ALERT_COLORS.pericolo};
-  if(stationNotesData[String(s.num)])return{bg:flagColor,ring:true,ringColor:"#1a1a1a",note:stationNotesData[String(s.num)]};
-  return{bg:flagColor,ring:false,flag:flagsData[s.num]||"verde"};
+  if(zr.some(r=>r.type==="emergenza"))return{bg:ALERT_COLORS.emergenza,ring:true};
+  if(zr.some(r=>r.type==="pericolo"))return{bg:ALERT_COLORS.pericolo,ring:true};
+  return{bg:FLAG_COLORS[flagsData[s.num]||"verde"],ring:false,flag:flagsData[s.num]||"verde"};
 }
 function refreshMarkers(){
   if(!mapObj)return;
@@ -1086,7 +964,7 @@ function refreshMarkers(){
     const zr=open.filter(r=>r.zone===zl);
     const mc=getMarkerColor(s);
     const isNearest=nearestStation&&nearestStation.num===s.num;
-    const shadow=mc.ring?`box-shadow:0 0 0 3px ${mc.ringColor||mc.bg},0 0 0 5px white;`:`box-shadow:0 1px 4px rgba(0,0,0,.4);`;
+    const shadow=mc.ring?`box-shadow:0 0 0 3px ${mc.bg},0 0 0 5px white;`:`box-shadow:0 1px 4px rgba(0,0,0,.4);`;
     const nearRing=isNearest?`outline:3px solid #1d4ed8;outline-offset:2px;`:"";
     const icon=L.divIcon({className:"",
       html:`<div style="width:26px;height:26px;border-radius:50%;background:${mc.bg};border:2.5px solid white;color:white;font-size:8.5px;font-weight:700;line-height:21px;text-align:center;${shadow}${nearRing}">${s.num}</div>`,
@@ -1111,17 +989,11 @@ function refreshMarkers(){
         var flagStr="<br><span style=\"font-size:12px\">Bandiera <span style=\"font-weight:700;color:"+flagCol+"\">"+flagName.toUpperCase()+"</span></span>";
         // Alert aperti
         var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
-        var noteStr="";
-        if(stationNotesData[String(station.num)]){
-          noteStr='<div style="margin:6px 0;padding:7px 10px;background:#1a1a1a;border-radius:6px;color:white;font-size:12px;line-height:1.4">'
-            +'<span style="font-weight:700;display:block;margin-bottom:2px">\u26a0\ufe0f Nota operatore</span>'
-            +String(stationNotesData[String(station.num)]).replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</div>";
-        }
         var popup=L.popup({maxWidth:220,keepInView:true,autoPanPadding:[20,20]})
           .setContent(
             "<div style=\"font-family:sans-serif;padding:2px\">"
             +"<b style=\"font-size:14px\">P."+station.num+" \u2013 "+station.name+"</b>"
-            +noteStr+distStr+flagStr+alertStr
+            +distStr+flagStr+alertStr
             +"<br><button onclick=\"window._segnalaPostazione('"+zoneLabel+"')\" "
             +"style=\"margin-top:8px;width:100%;padding:7px;background:#D62B1F;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer\">"
             +"\uD83D\uDEA8 Segnala qui</button>"
@@ -1149,29 +1021,27 @@ function addDAEMarkers(){
   if(!mapObj)return;
   daeMarkers.forEach(function(m){try{m.remove();}catch(e){}});
   daeMarkers=[];
-  var daeIcon=L.divIcon({
+  const daeIcon=L.divIcon({
     className:"",
-    html:'<div style="width:22px;height:22px;border-radius:4px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.5);border:1.5px solid #fff;">'
-        +'<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
+    html:'<div style="width:22px;height:22px;border-radius:4px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.5);border:1.5px solid #fff;">'+
+         '<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
     iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-13]
   });
   DAE_POINTS.forEach(function(d){
     var m=L.marker([d.lat,d.lng],{icon:daeIcon}).addTo(mapObj);
-    var availHtml=d.avail?'<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px">'+d.avail+'</div>':'';
-    var popHtml=
-      '<div style="font-family:sans-serif;min-width:180px">'
-      +'<div style="font-size:13px;font-weight:700;color:#1a6b1a;margin-bottom:6px">'
-      +'\u2764\ufe0f\u200d\ud83e\ude79 '+d.name+'</div>'
-      +'<div style="font-size:12px;color:#333;margin-bottom:4px">Defibrillatore DAE disponibile</div>'
-      +availHtml
-      +'<a href="https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lng+'&travelmode=walking"'
-      +' target="_blank" style="display:block;text-align:center;background:#1a6b1a;color:#fff;text-decoration:none;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:700">\ud83e\uddad Indicazioni</a>'
-      +'</div>';
-    m.bindPopup(popHtml);
+    m.bindPopup(
+      '<div style="font-family:sans-serif;min-width:180px">'+
+      '<div style="font-size:13px;font-weight:700;color:#1a6b1a;margin-bottom:6px">'+
+      '❤️‍🩹 '+d.name+'</div>'+
+      '<div style="font-size:12px;color:#333;margin-bottom:8px">Defibrillatore DAE disponibile</div>'+
+      '<a href="https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lng+'&travelmode=walking"'+
+      ' target="_blank" style="display:block;text-align:center;background:#1a6b1a;color:#fff;text-decoration:none;'+
+      'padding:7px 10px;border-radius:7px;font-size:12px;font-weight:700">🧭 Indicazioni</a>'+
+      '</div>'
+    );
     daeMarkers.push(m);
   });
 }
-
 function addCCMarker(){
   if(!mapObj||ccMarker)return;
   var ccIcon=L.divIcon({
@@ -1266,9 +1136,9 @@ function addRosetanaMarker(){
   if(!mapObj||rosetanaMarker)return;
   var rosetanaIcon=L.divIcon({
     className:"",
-    html:'<div style="width:30px;height:30px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1a6bb5;background:#fff;">'
+    html:'<div style="width:26px;height:26px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1a6bb5;background:#fff;">'
         +'<img src="data:image/jpeg;base64,'+ROSETANA_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
-    iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-17]
+    iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-15]
   });
   rosetanaMarker=L.marker([ROSETANA_POINT.lat,ROSETANA_POINT.lng],{icon:rosetanaIcon}).addTo(mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:250px;line-height:1.5">'
@@ -1350,10 +1220,10 @@ function render(screen){
     if(!mapObj){initMap();}
     else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
     renderMapLegend();
-    if(!nearestStation)requestGPS();
+    requestGPS();
   } else if(screen==="forecast"){
     // Richiedi GPS anche nella pagina meteo per la bandiera della postazione
-    if(!nearestStation)requestGPS();
+    requestGPS();
   }
   renderPage();
 }
@@ -1492,7 +1362,7 @@ function renderHome(page){
   // pulsante segnala
   const btns=document.createElement("div");btns.className="home-btns";
   const b1=document.createElement("button");b1.className="home-btn primary";
-  b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo \u26A0\uFE0F</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
+  b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
   b1.addEventListener("click",()=>{currentRole="public";render("submit");});
   btns.appendChild(b1);page.appendChild(btns);
 
@@ -1762,9 +1632,7 @@ function renderLogin(page){
   const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent="PIN non corretto";page.appendChild(err);
   function go(){
     if(inp.value===PIN){
-      currentRole="operator";newReportCount=0;
-      try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
-      if(window._requestNotifPermission)_requestNotifPermission();
+      currentRole="operator";newReportCount=0;if(window._requestNotifPermission)_requestNotifPermission();
       if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
       render("dashboard");
     }else{err.style.display="block";}
@@ -1777,22 +1645,6 @@ function renderLogin(page){
 // SUBMIT
 function renderSubmit(page){
   let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
-
-  // Banner 112
-  const banner112=document.createElement("div");
-  banner112.style.cssText="display:flex;align-items:center;gap:10px;padding:13px 15px;background:#b91c1c;border-radius:var(--radius-lg);margin-bottom:16px;cursor:pointer";
-  banner112.innerHTML='<span style="font-size:22px;flex-shrink:0">\uD83D\uDEA8</span>'
-    +'<div style="flex:1;min-width:0">'
-    +'<p style="font-size:12px;font-weight:800;color:white;letter-spacing:.02em;margin:0;line-height:1.4;text-align:center">'
-    +'\u26a0\ufe0f IN CASO DI PERICOLO PER LA PROPRIA O ALTRUI INCOLUMIT\u00c0 CHIAMA IMMEDIATAMENTE IL 112 O IL SERVIZIO DI SALVATAGGIO PI\u00d9 VICINO \u26a0\ufe0f</p>'
-    +'</div>'
-    +'<a href="tel:112" onclick="event.stopPropagation()" '
-    +'style="flex-shrink:0;background:white;color:#b91c1c;font-weight:900;font-size:15px;padding:8px 14px;border-radius:8px;text-decoration:none;white-space:nowrap">\uD83D\uDCDE 112</a>';
-  banner112.addEventListener("click",function(){
-    if(confirm("Stai per chiamare il 112. Continuare?")){window.location.href="tel:112";}
-  });
-  page.appendChild(banner112);
-
   const wrap=document.createElement("div");wrap.className="form-wrap";
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
@@ -1800,35 +1652,9 @@ function renderSubmit(page){
   const lbT=document.createElement("label");lbT.textContent="Tipo segnalazione";wrap.appendChild(lbT);
   const tg=document.createElement("div");tg.className="type-grid";
   const typeBtns={};
-  // Container chips dettaglio
-  const subChipsWrap=document.createElement("div");
-  subChipsWrap.style.cssText="display:flex;flex-direction:column;gap:0;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;margin-top:2px";
-
   function setType(k){
     type=k;sub="";
-    subChipsWrap.innerHTML="";
-    TYPES[k].sub.forEach(function(s,i){
-      const chip=document.createElement("button");
-      chip.type="button";
-      chip.textContent=s;
-      const isLast=i===TYPES[k].sub.length-1;
-      chip.style.cssText="width:100%;text-align:left;padding:11px 14px;background:var(--bg);border:none;"+(isLast?"":"border-bottom:1px solid var(--border);")+"font-size:14px;color:var(--text2);cursor:pointer;transition:background .12s,color .12s";
-      chip.addEventListener("mouseenter",function(){if(sub!==s)chip.style.background="var(--bg2)";});
-      chip.addEventListener("mouseleave",function(){if(sub!==s){chip.style.background="var(--bg)";chip.style.color="var(--text2)";}});
-      chip.addEventListener("click",function(){
-        sub=s;
-        if(s==="Annegamento / soccorso")_openAnnegamentoAlert();
-        Array.from(subChipsWrap.children).forEach(function(c){
-          const active=c.textContent===s;
-          const col=k==="emergenza"?"var(--danger-bg)":"var(--warning-bg)";
-          const tc=k==="emergenza"?"var(--danger-text)":"var(--warning-text)";
-          c.style.background=active?col:"var(--bg)";
-          c.style.color=active?tc:"var(--text2)";
-          c.style.fontWeight=active?"700":"400";
-        });
-      });
-      subChipsWrap.appendChild(chip);
-    });
+    subSel.innerHTML=`<option value="">Seleziona...</option>`+TYPES[k].sub.map(s=>`<option value="${s}">${s}</option>`).join("");
     const map={emergenza:"danger",pericolo:"warning"};
     Object.entries(typeBtns).forEach(([bk,bb])=>{
       const c=map[bk];bb.style.background=bk===k?`var(--${c}-bg)`:"";
@@ -1843,8 +1669,8 @@ function renderSubmit(page){
   });
   wrap.appendChild(tg);
   const lbS=document.createElement("label");lbS.textContent="Dettaglio";wrap.appendChild(lbS);
-  wrap.appendChild(subChipsWrap);
-  setType("pericolo");
+  const subSel=document.createElement("select");wrap.appendChild(subSel);
+  subSel.addEventListener("change",()=>sub=subSel.value);setType("pericolo");
   const lbZ=document.createElement("label");lbZ.textContent="Postazione";wrap.appendChild(lbZ);
   const zoneSel=document.createElement("select");
   ZONES.forEach(z=>{const o=document.createElement("option");o.value=z;o.textContent=z;zoneSel.appendChild(o);});
@@ -1911,7 +1737,7 @@ function renderSubmit(page){
 
   const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
   submitBtn.addEventListener("click",()=>{
-    notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
+    sub=subSel.value;notes=notesEl.value;zone=zoneSel.value;author=authorEl.value;
     var phoneEl2=document.getElementById("segnalazione-phone");
     if(phoneEl2)phone=phoneEl2.value.trim();
     if(!sub){alert("Seleziona il tipo di segnalazione.");return;}
@@ -1943,7 +1769,7 @@ function renderDone(page){
   const wn=document.createElement("p");wn.style.cssText="font-size:12px;color:var(--success-text);margin-bottom:20px";wn.textContent="\uD83D\uDCAC Notifica WhatsApp inviata";w.appendChild(wn);
   const b1=document.createElement("button");b1.className="btn-primary";b1.textContent="Nuova segnalazione";b1.addEventListener("click",()=>render("submit"));w.appendChild(b1);
   const b2=document.createElement("button");b2.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:10px;width:100%;cursor:pointer";
-  b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{render("home");});w.appendChild(b2);page.appendChild(w);
+  b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{currentRole=null;render("home");});w.appendChild(b2);page.appendChild(w);
 }
 
 // DASHBOARD
@@ -1953,17 +1779,6 @@ function renderDashboard(page){
   const ti=document.createElement("div");
   const sd=fbReady?`<span class="sync-dot" title="Sync attivo"></span>`:`<span class="sync-dot off" title="Connessione..."></span>`;
   ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">Dashboard Operatori ${sd}</h1><p style="font-size:11px;color:var(--text2)">Roseto degli Abruzzi &middot; P.10 \u2013 P.35</p>`;
-  const logoutBtn=document.createElement("button");
-  logoutBtn.style.cssText="font-size:12px;padding:5px 12px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;border-radius:var(--radius)";
-  logoutBtn.innerHTML="\uD83D\uDD13 Esci";
-  logoutBtn.addEventListener("click",function(){
-    if(confirm("Vuoi uscire dall\u2019area operatori?")){
-      currentRole=null;newReportCount=0;
-      try{localStorage.removeItem("omnia_op_auth");}catch(e){}
-      render("home");
-    }
-  });
-  ti.appendChild(logoutBtn);
   tb.appendChild(ti);
   const ac=document.createElement("div");ac.className="dash-actions";
   const newBtn=document.createElement("button");newBtn.className="btn-primary";newBtn.style.cssText="width:auto;font-size:12px;padding:6px 14px";newBtn.textContent="+ Segnala";
@@ -1974,13 +1789,12 @@ function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"]].forEach(([k,l])=>{
+  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"]].forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(activeDashTab===k?" active":"");btn.textContent=l;
     btn.addEventListener("click",()=>{activeDashTab=k;renderPage();});tabBar.appendChild(btn);
   });
   page.appendChild(tabBar);
   if(activeDashTab==="bandiere"){renderBandiere(page);return;}
-  if(activeDashTab==="note"){renderNote(page);return;}
   if(activeStation){
     const bar=document.createElement("div");bar.className="zone-filter-bar";
     bar.innerHTML=`<span style="font-size:12px;flex:1;color:var(--text2)">Filtro: ${activeStation}</span>`;
@@ -2030,72 +1844,6 @@ function renderDashboard(page){
   page.appendChild(list);
 }
 
-function renderNote(page){
-  var panel=document.createElement("div");panel.className="bandiere-panel";
-  panel.id="_notePanelRows";
-  var hdr=document.createElement("div");hdr.className="bandiere-header";
-  var title=document.createElement("h3");title.textContent="Note di pericolo postazioni";hdr.appendChild(title);
-  var sub=document.createElement("p");sub.style.cssText="font-size:11px;color:var(--text2);margin:2px 0 0";
-  sub.textContent="La postazione con nota diventa nera sulla mappa — visibile a tutti.";
-  hdr.appendChild(sub);panel.appendChild(hdr);
-  STATIONS.forEach(function(s){
-    var row=document.createElement("div");
-    row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
-    var note=stationNotesData[String(s.num)];
-    // Dot
-    var dot=document.createElement("div");
-    dot.id="_noteDot_"+s.num;
-    dot.style.cssText="width:12px;height:12px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.15);background:"+(note?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"]);
-    row.appendChild(dot);
-    // Name + badge
-    var nm=document.createElement("div");nm.style.cssText="flex:1;min-width:0";
-    nm.innerHTML='<span style="font-size:13px">'+s.name+'</span> <span style="font-size:11px;color:var(--text3)">P.'+s.num+'</span>';
-    var noteBadge=document.createElement("div");
-    noteBadge.id="_noteBadge_"+s.num;
-    noteBadge.style.cssText="font-size:11px;color:#fff;background:#1a1a1a;border-radius:4px;padding:2px 7px;margin-top:3px;display:"+(note?"inline-block":"none");
-    noteBadge.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"";
-    nm.appendChild(noteBadge);
-    row.appendChild(nm);
-    // Add button
-    var addBtn=document.createElement("button");
-    addBtn.id="_noteAddBtn_"+s.num;
-    addBtn.style.cssText="font-size:12px;padding:5px 10px;background:var(--bg2);border-color:var(--border2);flex-shrink:0;color:var(--text);display:"+(note?"none":"inline-block");
-    addBtn.textContent="+ Nota";
-    (function(sNum,sName,btn){
-      btn.addEventListener("click",function(){_openNoteModal(sNum,sName,null);});
-    })(s.num,s.name,addBtn);
-    row.appendChild(addBtn);
-    // Edit + delete buttons
-    var editBtn=document.createElement("button");
-    editBtn.style.cssText="font-size:12px;padding:5px 8px;background:var(--bg2);border-color:var(--border2);flex-shrink:0;color:var(--text);display:"+(note?"inline-block":"none");
-    editBtn.textContent="\u270f\ufe0f";
-    (function(sNum,sName){
-      editBtn.addEventListener("click",function(){_openNoteModal(sNum,sName,stationNotesData[String(sNum)]);});
-    })(s.num,s.name);
-    row.appendChild(editBtn);
-    var delBtn=document.createElement("button");
-    delBtn.id="_noteDelBtn_"+s.num;
-    delBtn.style.cssText="font-size:12px;padding:5px 10px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;flex-shrink:0;display:"+(note?"inline-block":"none");
-    delBtn.textContent="\u2715";
-    (function(sNum){
-      delBtn.addEventListener("click",function(){
-        if(confirm("Rimuovere la nota per P."+sNum+"?")){
-          stationNotesRef.child(String(sNum)).remove();
-          delete stationNotesData[String(sNum)]; // aggiorna subito locale
-          try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");delete _sn[String(sNum)];localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
-          refreshMarkers();
-          if(currentScreen==="home")renderPage();
-          if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
-        }
-      });
-    })(s.num);
-    row.appendChild(delBtn);
-    panel.appendChild(row);
-  });
-  page.appendChild(panel);
-}
-
-
 // BANDIERE
 function renderBandiere(page){
   const flags=getFlags();
@@ -2131,7 +1879,7 @@ function renderBandiere(page){
 }
 
 try{
-  if(currentRole!=="operator")render("home");
+  render("home");
   [250,700,1200].forEach(function(t){
     setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);
   });
@@ -2172,64 +1920,6 @@ window._requestNotifPermission=function(){
 
 
 
-
-
-<script>
-(function(){
-  function escapeHtml(s){
-    return String(s)
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;");
-  }
-
-  function patchMarkerPopups(){
-    try{
-      if(!window.mapMarkers || !window.mapMarkers.length) return;
-      window.mapMarkers.forEach(function(m){
-        if(!m || !m.stationData || !m.getPopup || !m.getPopup()) return;
-        var station = m.stationData;
-        var noteMap = window.stationNotesData || {};
-        var note = noteMap[String(station.num)] || "";
-        var popup = m.getPopup();
-        var content = String(popup.getContent() || "");
-        if(!note){
-          return;
-        }
-        if(content.indexOf("Nota postazione:") !== -1){
-          return;
-        }
-        var noteHtml = '<div style="margin-top:8px;padding:8px 10px;background:#111;color:#fff;border-radius:8px;font-size:12px;line-height:1.4"><b>⚠️ Nota postazione:</b><br>'+escapeHtml(note)+'</div>';
-        if(content.indexOf("<button") !== -1){
-          content = content.replace("<button", noteHtml + "<button");
-        } else {
-          content += noteHtml;
-        }
-        popup.setContent(content);
-      });
-    }catch(e){}
-  }
-
-  function wrapRefreshMarkers(){
-    if(!window.refreshMarkers || window._refreshMarkersPatched) return;
-    var oldRefresh = window.refreshMarkers;
-    window.refreshMarkers = function(){
-      var result = oldRefresh.apply(this, arguments);
-      setTimeout(patchMarkerPopups, 50);
-      return result;
-    };
-    window._refreshMarkersPatched = true;
-  }
-
-  function startPatchLoop(){
-    wrapRefreshMarkers();
-    patchMarkerPopups();
-    setTimeout(startPatchLoop, 1500);
-  }
-
-  startPatchLoop();
-})();
-</script>
 
 </body>
 </html>
