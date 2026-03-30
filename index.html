@@ -464,9 +464,9 @@ function _openNoteModal(stationNum, stationName, existingNote){
   saveBtn.addEventListener("click",function(){
     var txt=ta.value.trim();
     if(!txt){alert("Scrivi una nota prima di salvare.");return;}
-    stationNotesRef.child(String(stationNum)).set(txt);
-    stationNotesData[String(stationNum)]=txt; // aggiorna subito locale
-    try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");_sn[String(stationNum)]=txt;localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
+    stationNotesData[String(stationNum)]=txt; // aggiorna locale immediatamente
+    stationNotesRef.set(stationNotesData); // scrivi TUTTO l'oggetto su Firebase
+    try{localStorage.setItem("fb_stationNotes",JSON.stringify(stationNotesData));}catch(e){}
     overlay.remove();
     refreshMarkers();
     if(currentScreen==="home")renderPage();
@@ -2170,9 +2170,9 @@ function renderNote(page){
     (function(sNum){
       delBtn.addEventListener("click",function(){
         if(confirm("Rimuovere la nota per P."+sNum+"?")){
-          stationNotesRef.child(String(sNum)).remove();
-          delete stationNotesData[String(sNum)]; // aggiorna subito locale
-          try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");delete _sn[String(sNum)];localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
+          delete stationNotesData[String(sNum)]; // aggiorna locale immediatamente
+          stationNotesRef.set(stationNotesData); // scrivi TUTTO l'oggetto su Firebase
+          try{localStorage.setItem("fb_stationNotes",JSON.stringify(stationNotesData));}catch(e){}
           refreshMarkers();
           if(currentScreen==="home")renderPage();
           if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
