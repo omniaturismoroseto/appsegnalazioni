@@ -943,6 +943,7 @@ function findNearestDAE(lat,lng){
   return{dae:best,dist:Math.round(bestDist)};
 }
 var nearestDAE=null,nearestDAEDist=null;
+var _gpsWatchId=null;
 
 function isServiceActive(){var h=new Date().getHours();return h>=9&&h<19;}
 function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
@@ -966,15 +967,12 @@ function _playAlertTone(type){
     if(!_alertCtx)_alertCtx=new(window.AudioContext||window.webkitAudioContext)();
     var freqs=type==="emergenza"?[880,1320,880,660]:[660,880,660];
     freqs.forEach(function(f,i){
-      var o=_alertCtx.createOscillator();
-      var g=_alertCtx.createGain();
+      var o=_alertCtx.createOscillator(),g=_alertCtx.createGain();
       o.connect(g);g.connect(_alertCtx.destination);
-      o.frequency.value=f;
-      o.type=type==="emergenza"?"square":"triangle";
+      o.frequency.value=f;o.type=type==="emergenza"?"square":"triangle";
       g.gain.setValueAtTime(0.35,_alertCtx.currentTime+i*0.18);
       g.gain.exponentialRampToValueAtTime(0.001,_alertCtx.currentTime+i*0.18+0.15);
-      o.start(_alertCtx.currentTime+i*0.18);
-      o.stop(_alertCtx.currentTime+i*0.18+0.16);
+      o.start(_alertCtx.currentTime+i*0.18);o.stop(_alertCtx.currentTime+i*0.18+0.16);
     });
   }catch(e){}
 }
@@ -982,8 +980,7 @@ function _playAlertTone(type){
 function _stopAlertSound(){
   if(_alertInterval){clearInterval(_alertInterval);_alertInterval=null;}
   if(_alertBanner&&_alertBanner.parentNode){_alertBanner.parentNode.removeChild(_alertBanner);}
-  _alertBanner=null;
-  _alertReportKey=null;
+  _alertBanner=null;_alertReportKey=null;
 }
 
 function _startAlertSound(report){
@@ -992,18 +989,14 @@ function _startAlertSound(report){
   _alertReportKey=report._key;
   var type=report.type;
   _playAlertTone(type);
-  var interval=type==="emergenza"?4000:7000;
-  _alertInterval=setInterval(function(){_playAlertTone(type);},interval);
+  _alertInterval=setInterval(function(){_playAlertTone(type);},type==="emergenza"?4000:7000);
   var banner=document.createElement("div");
-  banner.className="alert-banner "+type;
-  banner.id="_alertBanner";
+  banner.className="alert-banner "+type;banner.id="_alertBanner";
   var icon=type==="emergenza"?"\uD83D\uDEA8":"\u26A0\uFE0F";
   var label=type==="emergenza"?"EMERGENZA":"PERICOLO";
   banner.innerHTML='<span style="font-size:20px;flex-shrink:0">'+icon+'</span>'
     +'<span class="alert-banner-text">'+label+': '+report.sub+' &mdash; '+report.zone+'</span>';
-  var stopBtn=document.createElement("button");
-  stopBtn.className="alert-banner-btn";
-  stopBtn.textContent="\u2714 Visto";
+  var stopBtn=document.createElement("button");stopBtn.className="alert-banner-btn";stopBtn.textContent="\u2714 Visto";
   stopBtn.addEventListener("click",function(e){e.stopPropagation();_stopAlertSound();});
   banner.appendChild(stopBtn);
   banner.addEventListener("click",function(){render("dashboard");});
@@ -1026,27 +1019,42 @@ function sendWANotify(r){
 }
 
 // GPS
-function requestGPS(){
-  if(!navigator.geolocation)return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const{latitude:lat,longitude:lng}=pos.coords;
-    const{station,dist}=findNearest(lat,lng);
-    nearestStation=station;nearestDist=dist;
-    var daeResult=findNearestDAE(lat,lng);
-    nearestDAE=daeResult.dae;nearestDAEDist=daeResult.dist;
-    if(mapObj){
-      if(userMarker){try{userMarker.remove();}catch(e){}}
-      const icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+function _onGPSPosition(pos){
+  var lat=pos.coords.latitude,lng=pos.coords.longitude;
+  var res=findNearest(lat,lng);
+  nearestStation=res.station;nearestDist=res.dist;
+  var daeResult=findNearestDAE(lat,lng);
+  nearestDAE=daeResult.dae;nearestDAEDist=daeResult.dist;
+  if(mapObj){
+    if(userMarker){try{userMarker.setLatLng([lat,lng]);}catch(e){
+      try{userMarker.remove();}catch(e2){}
+      var icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
       userMarker=L.marker([lat,lng],{icon}).addTo(mapObj).bindPopup('<b>Sei qui</b>');
-      const bounds=L.latLngBounds([[lat,lng],[station.lat,station.lng]]);
+    }} else {
+      var icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+      userMarker=L.marker([lat,lng],{icon}).addTo(mapObj).bindPopup('<b>Sei qui</b>');
+      // Prima volta: centra la mappa sulla posizione + postazione vicina
+      var bounds=L.latLngBounds([[lat,lng],[nearestStation.lat,nearestStation.lng]]);
       mapObj.fitBounds(bounds,{padding:[50,50],maxZoom:16});
     }
-    if(currentScreen==="home"||currentScreen==="forecast")renderPage();
-  },function(e){
-    // GPS non disponibile - mostra strip cliccabile
-    nearestStation=null;
-    if(currentScreen==="home"||currentScreen==="forecast")renderPage();
-  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    // Aggiorna marcatore postazione più vicina (anello blu)
+    refreshMarkers();
+  }
+  if(currentScreen==="home"||currentScreen==="forecast")renderPage();
+}
+
+function requestGPS(){
+  if(!navigator.geolocation)return;
+  // Se già in ascolto, non riavviare
+  if(_gpsWatchId!==null)return;
+  _gpsWatchId=navigator.geolocation.watchPosition(
+    _onGPSPosition,
+    function(e){
+      nearestStation=null;
+      if(currentScreen==="home"||currentScreen==="forecast")renderPage();
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:5000}
+  );
 }
 
 
