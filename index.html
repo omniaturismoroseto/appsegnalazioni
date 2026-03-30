@@ -336,7 +336,7 @@ function _fbFetch(path,method,body){
   return fetch(FB_URL+"/"+path+".json",opts)
     .then(function(r){if(!r.ok)throw new Error(r.status);_fbOnline=true;return r.json();});
 }
-
+var firebaseSdk = window.firebase;
 var firebase={
   _db:{
     ref:function(path){
@@ -457,11 +457,11 @@ async function enableOperatorPush(){
   }
 
   if (!_fcmApp){
-    _fcmApp = firebase.initializeApp(firebaseConfig, "fcmApp");
+    _fcmApp = firebaseSdk.initializeApp(firebaseConfig, "fcmApp");
   }
 
   if (!_fcmMessaging){
-    _fcmMessaging = firebase.messaging(_fcmApp);
+    _fcmMessaging = firebaseSdk.messaging(_fcmApp);
   }
 
   let permission = Notification.permission;
