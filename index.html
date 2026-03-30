@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
-<meta name="description" content="Segnalazioni spiaggia Roseto degli Abruzzi - Omnia Adriatic Safety Lifeguard"/>
+<meta name="description" content="Segnalazioni spiaggia Roseto degli Abruzzi - Omnia Adriatic Lifeguard Service"/>
 <meta name="theme-color" content="#D62B1F"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="application-name" content="Omnia Segnalazioni"/>
@@ -1915,7 +1915,7 @@ function renderConsigliPage(page){
   });
   var footer=document.createElement("p");
   footer.style.cssText="text-align:center;font-size:11px;color:var(--text3);margin:12px 0 24px";
-  footer.textContent="Omnia Adriatic Safety Lifeguard \u2014 Roseto degli Abruzzi";
+  footer.textContent="Omnia Adriatic Lifeguard Service \u2014 Roseto degli Abruzzi";
   page.appendChild(footer);
 }
 
@@ -2182,7 +2182,7 @@ function renderDashboard(page){
     const wa=document.createElement("button");wa.className="action-btn wa";wa.textContent="WA";
     wa.addEventListener("click",()=>{
       const em={emergenza:"\uD83D\uDEA8",pericolo:"\u26A0\uFE0F"};
-      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Safety Lifeguard`;
+      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Lifeguard Service`;
       window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
     });acts.appendChild(wa);
     if(!res){
