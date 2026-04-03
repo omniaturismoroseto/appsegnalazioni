@@ -666,7 +666,6 @@ let currentRole=_savedAuth?"operator":null;
 if(_savedAuth){if(window._requestNotifPermission)setTimeout(function(){try{_requestNotifPermission();}catch(e){}},500);}
 if(_savedAuth){setTimeout(function(){enableOperatorPush().catch(console.error);},1200);}
 // Se già autenticato, rimanda alla dashboard dopo init variabili
-if(currentRole==="operator"){setTimeout(function(){render("dashboard");},0);}
 
 window.onpopstate=function(event){
   suppressHistory=true;
