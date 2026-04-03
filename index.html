@@ -710,6 +710,9 @@ var IAT_B64="/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAAB
 var ccMarker=null;
 var finanzaMarker=null;
 var guardiaMedicaMarker=null;
+var vvfMarker=null;
+const VVF_POINT={lat:42.660998759620824,lng:14.026752032971247};
+const VVF_DATA_URI="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiIgd2lkdGg9IjM2IiBoZWlnaHQ9IjM2Ij48Y2lyY2xlIGN4PSIxOCIgY3k9IjE4IiByPSIxNyIgZmlsbD0iI0NDMDAwMCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIuNSIvPjx0ZXh0IHg9IjE4IiB5PSIxNSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtZmFtaWx5PSJBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjkiIGZvbnQtd2VpZ2h0PSI5MDAiPlZWRjwvdGV4dD48dGV4dCB4PSIxOCIgeT0iMjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMyI+8J+UpTwvdGV4dD48L3N2Zz4=";
 const FINANZA_POINT={name:"Guardia di Finanza - Comando Tenenza Roseto degli Abruzzi",lat: 42.6623998529502,lng: 14.027125530549077};
 const FINANZA_B64="iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAIAAABuYg/PAAAKbklEQVR42qVXa5Ac1XX+zr09PT0zvTs7uzuzDy37YtEDSiAEK4yREoEICiJCBByQHBOnXCqMbFwuijiVVPwjKTmPIhYG7CDiKsVlYzmQxI4BWUg2IAkkRTZ6oMfqwa61L+3O7s7Oe6ZnprvvPfmxki0QmFC51X+6+/b5+t5zz/m+j5gZHzMYrAEGGR/x3gcIJAD63YHoY8BYgeRvb91x7U5CFQBA1pPZDvMq+qjJnwRMM0iDiD1kX+HcbrjDgICsEyLEzOAKqxLAMHsodrdouBckwAxiQHwSMFaapACQ2YbpH2mjFbHVqLuNzB6ii4E0QNqHO8LFg5zdSTxGXY/C+jMCAAV82BL5yqF9j5krx/wzK7fubL5weIFm1u+fUsgMntmzsVotX/xC/7LyLRSfsPyh27V/gjWz9q8MLK7Mtk/SyL4wcGz1ylPlTbPrvjddpvS/KFbQNc/3R48/UyhkSwOPxKM6GAxDOWDFw5ur/9VY/c784sZj3q7f49qLDAn2PxBbXIFkGLPP7n73seUjt+x3+6RR2FqYX5z4LiC1CAYMI1jdP3FgneUdSaE/PX5QybCP0+6be9W5ZtHmqJNtpcca3O2fg/M8yPgA3mU5Y6VIyuz23e9uujd5l0tSwpPErmd/venQ5lvXOyXj5YN7i+XUAx3ntBF6cyhshnjV8o311oncZw94R1plkwfNcA0mFdl8PvinL5L1J5cf0UtgrDUJUT155tiqW0c+lUdIwCOC8s2rreIzrad0anbL4fhN9ZXPdpfbY7I+5Jcr9Pj/JJqs3Io+PDBJlX+tK08GA3WaGXAlh6t1384H/vAAyWsBPbeFF7eRCcy+N/LY5ye681wn55A8855o8ifNh7bvD9+7u39fcsE7pdYb2zSzkoIdT/zlosyBTPeDry1ZRy2pJ3MN/WU3L4iAoEI+4jwJff4xhn5/zlhpCJnb/vzIuXdqCwzhMEH5gTWx5Desk3+8o+ffhxMB012ZmIihWvRIkFSa7IAOBulo3kLY3XGsefnb15z+mhO7xfGKAgyya+p4e/WHb6H2EiDA6iIYkxDsliee25JfKIULJtay1yr9kz1w3+7e86WwFXa9qry7M//0zRNF1wgIzQyCzFTFo+3J64JlI6wn0taaN/qmv1oKt3u6RgBRSLmvNKlzTzP8S9vISoHI2bttIjla7VasQGAtvtlyevOh5tFCxAj6niIi/GKy7qqYEkQkQEBNUZftf/n6zKBj+UAgpJIzoUfOt0c25tgDA0rr2onm2sunSB8EEVgJgAWgMz9bEso90jZ0Tajsu9ay+nRw1vnP4YQR8rWG0rIvXPpa31SqIqVQBDCgWJsGpxw5T9QI8DUZEW/XycYdvWbs2ioXqHFhpXVTNnh1RU+/MncwDIYU4Mzske8eavhUy/iG1sps1O4KVf5hXxPN9RcQiMc9s6WODYICiDQAIiq6vKTRXREvDidtGfAZIKbnB5vWfmVMF83XW4wdmeiJ0Z6fTv8q1sYMaTARYXY4PbF9qGP7kCkC7opEYeunM/tmO9nQmmmuDF1NBY9atIAgEMAMzczCVTjrWHPcopk4oA8nI4duNDec7Ro5HIEvIaojmQsxZJiahAagpsYLFSmFFXY1y4FS5HQxlKsaJC4WvCStVWDMMSOCXQVDaBD7WoDhMVJ+AMTMxAAJTlUD01mzVpRCsmW7QhoX8g7UzCUu0KV8zVdaagYYvXZNaWJfiN8yFdnS+9tjLYeTlleiTFGmC0atAsPn7xyNjmdNYfBcNRGBfeEy2m1Pa1IMrWW+5kOXPpx4NONy1hHEio3ugLM+mr7/7a7tZ6IT0/LCtHz5rP35ve3I6k5Z0Uz0Pmon5t88YLrE4AIAhB0NSpAiAglOu0bEYEitGQC0T43KSVVNR8u/7p16brwpHtfhmH5qNLGmrViMmOc5IqH4ImEBUkcMnfeklCwIIF0flBA2AUIAkK2d9RGSXq0aYMZIIShJt0Y8ZoIW6+tTe1YMvn33ex1Rf890aNuNY2VHsiv+benoi9OxExnr7+KjqoK54mNN7bbLjF+nwsoTtUoAwrsqGoZMEGAQM6jp6nh7czC3LF67vSM7XjSnnMDK1uJLZ+Mc1AMVK2RwwMLN86qTvnF9hzeYDNghdetC7w9mcjckqvNs7iy4F7QlSfueXB4vm5IfvyE5UTMcPzCQ8XqaOoBGYhYExSA7tuyJRePr+7Jn0lZQ6oG89UBXnokNwWdq9u6hsHZEPi3vbytYYdJK5ErS8+nWNqfOUIOnxZrKlKgpCGLB63uzL4/VL004W/oneur8/sZsNNGvQAQlANKAjK9dGOOBTHB+Q3VJY/VA0nY1bVgw6zsGBemb4227z4eXLKhaIZrNCWmgoY4zBdHZxO/82swVqN2pXeMXvIq5/prZBtNf0VL+55OJvzky71TWXNnuo2ktAwAJkBRghJbf1nvd0RkVEPLH56O3JZxnT8WfuG6mr6nsVeVoIPKlM12HU2Z3olYq64TtJWzlVJHN05RhvuQ0/TgUH+T6Rc3FjfMzb03V/WQ0en9XPhFSQRQeWryAzeUSDJLEzBe1VH77zte/cDTfKeHVNMVMvW8q8heLU48e6Dw5Gdm8ZPRLS2c+t7OrN1B1pGyEeygZljFj30ODT7zR8dRA9/Udhaf7R3deqDcE99jeeDmgEUjIqa8++LyyN0hWIGkAAEliraPrf3/Rtu+/+t7ieOiOtuzpQqjgyZ+ORTfNn7lgy6+vnvj5iYbXJhM3N2Xvi6azyhgL1Y9PWW8O1m9ZM27VVHeHfywTztWM1R1FrdkxrReH3P0P9yv7QQk9pwwuFjURABnpe/bvl1V+MR4cKYcGc8FHFqSbLe+Hgw3dVk2V5GuHg19pGb22vrJluuPVQtO62OwXGy/sOB5yyyIm/ecG4hNO4Avz06dzweM5+9lT9g9WFY2eb9NlAvIKwVN46fU9f/7Mmd5bEtWGgNsSUkJi11A4XPEH3dDDi3MiQJ6ivCvjlq9cfmM4fEPYSQWCrY36eCq4otUp+Ma2s7F/XHrurju/r+wH5YcInktSTpEhs1vfeOvxvzrad0+na5K7f9r+8nWzr4zVN5j8bto6lwon6qt3thVfHYstilVuijtFT9wQqxJzIuT/x0h813jgW8uG1q56yo9+0WD/cjvy/t5IhmRfxTatuuN7L9yenCgUTSlXtlWGC6YJfqgrHRR6vBL4THd+aXMFwFg5sDBaHc4HJ8vGodn6bxzvmC4W//uuybV3bbsSCR/SiMmQrFTdhoWf3vv06ms7rOSuUTo4YzdayOhAVcslreWr62qZmrxjXvHIrF3yAj861/b6ZOzIjP9H7ed/sG7h4hV7lL3eYHWlxfo4Y5F/IT289efvnf1lUo44kRGnbrgUfrI/+fZUJOeKn43Y93VNB2Xtznb/M4vnN/Q+irqHNSA+wjv9LssECAVIaFT3Ir0zNfOrkdmJqVK55ns1RRHT6GkItzR0trbdhMZ7ELxdgSQY+KSW6bIlMsk5QUsAMAuVgi4BgLQh4kCzupQP+n+YwQ/aXCZj7rcBMEC/uf7PNvd/ARq+3ouaNnxVAAAAAElFTkSuQmCC";
 const GM_POINT={name:"Guardia Medica - Roseto degli Abruzzi",lat: 42.68070522681696,lng: 14.00866337714191};
@@ -1314,6 +1317,7 @@ function initMap(){
   ensureLocamareMarker();
   addCCMarker();
   addFinanzaMarker();
+  addVVFMarker();
   addGuardiaMedicaMarker();
   addComuneMarker();
   addIATMarker();
@@ -1465,6 +1469,27 @@ function addGuardiaMedicaMarker(){
     +'style="display:block;text-align:center;background:#c62828;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">\uD83E\uDDED Apri indicazioni</a>'
     +'</div>';
   guardiaMedicaMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+}
+
+function addVVFMarker(){
+  if(!mapObj||vvfMarker)return;
+  var vvfIcon=L.divIcon({
+    className:'',
+    html:'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #fff;background:#CC0000;">'
+        +'<img src="'+VVF_DATA_URI+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>',
+    iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-20]
+  });
+  vvfMarker=L.marker([VVF_POINT.lat,VVF_POINT.lng],{icon:vvfIcon}).addTo(mapObj);
+  var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
+    +'<div style="font-size:13px;font-weight:700;color:#CC0000;margin-bottom:4px">Vigili del Fuoco</div>'
+    +'<div style="font-size:11px;color:#555;margin-bottom:6px">Distaccamento e Nucleo Sommozzatori<br>Roseto degli Abruzzi (TE)</div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Tel.:</strong> <a href="tel:0858992222" style="color:#CC0000;text-decoration:none;font-weight:700">085 899 2222</a></div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Emergenze:</strong> <a href="tel:115" style="color:#CC0000;text-decoration:none;font-weight:700">115</a></div>'
+    +'<div style="font-size:11px;color:#333;margin-bottom:8px"><strong>Sito:</strong> <a href="http://www.vigilfuoco.it/" target="_blank" style="color:#CC0000;text-decoration:none">www.vigilfuoco.it</a></div>'
+    +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.660998759620824,14.026752032971247&travelmode=driving" target="_blank" '
+    +'style="display:block;text-align:center;background:#CC0000;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">🧭 Apri indicazioni</a>'
+    +'</div>';
+  vvfMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
 function addFinanzaMarker(){
