@@ -490,6 +490,7 @@ async function enableOperatorPush(){
   }
 
   _fcmToken = token;
+  localStorage.setItem("omnia_fcm_token", token);
 
   const tokenKey = _safeTokenKey(token);
 
@@ -502,7 +503,26 @@ async function enableOperatorPush(){
 
   console.log("✅ PUSH ATTIVO");
 }
-const stationNotesRef=db.ref("stationNotes");
+
+async function disableOperatorPush(){
+  try{
+    if(!_fcmToken){
+      const savedToken = localStorage.getItem("omnia_fcm_token");
+      if(savedToken) _fcmToken = savedToken;
+    }
+
+    if(!_fcmToken) return;
+
+    const tokenKey = _safeTokenKey(_fcmToken);
+
+    await _fbFetch("operatorTokens/" + tokenKey + "/enabled", "PUT", false);
+    await _fbFetch("operatorTokens/" + tokenKey + "/lastDisabled", "PUT", Date.now());
+
+    console.log("🔕 PUSH DISATTIVATO");
+  }catch(e){
+    console.log("Errore disableOperatorPush", e);
+  }
+}
 
 const PHONE="+393284769641";
 const WA_NOTIFY="393284769641";
@@ -1240,12 +1260,21 @@ function renderHeader(){
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
-    op.textContent="\uD83D\uDD13";op.title="Dashboard operatori";
-    op.addEventListener("click",()=>{render("dashboard");});
-  }else{
-    op.textContent="\uD83D\uDD10";op.title="Area Operatori";
-    op.addEventListener("click",()=>render("login"));
-  }
+  op.textContent="🚪";
+  op.title="Logout operatore";
+  op.addEventListener("click",async ()=>{
+    if(confirm("Vuoi uscire dall’area operatore?")){
+      await disableOperatorPush();
+      localStorage.removeItem("omnia_op_auth");
+      currentRole = null;
+      render("home");
+    }
+  });
+}else{
+  op.textContent="🔐";
+  op.title="Area Operatori";
+  op.addEventListener("click",()=>render("login"));
+}
   opWrap.appendChild(op);
   if(currentRole==="operator"&&newReportCount>0){
     const nb=document.createElement("span");nb.className="notif-badge";nb.textContent=newReportCount;opWrap.appendChild(nb);
