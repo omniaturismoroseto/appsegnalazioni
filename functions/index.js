@@ -3,70 +3,63 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-exports.notifyOperatorsOnNewReport = onValueCreated(
+exports.sendPushOnNewReport = onValueCreated(
   {
-    ref: "/reports/{reportId}",
-    region: "europe-west1"
+    ref: "/segnalazioni/{id}",
+    region: "europe-west1",
   },
   async (event) => {
-    const report = event.data.val();
-    const reportId = event.params.reportId;
+    const data = event.data.val();
+    const reportId = event.params.id;
 
-    if (!report) return;
+    if (!data) return null;
 
-    const tokenSnap = await admin.database().ref("operatorTokens").once("value");
-    const tokenMap = tokenSnap.val() || {};
+    try {
+      const tokensSnapshot = await admin.database().ref("tokens").once("value");
+      const tokensObj = tokensSnapshot.val();
 
-    const tokens = Object.values(tokenMap)
-      .filter(x => x && x.enabled === true && x.token)
-      .map(x => x.token);
-
-    if (!tokens.length) {
-      console.log("Nessun token attivo");
-      return;
-    }
-
-    const type = (report.type || "").toLowerCase();
-    const sub = report.sub || "Nuova segnalazione";
-    const zone = report.zone || "Zona non indicata";
-
-    const title =
-      type === "emergenza"
-        ? "🚨 EMERGENZA"
-        : type === "pericolo"
-        ? "⚠️ PERICOLO"
-        : "📣 Nuova segnalazione";
-
-    const body = `${sub} — ${zone}`;
-
-    const message = {
-      tokens,
-      data: {
-        title,
-        body,
-        reportId,
-        tag: `report-${reportId}`,
-        url: `/appsegnalazioni/?screen=dashboard&report=${reportId}`
-      },
-      webpush: {
-        headers: {
-          Urgency: "high"
-        },
-        notification: {
-          requireInteraction: true,
-          vibrate: [500, 200, 500, 200, 500],
-          icon: "/appsegnalazioni/icon-192-fixed.png",
-          badge: "/appsegnalazioni/icon-192-fixed.png",
-          tag: `report-${reportId}`,
-          renotify: true
-        },
-        fcmOptions: {
-          link: `https://omniaturismoroseto.github.io/appsegnalazioni/?screen=dashboard&report=${reportId}`
-        }
+      if (!tokensObj) {
+        console.log("Nessun token trovato");
+        return null;
       }
-    };
 
-    const response = await admin.messaging().sendEachForMulticast(message);
-    console.log("Inviate:", response.successCount, "Errori:", response.failureCount);
+      const tokens = Object.values(tokensObj).filter(Boolean);
+
+      if (!tokens.length) {
+        console.log("Lista token vuota");
+        return null;
+      }
+
+      const message = {
+        tokens,
+        notification: {
+          title: "🚨 Nuova segnalazione",
+          body: data.testo || "Nuova segnalazione ricevuta",
+        },
+        data: {
+          id: String(reportId || ""),
+        },
+        webpush: {
+          notification: {
+            icon: "/appsegnalazioni/icon-192-fixed.png",
+            badge: "/appsegnalazioni/icon-192-fixed.png",
+            requireInteraction: true,
+            vibrate: [500, 200, 500, 200, 500],
+          },
+          fcmOptions: {
+            link: "https://omniaturismoroseto.github.io/appsegnalazioni/",
+          },
+        },
+      };
+
+      const response = await admin.messaging().sendEachForMulticast(message);
+
+      console.log("Push inviate:", response.successCount, "Errori:", response.failureCount);
+
+      return null;
+    } catch (error) {
+      console.error("Errore push:", error);
+      return null;
+    }
   }
 );
