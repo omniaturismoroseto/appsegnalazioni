@@ -347,7 +347,7 @@ var firebase={
           var lsKey=self._path;
           // Avvia subito con dati locali
           var local=_lsGet(lsKey);
-          if(local!==null)cb({val:function(){return local;}});
+          if(local!==null)setTimeout(function(){cb({val:function(){return local;}});},0);
           // Poi tenta Firebase in background
           function poll(){
             _fbFetch(self._path)
