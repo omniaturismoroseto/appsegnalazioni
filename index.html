@@ -1404,6 +1404,8 @@ function refreshMarkers(){
       mapMarkers.push(m);
     })(s, zl, zr, mc.bg);
   });
+  // Aggiorna anche i marker DAE (evidenzia il più vicino)
+  addDAEMarkers();
 }
 function renderMapLegend(){
   const leg=document.getElementById("map-legend");leg.style.display="flex";
