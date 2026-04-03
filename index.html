@@ -2706,9 +2706,12 @@ function renderBandiere(page){
 }
 
 try{
-  if(currentRole!=="operator")render("home");
+  render(currentRole==="operator" ? "dashboard" : "home");
+
   [250,700,1200].forEach(function(t){
-    setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);
+    setTimeout(function(){
+      if(mapObj) mapObj.invalidateSize(true);
+    }, t);
   });
 }catch(e2){
   document.body.innerHTML='<div style="padding:20px;font-family:sans-serif">'
