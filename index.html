@@ -442,7 +442,6 @@ const FCM_VAPID_KEY = "BHJrW95NpOuHuRHcx9uLFrAxOfL6mhhM8JsuYycCFfY0Y9F8LB9skDgKf
 const db=firebase.database();
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
-const stationNotesRef=db.ref("stationNotes");
 let _fcmApp = null;
 let _fcmMessaging = null;
 let _fcmToken = null;
@@ -1260,17 +1259,9 @@ function renderHeader(){
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
   if(currentRole==="operator"){
-  op.textContent="🚪";
-  op.title="Logout operatore";
-  op.addEventListener("click",async ()=>{
-    if(confirm("Vuoi uscire dall’area operatore?")){
-      await disableOperatorPush();
-      localStorage.removeItem("omnia_fcm_token");
-      localStorage.removeItem("omnia_op_auth");
-      currentRole = null;
-      render("home");
-    }
-  });
+  op.textContent="🔓";
+  op.title="Dashboard operatori";
+  op.addEventListener("click",()=>render("dashboard"));
 }else{
   op.textContent="🔐";
   op.title="Area Operatori";
