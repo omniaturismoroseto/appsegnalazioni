@@ -1669,7 +1669,7 @@ function render(screen){
   }
   renderHeader();
   const mapEl=document.getElementById("main-map");
-  const showMap=["home","dashboard"].includes(screen);
+  const showMap=["home","dashboard","login"].includes(screen);
   mapEl.style.display=showMap?"block":"none";
   document.getElementById("map-legend").style.display=showMap?"flex":"none";
   if(showMap){
