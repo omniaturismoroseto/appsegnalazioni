@@ -5,7 +5,7 @@ admin.initializeApp();
 
 exports.sendPushOnNewReport = onValueCreated(
   {
-    ref: "/segnalazioni/{id}",
+    ref: "/reports/{id}",
     region: "europe-west1",
   },
   async (event) => {
