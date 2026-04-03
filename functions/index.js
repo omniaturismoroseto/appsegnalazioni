@@ -15,7 +15,7 @@ exports.sendPushOnNewReport = onValueCreated(
     if (!data) return null;
 
     try {
-      const tokensSnapshot = await admin.database().ref("tokens").once("value");
+      const tokensSnapshot = await admin.database().ref("operatorTokens").once("value");
       const tokensObj = tokensSnapshot.val();
 
       if (!tokensObj) {
@@ -23,7 +23,9 @@ exports.sendPushOnNewReport = onValueCreated(
         return null;
       }
 
-      const tokens = Object.values(tokensObj).filter(Boolean);
+      const tokens = Object.values(tokensObj)
+  .filter((row) => row && row.enabled === true && row.token)
+  .map((row) => row.token);
 
       if (!tokens.length) {
         console.log("Lista token vuota");
