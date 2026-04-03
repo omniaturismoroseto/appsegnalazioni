@@ -60,7 +60,7 @@ label:first-child{margin-top:0}
 .hbtn-op:hover{background:rgba(255,255,255,.3)}
 .notif-badge{position:absolute;top:-4px;right:-4px;background:#F5C800;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--red)}
 .hbtn-wrap{position:relative}
-#main-map{height:38vh;min-height:260px;max-height:420px;width:100%;display:block!important;z-index:1;background:#e8e8e8;flex-shrink:0}
+#main-map{height:38vh;min-height:260px;max-height:420px;width:100%;display:block;z-index:1;background:#e8e8e8}
 @media(min-width:600px){#main-map{height:50vh;max-height:600px}}
 @media(min-width:900px){#main-map{height:60vh;max-height:800px}}
 @media(min-width:1200px){#main-map{height:65vh;max-height:900px}}
@@ -442,6 +442,7 @@ const FCM_VAPID_KEY = "BHJrW95NpOuHuRHcx9uLFrAxOfL6mhhM8JsuYycCFfY0Y9F8LB9skDgKf
 const db=firebase.database();
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
+const stationNotesRef=db.ref("stationNotes");
 let _fcmApp = null;
 let _fcmMessaging = null;
 let _fcmToken = null;
@@ -1673,8 +1674,7 @@ function render(screen){
   document.getElementById("map-legend").style.display=showMap?"flex":"none";
   if(showMap){
     if(!mapObj){initMap();}
-    refreshMarkers();
-    [100,300,700,1500].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});
+    else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
     renderMapLegend();
     if(!nearestStation)requestGPS();
   } else if(screen==="forecast"){
@@ -2706,11 +2706,9 @@ function renderBandiere(page){
 }
 
 try{
-  // Piccolo delay per permettere al browser di completare il layout prima di initMap
-  var _startScreen=currentRole==="operator" ? "dashboard" : "home";
-  render(_startScreen);
-  // Forza ridimensionamento mappa a intervalli crescenti
-  [100,300,600,1000,2000].forEach(function(t){
+  render(currentRole==="operator" ? "dashboard" : "home");
+
+  [250,700,1200].forEach(function(t){
     setTimeout(function(){
       if(mapObj) mapObj.invalidateSize(true);
     }, t);
