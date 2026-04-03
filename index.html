@@ -1152,6 +1152,25 @@ var nearestDAE=null,nearestDAEDist=null;
 var _gpsWatchId=null;
 var _refreshPending=false;
 
+function _checkServiceOrEmergency(callback){
+  if(isServiceActive()){callback();return;}
+  // Servizio non attivo: mostra popup con 112
+  var overlay=document.createElement("div");
+  overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  var box=document.createElement("div");
+  box.style.cssText="background:#b91c1c;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4)";
+  box.innerHTML=
+    '<div style="font-size:48px;margin-bottom:12px">\uD83D\uDEA8</div>'
+    +'<p style="font-size:17px;font-weight:900;color:white;margin-bottom:8px;letter-spacing:.02em">SERVIZIO NON ATTIVO</p>'
+    +'<p style="font-size:13px;color:rgba(255,255,255,.85);margin-bottom:20px">Per emergenze chiama il 112</p>'
+    +'<a href="tel:112" style="display:block;background:white;color:#b91c1c;font-size:20px;font-weight:900;padding:14px;border-radius:10px;text-decoration:none;margin-bottom:12px">\uD83D\uDCDE CHIAMA IL 112</a>'
+    +'<button id="_svcPopupClose" style="background:rgba(255,255,255,.2);border:none;color:white;font-size:13px;padding:8px 18px;border-radius:8px;cursor:pointer">Annulla</button>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  document.getElementById("_svcPopupClose").addEventListener("click",function(){overlay.remove();});
+  overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
+}
+
 function isServiceActive(){var h=new Date().getHours();return h>=9&&h<19;}
 function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
 var _svcActive=isServiceActive();
@@ -1273,9 +1292,7 @@ function requestGPS(){
 
 
 window._segnalaPostazione=function(zoneLabel){
-  currentRole="public";
-  activeStation=zoneLabel||null;
-  render("submit");
+  _checkServiceOrEmergency(function(){currentRole="public";activeStation=zoneLabel||null;render("submit");});
 };
 
 
@@ -1778,9 +1795,9 @@ function renderHome(page){
   flagBox.innerHTML=
     `<p style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Significato delle bandiere</p>`+
     `<div style="display:grid;gap:8px">`+
-    `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#27ae60;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#27ae60">VERDE</span><span style="font-size:12px;color:var(--text2)"> &mdash; Mare calmo, bagno sicuro</span></div></div>`+
+    `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#27ae60;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#27ae60">VERDE</span><span style="font-size:12px;color:var(--text2)"> &mdash; Servizio di Salvataggio attivo, mare calmo, bagno sicuro</span></div></div>`+
     `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#F5C800;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#F5C800">GIALLA</span><span style="font-size:12px;color:var(--text2)"> &mdash; Mare mosso, prestare attenzione</span></div></div>`+
-    `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#e74c3c;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#e74c3c">ROSSA</span><span style="font-size:12px;color:var(--text2)"> &mdash; Pericolo, divieto di balneazione</span></div></div>`+
+    `<div style="display:flex;align-items:center;gap:10px"><div style="width:13px;height:20px;background:#e74c3c;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></div><div><span style="font-size:13px;font-weight:700;color:#e74c3c">ROSSA</span><span style="font-size:12px;color:var(--text2)"> &mdash; Mancanza Servizio di Salvataggio, pericolo, divieto di balneazione</span></div></div>`+
     `</div>`;
   page.appendChild(flagBox);
 
@@ -1811,7 +1828,7 @@ function renderHome(page){
       btnSeg.addEventListener("click",function(){
         currentRole="public";
         activeStation="P."+nearestStation.num+" \u2013 "+nearestStation.name;
-        render("submit");
+        _checkServiceOrEmergency(function(){render("submit");});
       });
       // Vai (apre navigatore)
       var btnNav=document.createElement("button");
@@ -1886,7 +1903,7 @@ function renderHome(page){
   const btns=document.createElement("div");btns.className="home-btns";
   const b1=document.createElement("button");b1.className="home-btn primary";
   b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo \u26A0\uFE0F</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
-  b1.addEventListener("click",()=>{currentRole="public";render("submit");});
+  b1.addEventListener("click",()=>{_checkServiceOrEmergency(function(){currentRole="public";render("submit");});});
   btns.appendChild(b1);page.appendChild(btns);
 
   // chiama + scrivi su WA
