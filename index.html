@@ -1265,6 +1265,7 @@ function renderHeader(){
   op.addEventListener("click",async ()=>{
     if(confirm("Vuoi uscire dall’area operatore?")){
       await disableOperatorPush();
+      localStorage.removeItem("omnia_fcm_token");
       localStorage.removeItem("omnia_op_auth");
       currentRole = null;
       render("home");
@@ -2329,12 +2330,19 @@ function renderLogin(page){
   const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent="PIN non corretto";page.appendChild(err);
   function go(){
     if(inp.value===PIN){
-      currentRole="operator";newReportCount=0;
-      try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
-      if(window._requestNotifPermission)_requestNotifPermission();
-      if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
+  currentRole="operator";
+  newReportCount=0;
+
+  try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
+
+  enableOperatorPush()
+    .catch(function(e){ console.log("Errore enableOperatorPush", e); })
+    .finally(function(){
       render("dashboard");
-    }else{err.style.display="block";}
+    });
+}else{
+  err.style.display="block";
+}
   }
   inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
   const btn=document.createElement("button");btn.className="btn-primary";btn.textContent="Accedi";btn.addEventListener("click",go);page.appendChild(btn);
