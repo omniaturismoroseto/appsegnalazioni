@@ -1672,7 +1672,7 @@ function render(screen){
   mapEl.style.display=showMap?"block":"none";
   document.getElementById("map-legend").style.display=showMap?"flex":"none";
   if(showMap){
-    if(!mapObj){initMap();}
+    if(!mapObj){initMap();[300,800,1500].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
     else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});}
     renderMapLegend();
     if(!nearestStation)requestGPS();
