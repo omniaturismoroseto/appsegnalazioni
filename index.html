@@ -2496,7 +2496,15 @@ function renderLogin(page){
     }catch(e){
       btn.disabled=false;btn.textContent="Accedi";
       err.style.display="block";
-      err.textContent="Email o password non corretti";
+      var msg="Email o password non corretti";
+      if(e.code==="auth/invalid-email")msg="Email non valida";
+      else if(e.code==="auth/user-not-found")msg="Utente non trovato";
+      else if(e.code==="auth/wrong-password"||e.code==="auth/invalid-credential")msg="Password errata";
+      else if(e.code==="auth/too-many-requests")msg="Troppi tentativi, riprova tra qualche minuto";
+      else if(e.code==="auth/network-request-failed")msg="Errore di rete, controlla la connessione";
+      else if(e.code==="auth/unauthorized-domain")msg="Dominio non autorizzato — aggiungi il dominio in Firebase Console → Auth → Impostazioni";
+      else if(e.code)msg="Errore: "+e.code;
+      err.textContent=msg;
     }
   }
 
