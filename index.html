@@ -2471,7 +2471,17 @@ function renderLogin(page){
   const passInp=document.createElement("input");passInp.type="password";
   passInp.placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
   passInp.autocomplete="current-password";
-  passWrap.appendChild(passInp);page.appendChild(passWrap);
+  passInp.style.paddingRight="44px";
+  passWrap.appendChild(passInp);
+  var eyeBtn=document.createElement("button");eyeBtn.type="button";
+  eyeBtn.style.cssText="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--text2);padding:4px";
+  eyeBtn.textContent="\uD83D\uDC41\uFE0F";
+  eyeBtn.addEventListener("click",function(){
+    if(passInp.type==="password"){passInp.type="text";eyeBtn.textContent="\uD83D\uDEAB";}
+    else{passInp.type="password";eyeBtn.textContent="\uD83D\uDC41\uFE0F";}
+  });
+  passWrap.appendChild(eyeBtn);
+  page.appendChild(passWrap);
 
   const err=document.createElement("p");
   err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";
@@ -2504,7 +2514,8 @@ function renderLogin(page){
       else if(e.code==="auth/network-request-failed")msg="Errore di rete, controlla la connessione";
       else if(e.code==="auth/unauthorized-domain")msg="Dominio non autorizzato — aggiungi il dominio in Firebase Console → Auth → Impostazioni";
       else if(e.code)msg="Errore: "+e.code;
-      err.textContent=msg;
+      err.textContent=msg+(e.code?" ["+e.code+"]":"");
+      console.error("Firebase Auth error:",e.code,e.message);
     }
   }
 
