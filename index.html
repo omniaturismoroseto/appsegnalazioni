@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.arcgisonline.com https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://*.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://www.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=(), payment=()"/>
@@ -482,16 +482,30 @@ const firebaseConfig={
 const FCM_VAPID_KEY = "BHJrW95NpOuHuRHcx9uLFrAxOfL6mhhM8JsuYycCFfY0Y9F8LB9skDgKfZ2nYzSjxs_qsgVziMe9zADuH0kvB_E";
 // Firebase REST - no initializeApp needed
 const db=firebase.database();
-// Firebase Auth - inizializzazione lazy e sicura
+// Firebase Auth - inizializzazione diretta
 var auth=null;
 function _getAuth(){
   if(auth)return auth;
-  var fbSdk=window.firebase;
-  if(!fbSdk)return null;
+  // firebaseSdk catturato prima della sovrascrittura del wrapper
+  var fbSdk=firebaseSdk;
+  if(!fbSdk||typeof fbSdk.auth!=="function"){
+    // Fallback: prova window.firebase se firebaseSdk non funziona
+    fbSdk=window.firebase;
+  }
+  if(!fbSdk||typeof fbSdk.auth!=="function"){
+    console.error("Firebase SDK non disponibile");
+    return null;
+  }
   try{
-    if(!fbSdk.apps||fbSdk.apps.length===0)fbSdk.initializeApp(firebaseConfig);
-  }catch(e){}
-  try{auth=fbSdk.auth();return auth;}catch(e){return null;}
+    // Usa app già inizializzata o creane una nuova
+    var app=fbSdk.apps&&fbSdk.apps.length>0?fbSdk.apps[0]:fbSdk.initializeApp(firebaseConfig);
+    auth=fbSdk.auth(app);
+    console.log("Firebase Auth inizializzato OK");
+    return auth;
+  }catch(e){
+    console.error("Errore init Firebase Auth:",e);
+    return null;
+  }
 }
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
@@ -2514,7 +2528,7 @@ function renderLogin(page){
       else if(e.code==="auth/network-request-failed")msg="Errore di rete, controlla la connessione";
       else if(e.code==="auth/unauthorized-domain")msg="Dominio non autorizzato — aggiungi il dominio in Firebase Console → Auth → Impostazioni";
       else if(e.code)msg="Errore: "+e.code;
-      err.textContent=msg+(e.code?" ["+e.code+"]":"");
+      err.textContent=msg+(e.code?" ["+e.code+"]":"")+(e.message?" - "+e.message.substring(0,80):"");
       console.error("Firebase Auth error:",e.code,e.message);
     }
   }
