@@ -4,12 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.arcgisonline.com https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.firebasedatabase.app https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://*.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.arcgisonline.com https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://*.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=(), payment=()"/>
 
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.arcgisonline.com https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.firebasedatabase.app https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://*.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://*.arcgisonline.com https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://*.googleapis.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=(), payment=()"/>
@@ -357,7 +357,8 @@ label:first-child{margin-top:0}
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js">
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
 <script>
 // Meteomare integrato con Open-Meteo Marine API e Forecast API
@@ -481,6 +482,17 @@ const firebaseConfig={
 const FCM_VAPID_KEY = "BHJrW95NpOuHuRHcx9uLFrAxOfL6mhhM8JsuYycCFfY0Y9F8LB9skDgKfZ2nYzSjxs_qsgVziMe9zADuH0kvB_E";
 // Firebase REST - no initializeApp needed
 const db=firebase.database();
+// Firebase Auth - inizializzazione lazy e sicura
+var auth=null;
+function _getAuth(){
+  if(auth)return auth;
+  var fbSdk=window.firebase;
+  if(!fbSdk)return null;
+  try{
+    if(!fbSdk.apps||fbSdk.apps.length===0)fbSdk.initializeApp(firebaseConfig);
+  }catch(e){}
+  try{auth=fbSdk.auth();return auth;}catch(e){return null;}
+}
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
 const stationNotesRef=db.ref("stationNotes");
@@ -569,7 +581,7 @@ async function disableOperatorPush(){
 const PHONE="+393284769641";
 const WA_NOTIFY="393284769641";
 const WA_CHANNEL="https://whatsapp.com/channel/0029VbCewQeCMY0PyZ6v5P3z";
-const PIN="151569";
+// PIN removed - using Firebase Authentication
 const RED="#D62B1F",NAVY="#1A3B8C";
 const FLAG_COLORS={verde:"#27ae60",gialla:"#F5C800",rossa:"#e74c3c"};
 const ALERT_COLORS={emergenza:"#D81B8C",pericolo:"#1a1a1a"};
@@ -2441,34 +2453,61 @@ function renderConsigliPage(page){
 }
 
 function renderLogin(page){
-  const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
+  const back=document.createElement("button");back.className="back-btn";
+  back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render("home"));page.appendChild(back);
-  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Accesso operatori";page.appendChild(h);
-  const lbl=document.createElement("label");lbl.textContent="PIN di accesso";page.appendChild(lbl);
-  const inp=document.createElement("input");inp.type="password";inp.placeholder="\u2022\u2022\u2022\u2022";inp.maxLength=6;page.appendChild(inp);
-  const err=document.createElement("p");err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";err.textContent="PIN non corretto";page.appendChild(err);
-  function go(){
-    if(inp.value===PIN){
-  currentRole="operator";
-  newReportCount=0;
 
-  try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
+  const h=document.createElement("h2");
+  h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";
+  h.textContent="Accesso operatori";page.appendChild(h);
 
-  enableOperatorPush()
-    .catch(function(e){ console.log("Errore enableOperatorPush", e); })
-    .finally(function(){
+  const lbE=document.createElement("label");lbE.textContent="Email";page.appendChild(lbE);
+  const emailInp=document.createElement("input");emailInp.type="email";
+  emailInp.placeholder="operatore@omnialifeguard.it";
+  emailInp.autocomplete="email";page.appendChild(emailInp);
+
+  const lbP=document.createElement("label");lbP.textContent="Password";page.appendChild(lbP);
+  const passWrap=document.createElement("div");passWrap.style.cssText="position:relative";
+  const passInp=document.createElement("input");passInp.type="password";
+  passInp.placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+  passInp.autocomplete="current-password";
+  passWrap.appendChild(passInp);page.appendChild(passWrap);
+
+  const err=document.createElement("p");
+  err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";
+  err.textContent="Email o password non corretti";page.appendChild(err);
+
+  const btn=document.createElement("button");btn.className="btn-primary";
+  btn.textContent="Accedi";
+
+  async function go(){
+    const email=emailInp.value.trim();
+    const pass=passInp.value;
+    if(!email||!pass){err.style.display="block";err.textContent="Inserisci email e password";return;}
+    btn.disabled=true;btn.textContent="Accesso in corso...";err.style.display="none";
+    try{
+      var _a=_getAuth();if(!_a)throw new Error("Auth non disponibile");
+      const cred=await _a.signInWithEmailAndPassword(email,pass);
+      currentRole="operator";newReportCount=0;
+      try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
+      if(window._requestNotifPermission)_requestNotifPermission();
+      if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
       render("dashboard");
-    });
-}else{
-  err.style.display="block";
-}
+    }catch(e){
+      btn.disabled=false;btn.textContent="Accedi";
+      err.style.display="block";
+      err.textContent="Email o password non corretti";
+    }
   }
-  inp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
-  const btn=document.createElement("button");btn.className="btn-primary";btn.textContent="Accedi";btn.addEventListener("click",go);page.appendChild(btn);
-  const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--text3);text-align:center;margin-top:12px";hint.textContent="PIN demo: 1234";page.appendChild(hint);
+
+  passInp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+  emailInp.addEventListener("keydown",e=>{if(e.key==="Enter")passInp.focus();});
+  btn.addEventListener("click",go);page.appendChild(btn);
+
+  // Auto-fill email if remembered
+  try{const saved=localStorage.getItem("omnia_op_email");if(saved)emailInp.value=saved;}catch(e){}
 }
 
-// SUBMIT
 function renderSubmit(page){
   let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
 
@@ -2654,6 +2693,8 @@ function renderDashboard(page){
     if(confirm("Vuoi uscire dall\u2019area operatori?")){
       currentRole=null;newReportCount=0;
       try{localStorage.removeItem("omnia_op_auth");}catch(e){}
+      try{var _ao=_getAuth();if(_ao)_ao.signOut();}catch(e){}
+      currentRole=null;
       render("home");
     }
   });
