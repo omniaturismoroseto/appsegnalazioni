@@ -22,7 +22,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/appsegnalazioni/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/appsegnalazioni/favicon-16.png">
 <link rel="shortcut icon" href="/appsegnalazioni/favicon.ico">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;font-size:15px}
@@ -351,7 +351,7 @@ label:first-child{margin-top:0}
   <div class="map-legend" id="map-legend" style="display:none"></div>
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
 <script>
@@ -1413,7 +1413,8 @@ function getMarkerColor(s){
 function refreshMarkers(){
   if(!mapObj)return;
   // Se un popup è aperto non distruggere i marker - aggiornali al momento della chiusura
-  var _anyOpen=mapMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}});
+  var _anyOpen=mapMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}})
+    ||daeMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}});
   if(_anyOpen){_refreshPending=true;return;}
   _refreshPending=false;
   mapMarkers.forEach(function(m){try{m.remove();}catch(e){}});
