@@ -786,7 +786,7 @@ const ZONE_VIETATE=[
       [42.73894026756044,13.98471909490045],
       [42.74090363248578,13.98410427675384]
     ],
-    desc:"Acque non adibite alla balneazione — area ufficiale foce Fiume Tordino (Ord. Capitaneria di Porto di Pescara)."
+    desc:"Acque non adibite alla balneazione — area ufficiale foce Fiume Tordino."
   },
   {
     name:"Zona vietata — Foce Fiume Vomano",
@@ -796,7 +796,7 @@ const ZONE_VIETATE=[
       [42.65582173682781,14.04131048524463],
       [42.65842631760071,14.03956013632299]
     ],
-    desc:"Acque non adibite alla balneazione — area ufficiale foce Fiume Vomano (Ord. Capitaneria di Porto di Pescara)."
+    desc:"Acque non adibite alla balneazione — area ufficiale foce Fiume Vomano."
   }
 ];
 var zoneVietateMarkers=[];
@@ -1732,7 +1732,7 @@ function addZoneVietate(){
     var popup='<div style="font-family:sans-serif;min-width:230px;line-height:1.5">'
       +'<div style="background:#cc0000;color:#fff;font-weight:700;font-size:12px;padding:6px 10px;border-radius:6px 6px 0 0;margin:-1px -1px 8px -1px">⛔ '+z.name+'</div>'
       +'<div style="font-size:11px;color:#333;margin-bottom:6px">'+z.desc+'</div>'
-      +'<div style="font-size:10px;color:#888;margin-bottom:6px">Fonte: Ordinanza Capitaneria di Porto di Pescara – Comandante Andreoli</div>'
+      +''
       +'</div>';
     rect.bindPopup(popup,{maxWidth:270,keepInView:true});
     labelMarker.bindPopup(popup,{maxWidth:270,keepInView:true});
