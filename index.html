@@ -780,15 +780,23 @@ const PORTOROSE_POPUP_B64="/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDB
 const ZONE_VIETATE=[
   {
     name:"Zona vietata — Foce Fiume Tordino",
-    fiume:"Tordino",
-    bounds:[[42.7383590,13.9805300],[42.7401100,13.9847929]],
-    desc:"Acque non adibite alla balneazione — 300 m in mare dalla foce del Fiume Tordino (Ord. Capitaneria di Porto di Pescara)."
+    latlngs:[
+      [42.74011111111111,13.98053055555556],
+      [42.73835833333334,13.98111388888889],
+      [42.73894026756044,13.98471909490045],
+      [42.74090363248578,13.98410427675384]
+    ],
+    desc:"Acque non adibite alla balneazione — area ufficiale foce Fiume Tordino (Ord. Capitaneria di Porto di Pescara)."
   },
   {
     name:"Zona vietata — Foce Fiume Vomano",
-    fiume:"Vomano",
-    bounds:[[42.6547730,14.0363000],[42.6572000,14.0415820]],
-    desc:"Acque non adibite alla balneazione — 300 m in mare dalla foce del Fiume Vomano (Ord. Capitaneria di Porto di Pescara)."
+    latlngs:[
+      [42.65720000000000,14.03630000000000],
+      [42.65477222222222,14.03790833333333],
+      [42.65582173682781,14.04131048524463],
+      [42.65842631760071,14.03956013632299]
+    ],
+    desc:"Acque non adibite alla balneazione — area ufficiale foce Fiume Vomano (Ord. Capitaneria di Porto di Pescara)."
   }
 ];
 var zoneVietateMarkers=[];
@@ -1702,7 +1710,7 @@ function addZoneVietate(){
   zoneVietateMarkers.forEach(function(m){if(m&&m.remove)m.remove();});
   zoneVietateMarkers=[];
   ZONE_VIETATE.forEach(function(z){
-    var rect=L.rectangle(z.bounds,{
+    var rect=L.polygon(z.latlngs,{
       color:"#cc0000",
       weight:2,
       opacity:0.85,
@@ -1710,7 +1718,11 @@ function addZoneVietate(){
       fillOpacity:0.18,
       dashArray:"6,4"
     }).addTo(mapObj);
-    var center=[(z.bounds[0][0]+z.bounds[1][0])/2,(z.bounds[0][1]+z.bounds[1][1])/2];
+    var bounds=rect.getBounds();
+    var center=[
+      (bounds.getNorth()+bounds.getSouth())/2,
+      (bounds.getEast()+bounds.getWest())/2
+    ];
     var labelIcon=L.divIcon({
       className:"",
       html:'<div style="background:rgba(180,0,0,0.82);color:#fff;font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5);">⛔ DIVIETO BALNEAZIONE</div>',
