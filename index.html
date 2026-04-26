@@ -2380,6 +2380,27 @@ function renderOrdinanzePage(page){
   cardOB.onclick=function(){window.open("./ordinanza-balneare-2026.pdf","_blank");};
   page.appendChild(cardOB);
 
+  // --- Ordinanza Sindacale N.71 — Animali in spiaggia ---
+  var cardAnimali=document.createElement("div");
+  cardAnimali.className="ordinanza-card";
+  cardAnimali.style.cssText+="cursor:pointer;transition:box-shadow .2s;";
+  cardAnimali.onmouseenter=function(){this.style.boxShadow="0 6px 20px rgba(26,95,168,.18)";};
+  cardAnimali.onmouseleave=function(){this.style.boxShadow="";};
+  cardAnimali.innerHTML='<div class="ordinanza-card-header">'
+    +'<span style="font-size:30px">🐾</span>'
+    +'<div>'
+    +'<span class="ordinanza-badge" style="background:#2e7d32">COMUNE DI ROSETO</span>'
+    +'<h3 style="margin-top:4px">Ordinanza N. 71 — Animali d\'Affezione in Spiaggia</h3>'
+    +'</div>'
+    +'</div>'
+    +'<p>Disciplina per l\'accesso alle spiagge e la balneazione di cani e gatti. Orari consentiti, norme igieniche, aree dedicate e sanzioni per i proprietari o detentori degli animali.</p>'
+    +'<div class="ord-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'
+    +'<span><strong>Sindaco:</strong> Avv. Sabatino Di Girolamo &nbsp;·&nbsp; <strong>Data:</strong> 14.05.2021</span>'
+    +'<span style="background:#2e7d32;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">📥 Apri PDF</span>'
+    +'</div>';
+  cardAnimali.onclick=function(){window.open("./ordinanza-animali-spiaggia-2021.pdf","_blank");};
+  page.appendChild(cardAnimali);
+
   // --- Divieti balneazione ---
   var ordinanze=[
     {
@@ -2408,18 +2429,12 @@ function renderOrdinanzePage(page){
       +'<div><span class="ordinanza-badge '+o.tipo+'">'+o.tipo.toUpperCase()+'</span>'
       +'<h3 style="margin-top:4px">'+o.titolo+'</h3></div>'
       +'</div>'
-      +'<p>'+o.testo+'</p>'
-      +'<div class="ord-meta">'
-      +'<strong>Autorità:</strong> '+o.autorita+' &nbsp;·&nbsp; <strong>Validità:</strong> '+o.validita
-      +'</div>';
+      +'<p>'+o.testo+'</p>';
     page.appendChild(card);
   });
 
   // Nota in fondo
-  var nota=document.createElement("p");
-  nota.style.cssText="font-size:11px;color:#999;text-align:center;margin-top:10px;line-height:1.6;";
-  nota.textContent="Le aree di divieto sono visibili sulla mappa principale. Per consultare il testo integrale delle ordinanze rivolgersi alla Capitaneria di Porto di Pescara.";
-  page.appendChild(nota);
+
 }
 
 function renderConsigliPage(page){
