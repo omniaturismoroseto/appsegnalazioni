@@ -2380,6 +2380,27 @@ function renderOrdinanzePage(page){
   cardOB.onclick=function(){window.open("./ordinanza-balneare-2026.pdf","_blank");};
   page.appendChild(cardOB);
 
+  // --- Ordinanza Sindacale N.40/2023 — Animali in spiaggia ---
+  var cardAnim2023=document.createElement("div");
+  cardAnim2023.className="ordinanza-card";
+  cardAnim2023.style.cssText+="cursor:pointer;transition:box-shadow .2s;";
+  cardAnim2023.onmouseenter=function(){this.style.boxShadow="0 6px 20px rgba(26,95,168,.18)";};
+  cardAnim2023.onmouseleave=function(){this.style.boxShadow="";};
+  cardAnim2023.innerHTML='<div class="ordinanza-card-header">'
+    +'<span style="font-size:30px">🐾</span>'
+    +'<div>'
+    +'<span class="ordinanza-badge" style="background:#2e7d32">COMUNE DI ROSETO</span>'
+    +'<h3 style="margin-top:4px">Ordinanza N. 40 — Accesso alle spiagge e balneazione animali d\'affezione</h3>'
+    +'</div>'
+    +'</div>'
+    +'<p>Aggiorna e sostituisce l\'Ord. N. 71/2021. Individua le spiagge libere autorizzate all\'accesso degli animali, gli orari di balneazione consentiti (fuori dalla fascia 9:30–18:30) e le norme igieniche per la stagione balneare 2023.</p>'
+    +'<div class="ord-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'
+    +'<span><strong>Sindaco:</strong> Dott. Mario Nugnes &nbsp;·&nbsp; <strong>Data:</strong> 05.07.2023</span>'
+    +'<span style="background:#2e7d32;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">📥 Apri PDF</span>'
+    +'</div>';
+  cardAnim2023.onclick=function(){window.open("./ordinanza-animali-spiaggia-2023.pdf","_blank");};
+  page.appendChild(cardAnim2023);
+
   // --- Ordinanza Sindacale N.71 — Animali in spiaggia ---
   var cardAnimali=document.createElement("div");
   cardAnimali.className="ordinanza-card";
