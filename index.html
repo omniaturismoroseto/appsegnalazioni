@@ -2401,6 +2401,27 @@ function renderOrdinanzePage(page){
   cardAnimali.onclick=function(){window.open("./ordinanza-animali-spiaggia-2021.pdf","_blank");};
   page.appendChild(cardAnimali);
 
+  // --- Legge Regionale 19/2014 — Cani in spiaggia ---
+  var cardLR=document.createElement("div");
+  cardLR.className="ordinanza-card";
+  cardLR.style.cssText+="cursor:pointer;transition:box-shadow .2s;";
+  cardLR.onmouseenter=function(){this.style.boxShadow="0 6px 20px rgba(26,95,168,.18)";};
+  cardLR.onmouseleave=function(){this.style.boxShadow="";};
+  cardLR.innerHTML='<div class="ordinanza-card-header">'
+    +'<span style="font-size:30px">🐾</span>'
+    +'<div>'
+    +'<span class="ordinanza-badge" style="background:#558b2f">REGIONE ABRUZZO</span>'
+    +'<h3 style="margin-top:4px">L.R. 19/2014 — Norme per l\'accesso alle spiagge degli animali d\'affezione</h3>'
+    +'</div>'
+    +'</div>'
+    +'<p>Disciplina regionale sull\'accesso di cani e gatti alle spiagge: certificazioni sanitarie, norme igieniche, balneazione, aree dedicate e cani da salvataggio.</p>'
+    +'<div class="ord-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'
+    +'<span><strong>Regione Abruzzo</strong> &nbsp;·&nbsp; <strong>Pubblicata:</strong> 28.04.2014 &nbsp;·&nbsp; B.U.R.A. n. 48</span>'
+    +'<span style="background:#558b2f;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">📥 Apri PDF</span>'
+    +'</div>';
+  cardLR.onclick=function(){window.open("./lr19-2014-animali-spiaggia.pdf","_blank");};
+  page.appendChild(cardLR);
+
   // --- Divieti balneazione ---
   var ordinanze=[
     {
