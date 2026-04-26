@@ -2369,6 +2369,17 @@ function renderOrdinanzePage(page){
     +'<p style="font-size:12px;color:rgba(255,255,255,.85);margin:0">Divieti e normative vigenti — Roseto degli Abruzzi e Pineto</p>';
   page.appendChild(hdr);
 
+
+  // --- Ordinanza Sicurezza Balneare 2025 — Capitaneria Giulianova ---
+  var cardCapit=document.createElement("div");
+  cardCapit.className="ordinanza-card";
+  cardCapit.style.cssText+="cursor:pointer;transition:box-shadow .2s;";
+  cardCapit.onmouseenter=function(){this.style.boxShadow="0 6px 20px rgba(204,0,0,.18)";};
+  cardCapit.onmouseleave=function(){this.style.boxShadow="";};
+  cardCapit.innerHTML='<div class="ordinanza-card-header">'    +'<span style="font-size:30px">⚓</span>'    +'<div>'    +'<span class="ordinanza-badge" style="background:#cc0000">CAPITANERIA DI PORTO</span>'    +'<h3 style="margin-top:4px">Ordinanza Sicurezza Balneare n. 35/2025 — Circondario Marittimo di Giulianova</h3>'    +'</div>'    +'</div>'    +'<p>Disciplina il servizio di salvamento (17 mag – 21 set 2025, ore 09:00–19:00), le dotazioni delle postazioni di salvataggio, i limiti alla navigazione nelle zone balneari (300 m dalla battigia), i corridoi di lancio, le spiagge libere e i divieti di pesca. Si applica ai Comuni di Martinsicuro, Alba Adriatica, Tortoreto, Giulianova, Roseto degli Abruzzi, Pineto e Silvi.</p>'    +'<div class="ord-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'    +'<span><strong>Comandante:</strong> T.V. (CP) Valeria Di Mattia &nbsp;·&nbsp; <strong>Emessa:</strong> 07.05.2025</span>'    +'<span style="background:#cc0000;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">📥 Apri PDF</span>'    +'</div>';
+  cardCapit.onclick=function(){window.open("./ordinanza-sicurezza-balneare-2025-giulianova.pdf","_blank");};
+  page.appendChild(cardCapit);
+
   // --- Ordinanza Balneare 2026 Regione Abruzzo ---
   var cardOB=document.createElement("div");
   cardOB.className="ordinanza-card";
