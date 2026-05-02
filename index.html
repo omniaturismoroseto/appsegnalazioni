@@ -503,6 +503,7 @@ window.addEventListener("load",function(){
 });
 function startApp(){
   history.replaceState({screen:"home"}, "", "");
+  setTimeout(_showOnboarding, 800);
 // Sblocca AudioContext al primo tocco utente (richiesto da browser mobile)
 function _unlockAudio(){
   if(_alertCtx){try{if(_alertCtx.state==="suspended")_alertCtx.resume();}catch(e){}return;}
@@ -1885,6 +1886,169 @@ function ensureLocamareMarker(){
 
 
 // RENDER
+
+// ===================== ONBOARDING AL PRIMO AVVIO =====================
+function _showOnboarding(){
+  var OB_KEY='omnia_onboarding_v1';
+  try{ if(localStorage.getItem(OB_KEY)==='1') return; }catch(e){}
+
+  var slides=[
+    {
+      icon:'⚓',
+      title:'Benvenuto in Omnia Segnalazioni',
+      text:'Il sistema digitale di coordinamento per il servizio di salvataggio Adriatic Lifeguard Service.\nRoseto degli Abruzzi — stagione 2026.',
+      color:'#1a5fa8'
+    },
+    {
+      icon:'🗺️',
+      title:'Mappa Interattiva',
+      text:'Visualizza in tempo reale le postazioni bagnino (P.10–P.35), i defibrillatori DAE, la Guardia Costiera, i Carabinieri, la Guardia di Finanza e i Vigili del Fuoco e tante altre info utili.',
+      color:'#1a7a3a'
+    },
+    {
+      icon:'🚨',
+      title:'Come fare una Segnalazione',
+      text:'1️⃣  Tocca il pulsante rosso 🔴 SEGNALA sulla home\n2️⃣  Scegli il tipo: Persona in difficoltà, Medusa, DAE, Anomalia...\n3️⃣  La tua posizione GPS viene rilevata automaticamente\n4️⃣  Aggiungi una nota se necessario (es. "bagnante anziano")\n5️⃣  Tocca INVIA — l\'operatore riceve la notifica in tempo reale',
+      color:'#cc0000'
+    },
+    {
+      icon:'🌊',
+      title:'Meteo & Bandiere',
+      text:'Consulta previsioni meteo marine aggiornate e lo stato delle bandiere per ogni postazione:\n\n🟢 VERDE — Servizio attivo, condizioni buone\n🟡 GIALLA — Servizio attivo, condizioni a rischio\n🔴 ROSSA — Pericolo / servizio sospeso\n\n⚠️ Vento GARBINO (da W/SW): pericolo massimo — vietato l\'uso di gonfiabili.',
+      color:'#b87000'
+    },
+    {
+      icon:'📋',
+      title:'Ordinanze & Guide',
+      text:'Accedi alle ordinanze balneari vigenti, ai consigli di sicurezza per i bagnini e ai partner istituzionali del servizio.',
+      color:'#5a2d82'
+    },
+    {
+      icon:'🏊',
+      title:'Consigli del Bagnino',
+      text:'La sezione CONSIGLI raccoglie guide pratiche per i bagnini:\n\n• Tecniche di salvataggio in mare\n• Gestione delle emergenze mediche in spiaggia\n• Regole sugli spazi minimi (5 m dalla battigia)\n• Segnalazioni corrette con bandiera e fischietto\n• Normativa vigente sull\'assistente bagnanti\n\nToccala dal menu principale della home.',
+      color:'#006a8e'
+    }
+  ];
+
+  var cur=0;
+
+  // Overlay
+  var overlay=document.createElement('div');
+  overlay.id='_ob_overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,#0d3d7a 0%,#1a5fa8 60%,#0a2a55 100%);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:0;overflow:hidden;touch-action:pan-y;';
+
+  // Skip button
+  var skipBtn=document.createElement('button');
+  skipBtn.textContent='Salta';
+  skipBtn.style.cssText='position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;z-index:2;';
+  overlay.appendChild(skipBtn);
+
+  // Slides container
+  var slidesWrap=document.createElement('div');
+  slidesWrap.style.cssText='flex:1;display:flex;align-items:center;justify-content:center;width:100%;padding:16px 24px 0;box-sizing:border-box;';
+
+  var slideEl=document.createElement('div');
+  slideEl.style.cssText='display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;max-width:360px;width:100%;animation:_ob_fadein .35s ease;';
+
+  function renderSlide(){
+    var s=slides[cur];
+    slideEl.innerHTML='';
+    slideEl.style.animation='none';
+    void slideEl.offsetWidth; // force reflow
+    slideEl.style.animation='_ob_fadein .35s ease';
+
+    var iconEl=document.createElement('div');
+    iconEl.textContent=s.icon;
+    iconEl.style.cssText='font-size:72px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));';
+
+    var titleEl=document.createElement('h2');
+    titleEl.textContent=s.title;
+    titleEl.style.cssText='color:#fff;font-size:22px;font-weight:900;margin:0;line-height:1.25;';
+
+    var textEl=document.createElement('p');
+    textEl.style.cssText='color:rgba(255,255,255,.88);font-size:14px;line-height:1.6;margin:0;white-space:pre-line;';
+    textEl.textContent=s.text;
+
+    // Accent bar
+    var bar=document.createElement('div');
+    bar.style.cssText='width:48px;height:4px;border-radius:2px;background:'+s.color+';opacity:.8;';
+
+    slideEl.appendChild(iconEl);
+    slideEl.appendChild(bar);
+    slideEl.appendChild(titleEl);
+    slideEl.appendChild(textEl);
+  }
+
+  slidesWrap.appendChild(slideEl);
+  overlay.appendChild(slidesWrap);
+
+  // Bottom area: dots + button
+  var bottom=document.createElement('div');
+  bottom.style.cssText='width:100%;padding:20px 24px 36px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:20px;';
+
+  // Dots
+  var dotsEl=document.createElement('div');
+  dotsEl.style.cssText='display:flex;gap:8px;align-items:center;';
+
+  function renderDots(){
+    dotsEl.innerHTML='';
+    slides.forEach(function(_,i){
+      var d=document.createElement('div');
+      d.style.cssText='border-radius:50%;transition:all .25s;cursor:pointer;'+(i===cur?'width:24px;height:8px;border-radius:4px;background:#fff;':'width:8px;height:8px;background:rgba(255,255,255,.35);');
+      d.addEventListener('click',function(){ cur=i; renderSlide(); renderDots(); updateBtn(); });
+      dotsEl.appendChild(d);
+    });
+  }
+
+  // Button
+  var nextBtn=document.createElement('button');
+  nextBtn.style.cssText='width:100%;max-width:320px;padding:15px 0;background:#fff;color:#1a5fa8;border:none;border-radius:14px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.25);letter-spacing:.3px;';
+
+  function updateBtn(){
+    nextBtn.textContent=cur===slides.length-1?'Inizia →':'Avanti →';
+  }
+
+  function dismiss(){
+    try{localStorage.setItem(OB_KEY,'1');}catch(e){}
+    overlay.style.transition='opacity .4s';
+    overlay.style.opacity='0';
+    setTimeout(function(){ if(overlay.parentNode) overlay.parentNode.removeChild(overlay); },400);
+  }
+
+  nextBtn.addEventListener('click',function(){
+    if(cur<slides.length-1){ cur++; renderSlide(); renderDots(); updateBtn(); }
+    else { dismiss(); }
+  });
+  skipBtn.addEventListener('click', dismiss);
+
+  // Swipe support
+  var _sx=null;
+  overlay.addEventListener('touchstart',function(e){ _sx=e.changedTouches[0].clientX; },{passive:true});
+  overlay.addEventListener('touchend',function(e){
+    if(_sx===null) return;
+    var dx=e.changedTouches[0].clientX-_sx; _sx=null;
+    if(Math.abs(dx)<40) return;
+    if(dx<0 && cur<slides.length-1){ cur++; renderSlide(); renderDots(); updateBtn(); }
+    else if(dx>0 && cur>0){ cur--; renderSlide(); renderDots(); updateBtn(); }
+  },{passive:true});
+
+  bottom.appendChild(dotsEl);
+  bottom.appendChild(nextBtn);
+  overlay.appendChild(bottom);
+
+  // CSS animation
+  if(!document.getElementById('_ob_style')){
+    var st=document.createElement('style'); st.id='_ob_style';
+    st.textContent='@keyframes _ob_fadein{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}';
+    document.head.appendChild(st);
+  }
+
+  renderSlide(); renderDots(); updateBtn();
+  document.body.appendChild(overlay);
+}
+// ===================== FINE ONBOARDING =====================
+
 function render(screen){
   currentScreen=screen;
   if(!suppressHistory){
@@ -2081,6 +2245,15 @@ function renderHome(page){
   ordinanzeBtn.innerHTML=`<h3>📋 Ordinanze Balneari</h3><p>Divieti e normative vigenti in spiaggia</p>`;
   ordinanzeBtn.onclick=function(){render("ordinanze");};
   page.appendChild(ordinanzeBtn);
+
+  var guideBtn=document.createElement("button");
+  guideBtn.innerHTML='<span style="font-size:16px">📖</span> Rivedi la guida introduttiva';
+  guideBtn.style.cssText="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;margin-top:8px;background:#27ae60;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(39,174,96,.3);";
+  guideBtn.onclick=function(){
+    try{localStorage.removeItem("omnia_onboarding_v1");}catch(e){}
+    _showOnboarding();
+  };
+  page.appendChild(guideBtn);
 
   var partnerBtn=document.createElement("button");
   partnerBtn.className="partner-home-btn";
@@ -2497,6 +2670,18 @@ function renderOrdinanzePage(page){
   });
 
   // Nota in fondo
+
+  // --- Pulsante: Rivedi la guida introduttiva ---
+  var obBtn=document.createElement("button");
+  obBtn.innerHTML='<span style="font-size:18px">📖</span> Rivedi la guida introduttiva';
+  obBtn.style.cssText="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px;margin-top:28px;background:#27ae60;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(39,174,96,.35);letter-spacing:.2px;";
+  obBtn.onmouseenter=function(){this.style.background="#219a52";};
+  obBtn.onmouseleave=function(){this.style.background="#27ae60";};
+  obBtn.onclick=function(){
+    try{localStorage.removeItem("omnia_onboarding_v1");}catch(e){}
+    _showOnboarding();
+  };
+  page.appendChild(obBtn);
 
 }
 
