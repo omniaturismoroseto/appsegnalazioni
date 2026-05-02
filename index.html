@@ -1358,7 +1358,9 @@ function _checkForActiveAlerts(){
 }
 function sendWANotify(r){
   const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO"};
-  const photoNote=r.photo?"\n\uD83D\uDCF7 Foto allegata (visualizza in dashboard)":"";const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}${photoNote}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Lifeguard Service`;
+  const photoNote=r.photo?"\n\uD83D\uDCF7 Foto allegata (visualizza in dashboard)":"";
+  const gpsNote=r.gps?"\n\uD83D\uDCCD GPS: https://maps.google.com/?q="+r.gps.lat.toFixed(6)+","+r.gps.lng.toFixed(6)+(r.gps.acc?"\n\uD83D\uDFE2 Accuratezza ~"+Math.round(r.gps.acc)+"m":""):"";
+  const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}${gpsNote}${photoNote}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Lifeguard Service`;
   window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
 }
 
