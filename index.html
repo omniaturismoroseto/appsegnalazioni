@@ -1262,6 +1262,7 @@ function findNearestDAE(lat,lng){
 var nearestDAE=null,nearestDAEDist=null;
 var _gpsWatchId=null;
 var _refreshPending=false;
+var _userLat=null,_userLng=null,_userGpsAcc=null;
 
 function _checkServiceOrEmergency(callback){
   if(isServiceActive()){callback();return;}
@@ -1364,6 +1365,7 @@ function sendWANotify(r){
 // GPS
 function _onGPSPosition(pos){
   var lat=pos.coords.latitude,lng=pos.coords.longitude;
+  _userLat=lat;_userLng=lng;_userGpsAcc=pos.coords.accuracy||null;
   var res=findNearest(lat,lng);
   nearestStation=res.station;nearestDist=res.dist;
   var daeResult=findNearestDAE(lat,lng);
@@ -3119,9 +3121,9 @@ function renderSubmit(page){
   privacyWrap.style.cssText="margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2)";
   privacyWrap.innerHTML=
     '<p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Informativa privacy</p>'
-    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">Ai sensi del Regolamento UE 2016/679 (GDPR), i dati personali eventualmente forniti tramite questo servizio, incluso il numero di telefono, saranno trattati da Omnia Servizi al Turismo SRLS esclusivamente per la gestione della segnalazione, eventuali verifiche e ricontatto dell’utente, se necessario.</p>'
-    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">I dati saranno utilizzati solo dal personale incaricato del servizio e conservati per il tempo strettamente necessario alla gestione della segnalazione.</p>'
-    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text);margin:0"><input type="checkbox" id="privacyCheck" style="margin-top:2px;flex-shrink:0"> <span>Ho letto l’informativa privacy e acconsento al trattamento dei dati personali per la gestione della segnalazione.</span></label>';
+    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">Ai sensi del Regolamento UE 2016/679 (GDPR), i dati personali forniti tramite questo servizio — inclusi numero di telefono, nome e, se il GPS del dispositivo è attivo e autorizzato, la posizione geografica al momento dell’invio — saranno trattati da Omnia Servizi al Turismo SRLS esclusivamente per la gestione della segnalazione, il coordinamento del soccorso, eventuali verifiche e il ricontatto dell’utente se necessario.</p>'
+    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">La posizione GPS, se rilevata, viene utilizzata per identificare la postazione di soccorso più vicina e facilitare l’intervento tempestivo. I dati sono accessibili esclusivamente al personale incaricato del servizio e conservati per il tempo strettamente necessario alla gestione della segnalazione.</p>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text);margin:0"><input type="checkbox" id="privacyCheck" style="margin-top:2px;flex-shrink:0"> <span>Ho letto l’informativa privacy e acconsento al trattamento dei dati personali, inclusa l’eventuale posizione GPS, per la gestione della segnalazione.</span></label>';
   wrap.appendChild(privacyWrap);
 
   const emergencyNote=document.createElement("p");
@@ -3144,7 +3146,7 @@ function renderSubmit(page){
       alert("Devi leggere e accettare l’informativa privacy per procedere.");return;
     }
     submitBtn.disabled=true;submitBtn.textContent="Invio...";
-    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null};
+    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null,gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null};
     addReport(r).then(()=>{sendWANotify(r);render("done");})
     .catch(e=>{submitBtn.disabled=false;submitBtn.textContent="Invia segnalazione";alert("Errore: "+e.message);});
   });
