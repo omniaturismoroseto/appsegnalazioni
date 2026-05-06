@@ -1263,6 +1263,7 @@ function findNearestDAE(lat,lng){
 }
 var nearestDAE=null,nearestDAEDist=null;
 var _gpsWatchId=null;
+var _gpsError=false; // true se GPS negato o in timeout
 var _refreshPending=false;
 var _userLat=null,_userLng=null,_userGpsAcc=null;
 
@@ -1396,10 +1397,12 @@ function requestGPS(){
   if(!navigator.geolocation)return;
   // Se già in ascolto, non riavviare
   if(_gpsWatchId!==null)return;
+  _gpsError=false;
   _gpsWatchId=navigator.geolocation.watchPosition(
     _onGPSPosition,
     function(e){
       nearestStation=null;
+      _gpsError=true;
       if(currentScreen==="home")renderPage();
     },
     {enableHighAccuracy:true,timeout:15000,maximumAge:0}
@@ -2166,10 +2169,30 @@ function renderHome(page){
       });
       btnRow.appendChild(btnSeg);btnRow.appendChild(btnNav);
       ns.appendChild(btnRow);
+    } else if(_gpsError){
+      // Stato 3: errore GPS (permesso negato o timeout)
+      ns.style.cssText="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:14px;background:#fff7ed;border:1px solid #fed7aa;";
+      var errIcon=document.createElement("span");errIcon.style.cssText="font-size:18px;flex-shrink:0";errIcon.textContent="\u26A0\uFE0F";
+      var errBody=document.createElement("div");errBody.style.cssText="flex:1;min-width:0";
+      var errTxt=document.createElement("p");errTxt.style.cssText="font-size:13px;color:#92400e;margin:0 0 4px;font-weight:600";errTxt.textContent="GPS non disponibile";
+      var errSub=document.createElement("p");errSub.style.cssText="font-size:11px;color:#b45309;margin:0";errSub.textContent="Verifica che i permessi di posizione siano attivi per questo sito.";
+      var errBtn=document.createElement("button");errBtn.style.cssText="margin-top:6px;padding:4px 12px;border-radius:20px;border:1px solid #f97316;background:transparent;font-size:12px;font-weight:600;color:#ea580c;cursor:pointer";errBtn.textContent="Riprova";
+      errBtn.addEventListener("click",function(){_gpsWatchId=null;_gpsError=false;requestGPS();renderPage();});
+      errBody.appendChild(errTxt);errBody.appendChild(errSub);errBody.appendChild(errBtn);
+      ns.appendChild(errIcon);ns.appendChild(errBody);
+    } else if(_gpsWatchId!==null){
+      // Stato 2: GPS avviato, in attesa del fix
+      ns.style.cssText="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);";
+      var spnWrap=document.createElement("div");spnWrap.style.cssText="width:18px;height:18px;flex-shrink:0;position:relative";
+      spnWrap.innerHTML='<div style="width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border);border-top-color:#3b82f6;animation:_gpsSpinAnim 0.8s linear infinite"></div>';
+      if(!document.getElementById("_gpsSpinStyle")){var ss=document.createElement("style");ss.id="_gpsSpinStyle";ss.textContent="@keyframes _gpsSpinAnim{to{transform:rotate(360deg)}}";document.head.appendChild(ss);}
+      var spnTxt=document.createElement("span");spnTxt.style.cssText="font-size:13px;color:var(--text2)";spnTxt.textContent="Ricerca posizione in corso\u2026";
+      ns.appendChild(spnWrap);ns.appendChild(spnTxt);
     } else {
+      // Stato 1: GPS non ancora avviato
       ns.style.cssText="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);cursor:pointer";
       ns.innerHTML='<span style="font-size:18px">\uD83D\uDCCD</span><span style="font-size:13px;color:var(--text2)">Tocca per rilevare la postazione pi\u00f9 vicina</span>';
-      ns.addEventListener("click",function(){requestGPS();});
+      ns.addEventListener("click",function(){requestGPS();renderPage();});
     }
     page.appendChild(ns);
 
