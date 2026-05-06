@@ -1401,11 +1401,17 @@ function requestGPS(){
   _gpsWatchId=navigator.geolocation.watchPosition(
     _onGPSPosition,
     function(e){
+      // code 1=permesso negato, 2=non disponibile, 3=timeout
+      if(e.code===3){
+        // Timeout: segnale assente momentaneamente, riprova silenziosamente
+        // _gpsWatchId rimane attivo, watchPosition riproverà da solo
+        return;
+      }
       nearestStation=null;
       _gpsError=true;
       if(currentScreen==="home")renderPage();
     },
-    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+    {enableHighAccuracy:true,timeout:30000,maximumAge:30000}
   );
 }
 
