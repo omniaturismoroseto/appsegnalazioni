@@ -503,6 +503,8 @@ window.addEventListener("load",function(){
 });
 function startApp(){
   history.replaceState({screen:"home"}, "", "");
+  // Avvia GPS subito, prima del primo render
+  setTimeout(function(){try{requestGPS();}catch(e){}}, 0);
   setTimeout(_showOnboarding, 800);
 // Sblocca AudioContext al primo tocco utente (richiesto da browser mobile)
 function _unlockAudio(){
