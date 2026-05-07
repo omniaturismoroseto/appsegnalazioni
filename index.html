@@ -2001,7 +2001,7 @@ function _showOnboarding(){
     {
       icon:'📋',
       title:'Ordinanze & Guide',
-      text:'Accedi alle ordinanze balneari vigenti, ai consigli di sicurezza per i bagnini e ai partner istituzionali del servizio.',
+      text:'Accedi alle ordinanze in vigore vigenti, ai consigli di sicurezza per i bagnini e ai partner istituzionali del servizio.',
       color:'#5a2d82'
     },
     {
@@ -2344,7 +2344,7 @@ function renderHome(page){
 
   const ordinanzeBtn=document.createElement("button");
   ordinanzeBtn.className="ordinanze-home-btn";
-  ordinanzeBtn.innerHTML=`<h3>📋 Ordinanze Balneari</h3><p>Divieti e normative vigenti in spiaggia</p>`;
+  ordinanzeBtn.innerHTML=`<h3>📋 Ordinanze in Vigore</h3><p>Divieti e normative vigenti in spiaggia</p>`;
   ordinanzeBtn.onclick=function(){render("ordinanze");};
   page.appendChild(ordinanzeBtn);
 
@@ -2647,7 +2647,7 @@ function renderOrdinanzePage(page){
   var hdr=document.createElement("div");
   hdr.style.cssText="background:linear-gradient(135deg,#1a5fa8 0%,#0d3d7a 100%);border-radius:18px;padding:20px 18px 16px;margin-bottom:20px;";
   hdr.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
-    +'<h2 style="font-size:20px;font-weight:900;color:#fff;margin:0">📋 Ordinanze Balneari</h2>'
+    +'<h2 style="font-size:20px;font-weight:900;color:#fff;margin:0">📋 Ordinanze in Vigore</h2>'
     +'</div>'
     +'<p style="font-size:12px;color:rgba(255,255,255,.85);margin:0">Divieti e normative vigenti — Roseto degli Abruzzi e Pineto</p>';
   page.appendChild(hdr);
