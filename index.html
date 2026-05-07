@@ -435,9 +435,12 @@ var firebase={
     ref:function(path){
       return {
         _path:path,
-        on:function(evt,cb){
+        on:function(evt,cb,pollInterval){
           var self=this;
           var lsKey=self._path;
+          // Intervalli differenziati per path (ms)
+          var _POLL_MAP={"flags":5000,"reports":10000,"stationNotes":15000};
+          var _pi=pollInterval||_POLL_MAP[lsKey]||10000;
           // Avvia subito con dati locali
           var local=_lsGet(lsKey);
           if(local!==null)cb({val:function(){return local;}});
@@ -452,7 +455,7 @@ var firebase={
           }
           poll();
           setTimeout(poll,1500); // secondo tentativo rapido
-          setInterval(poll,2000);
+          setInterval(poll,_pi);
         },
         push:function(data){
           var lsKey=this._path;
@@ -825,6 +828,16 @@ const DAE_POINTS=[
 ];
 const DAE_B64="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";
 var daeMarkers=[];
+// Boe cantiere Ordinanza 23/2026 — Realizzazione/Ripristino Scogliere
+var boeCantiereMarkers=[];
+const BOE_CANTIERE_23_2026=[
+  {area:"AREA 1",pres:"13-26-TA",boa:1,lat:42.6655,lng:14.0323},
+  {area:"AREA 1",pres:"13-26-TA",boa:2,lat:42.6594,lng:14.0376},
+  {area:"AREA 2",pres:"16-26-TA",boa:1,lat:42.7090,lng:14.0012},
+  {area:"AREA 2",pres:"16-26-TA",boa:2,lat:42.6962,lng:14.0090},
+  {area:"AREA 3",pres:"15-26-TA",boa:1,lat:42.7331,lng:13.9867},
+  {area:"AREA 3",pres:"15-26-TA",boa:2,lat:42.7204,lng:13.9938},
+];
 const CC_POINT={name:"Carabinieri - Comando Stazione di Roseto degli Abruzzi",lat:42.6690839,lng:14.0202191};
 const COMUNE_POINT={name:"Comune di Roseto degli Abruzzi",lat:42.6796819,lng:14.0110622};
 const IAT_POINT={name:"IAT Roseto degli Abruzzi",lat:42.6775099,lng:14.0139231};
@@ -1182,6 +1195,26 @@ flagsRef.on("value",snap=>{
   if(currentScreen==="home")renderPage();
   if(currentScreen==="dashboard"&&activeDashTab==="bandiere")renderPage();
 });
+
+// Valida sessione Firebase Auth in background al caricamento
+// Se il token è scaduto o il localStorage è stato manipolato, revoca l'accesso
+(function(){
+  try{
+    var _ao=_getAuth();
+    if(_ao){
+      _ao.onAuthStateChanged(function(user){
+        if(!user&&currentRole==="operator"){
+          // Nessuna sessione Firebase valida: localStorage non attendibile
+          currentRole=null;
+          try{localStorage.removeItem("omnia_op_auth");}catch(e){}
+          console.warn("Sessione operatore non valida: accesso revocato");
+          if(currentScreen==="dashboard")render("home");
+          else renderHeader();
+        }
+      });
+    }
+  }catch(e){console.warn("onAuthStateChanged init error:",e);}
+})();
 
 function onNewReport(){
   renderHeader();
@@ -1635,6 +1668,34 @@ function addDAEMarkers(){
       +'</div>';
     m.bindPopup(popHtml);
     daeMarkers.push(m);
+  });
+  addBoeCantiereMarkers();
+}
+
+function addBoeCantiereMarkers(){
+  if(!mapObj)return;
+  boeCantiereMarkers.forEach(function(m){try{m.remove();}catch(e){}});
+  boeCantiereMarkers=[];
+  BOE_CANTIERE_23_2026.forEach(function(b){
+    var boaIcon=L.divIcon({
+      className:"",
+      html:'<div style="width:28px;height:28px;border-radius:50%;background:#f5c800;border:2.5px solid #b8860b;'
+          +'box-shadow:0 2px 6px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;">'
+          +'<span style="font-size:14px;font-weight:900;color:#7a5700;line-height:1">✕</span></div>',
+      iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-16]
+    });
+    var m=L.marker([b.lat,b.lng],{icon:boaIcon}).addTo(mapObj);
+    var popHtml='<div style="font-family:sans-serif;min-width:210px;line-height:1.5">'
+      +'<div style="font-size:13px;font-weight:700;color:#b8860b;margin-bottom:4px">⚓ Cantiere Marittimo</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#333;margin-bottom:2px">Ordinanza N. 23/2026</div>'
+      +'<div style="font-size:11px;color:#555;margin-bottom:2px">Ufficio Circondariale Marittimo di Giulianova</div>'
+      +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>'+b.area+'</strong> — Segnalamento '+b.pres+'</div>'
+      +'<div style="font-size:11px;color:#333;margin-bottom:2px">BOA '+b.boa+' — Boa ad asta gialla con miraglio X</div>'
+      +'<div style="font-size:10px;color:#888;margin-bottom:6px">Divieto balneazione, navigazione e pesca nel raggio di 100 mt dai motopontoni</div>'
+      +'<div style="font-size:10px;font-weight:700;color:#cc0000">Validità: fino al 23.05.2026</div>'
+      +'</div>';
+    m.bindPopup(popHtml,{maxWidth:240,keepInView:true});
+    boeCantiereMarkers.push(m);
   });
 }
 
@@ -2577,6 +2638,28 @@ function renderOrdinanzePage(page){
     +'<p style="font-size:12px;color:rgba(255,255,255,.85);margin:0">Divieti e normative vigenti — Roseto degli Abruzzi e Pineto</p>';
   page.appendChild(hdr);
 
+
+  // --- Ordinanza 23/2026 — Lavori Scogliere (ATTIVA — scade 23.05.2026) ---
+  var cardLavori=document.createElement("div");
+  cardLavori.className="ordinanza-card";
+  cardLavori.style.cssText+="cursor:pointer;transition:box-shadow .2s;border-left:4px solid #f5c800;";
+  cardLavori.onmouseenter=function(){this.style.boxShadow="0 6px 20px rgba(181,137,0,.25)";};
+  cardLavori.onmouseleave=function(){this.style.boxShadow="";};
+  cardLavori.innerHTML='<div class="ordinanza-card-header">'
+    +'<span style="font-size:30px">⚓</span>'
+    +'<div>'
+    +'<span class="ordinanza-badge" style="background:#b8860b">CAPITANERIA DI PORTO</span>'
+    +'<span style="margin-left:6px;background:#cc0000;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;vertical-align:middle">IN CORSO</span>'
+    +'<h3 style="margin-top:4px">Ordinanza N. 23/2026 — Realizzazione/Ripristino Scogliere · Roseto degli Abruzzi</h3>'
+    +'</div>'
+    +'</div>'
+    +'<p>Disciplina i lavori di ripristino barriere sommerse e scogliere su 3 aree del litorale (Roseto Sud, Torrente Borsacchio, Cologna Spiaggia). Impresa: ditta Curti srl. Mezzi operanti: Motopontone IN MARE I° e MAGNUM. Per un raggio di 100 mt dai motopontoni è vietata navigazione, balneazione, pesca e immersione. Le aree sono segnalate da boe gialle con miraglio X visibili sulla mappa.</p>'
+    +'<div class="ord-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'
+    +'<span><strong>Comandante:</strong> T.V. (CP) Valeria Di Mattia &nbsp;·&nbsp; <strong>Valida fino al:</strong> 23.05.2026</span>'
+    +'<span style="background:#b8860b;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">📥 Apri PDF</span>'
+    +'</div>';
+  cardLavori.onclick=function(){window.open("./ordinanza-lavori-2026.pdf","_blank");};
+  page.appendChild(cardLavori);
 
   // --- Ordinanza Sicurezza Balneare 2025 — Capitaneria Giulianova ---
   var cardCapit=document.createElement("div");
