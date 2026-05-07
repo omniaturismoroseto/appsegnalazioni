@@ -2803,17 +2803,6 @@ function renderOrdinanzePage(page){
 
   // Nota in fondo
 
-  // --- Pulsante: Rivedi la guida introduttiva ---
-  var obBtn=document.createElement("button");
-  obBtn.innerHTML='<span style="font-size:18px">📖</span> Rivedi la guida introduttiva';
-  obBtn.style.cssText="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px;margin-top:28px;background:#27ae60;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(39,174,96,.35);letter-spacing:.2px;";
-  obBtn.onmouseenter=function(){this.style.background="#219a52";};
-  obBtn.onmouseleave=function(){this.style.background="#27ae60";};
-  obBtn.onclick=function(){
-    try{localStorage.removeItem("omnia_onboarding_v1");}catch(e){}
-    _showOnboarding();
-  };
-  page.appendChild(obBtn);
 
 
 }
