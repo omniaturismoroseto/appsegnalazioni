@@ -1672,8 +1672,11 @@ function addDAEMarkers(){
   addBoeCantiereMarkers();
 }
 
+var _boePopupOpen=false;
 function addBoeCantiereMarkers(){
   if(!mapObj)return;
+  // Non ricreare i marker se un popup è aperto
+  if(_boePopupOpen)return;
   boeCantiereMarkers.forEach(function(m){try{m.remove();}catch(e){}});
   boeCantiereMarkers=[];
   BOE_CANTIERE_23_2026.forEach(function(b){
@@ -1694,7 +1697,9 @@ function addBoeCantiereMarkers(){
       +'<div style="font-size:10px;color:#888;margin-bottom:6px">Divieto balneazione, navigazione e pesca nel raggio di 100 mt dai motopontoni</div>'
       +'<div style="font-size:10px;font-weight:700;color:#cc0000">Validità: fino al 23.05.2026</div>'
       +'</div>';
-    m.bindPopup(popHtml,{maxWidth:240,keepInView:true});
+    m.bindPopup(popHtml,{maxWidth:240,keepInView:true,autoClose:false,closeOnClick:false});
+    m.on("popupopen",function(){_boePopupOpen=true;});
+    m.on("popupclose",function(){_boePopupOpen=false;});
     boeCantiereMarkers.push(m);
   });
 }
