@@ -1695,7 +1695,7 @@ function addBoeCantiereMarkers(){
       +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>'+b.area+'</strong> — Segnalamento '+b.pres+'</div>'
       +'<div style="font-size:11px;color:#333;margin-bottom:2px">BOA '+b.boa+' — Boa ad asta gialla con miraglio X</div>'
       +'<div style="font-size:10px;color:#888;margin-bottom:6px">Divieto balneazione, navigazione e pesca nel raggio di 100 mt dai motopontoni</div>'
-      +'<div style="font-size:10px;font-weight:700;color:#cc0000">Validità: fino al 23.05.2026</div>'
+      +'<div style="font-size:10px;font-weight:700;color:#cc0000">Validità: prorogata fino al 03.06.2026 (Ord. 37/2026)</div>'
       +'</div>';
     m.bindPopup(popHtml,{maxWidth:240,keepInView:true,autoClose:false,closeOnClick:false});
     m.on("popupopen",function(){_boePopupOpen=true;});
@@ -2669,11 +2669,32 @@ function renderOrdinanzePage(page){
     +'</div>'
     +'<p>Disciplina i lavori di ripristino barriere sommerse e scogliere su 3 aree del litorale (Roseto Sud, Torrente Borsacchio, Cologna Spiaggia). Impresa: ditta Curti srl. Mezzi operanti: Motopontone IN MARE I° e MAGNUM. Per un raggio di 100 mt dai motopontoni è vietata navigazione, balneazione, pesca e immersione. Le aree sono segnalate da boe gialle con miraglio X visibili sulla mappa.</p>'
     +'<div class="ord-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'
-    +'<span><strong>Comandante:</strong> T.V. (CP) Valeria Di Mattia &nbsp;·&nbsp; <strong>Valida fino al:</strong> 23.05.2026</span>'
+    +'<span><strong>Comandante:</strong> T.V. (CP) Valeria Di Mattia &nbsp;·&nbsp; <strong>Prorogata fino al:</strong> 03.06.2026 (Ord. 37/2026)</span>'
     +'<span style="background:#b8860b;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">📥 Apri PDF</span>'
     +'</div>';
   cardLavori.onclick=function(){window.open("./ordinanza-lavori-2026.pdf","_blank");};
   page.appendChild(cardLavori);
+
+  // --- Ordinanza N. 37/2026 — Proroga Ord. 23/2026 ---
+  var cardProroga=document.createElement("div");
+  cardProroga.className="ordinanza-card";
+  cardProroga.style.cssText+="cursor:pointer;transition:box-shadow .2s;border-left:4px solid #f5c800;";
+  cardProroga.onmouseenter=function(){this.style.boxShadow="0 6px 20px rgba(181,137,0,.25)";};
+  cardProroga.onmouseleave=function(){this.style.boxShadow="";};
+  cardProroga.innerHTML='<div class="ordinanza-card-header">'
+    +'<span style="font-size:30px">📋</span>'
+    +'<div>'
+    +'<span class="ordinanza-badge" style="background:#b8860b">CAPITANERIA DI PORTO</span>'
+    +'<span style="margin-left:6px;background:#cc0000;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;vertical-align:middle">PROROGA</span>'
+    +'<h3 style="margin-top:4px">Ordinanza N. 37/2026 — Proroga Ord. 23/2026 · Ripristino Scogliere Roseto</h3>'
+    +'</div></div>'
+    +'<p>Proroga dell\'Ord. 23/2026 fino al 03.06.2026. Lo specchio acqueo riservato alla balneazione è ridotto a 50 metri dalla battigia nelle aree di cantiere. Nulla osta Ufficio Demanio Regione Abruzzo. Restano valide tutte le prescrizioni dell\'Ord. 23/2026.</p>'
+    +'<div class="ord-meta" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">'
+    +'<span><strong>Firmata:</strong> 21.05.2026 &nbsp;·&nbsp; <strong>Valida fino al:</strong> 03.06.2026</span>'
+    +'<span style="background:#b8860b;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">📥 Apri PDF</span>'
+    +'</div>';
+  cardProroga.onclick=function(){window.open("./ordinanza-proroga-37-2026.pdf","_blank");};
+  page.appendChild(cardProroga);
 
   // --- Ordinanza Sicurezza Balneare 2026 — Capitaneria Giulianova ---
   var cardCapit=document.createElement("div");
