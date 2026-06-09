@@ -686,6 +686,8 @@ const STATIONS=[
   {num:34,name:"Tartaruga",lat:42.66747,lng:14.02596},
   {num:35,name:"Cabana Park",lat:42.66836,lng:14.02542},
 ];
+// Note permanenti di pericolo — non eliminabili dall'operatore
+const PERMANENT_STATION_NOTES={"10":"⚠️Zona soggetta a correnti che trascinano verso il Pontile. Prestare sempre la massima attenzione ed ascolta i richiami del personale ALS⚠️"};
 const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
 ZONES.push("Spiaggia libera / Area non concessionata");
 const TYPES={
@@ -776,6 +778,7 @@ function _refreshNotePanel(){
     var badge=document.getElementById("_noteBadge_"+s.num);
     var addBtn=document.getElementById("_noteAddBtn_"+s.num);
     var delBtn=document.getElementById("_noteDelBtn_"+s.num);
+    var permNote=PERMANENT_STATION_NOTES[String(s.num)];
     var note=stationNotesData[String(s.num)];
     if(dot)dot.style.background=note?"#1a1a1a":FLAG_COLORS[flagsData[s.num]||"verde"];
     if(badge){badge.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"";
@@ -1626,10 +1629,17 @@ function refreshMarkers(){
         // Alert aperti
         var alertStr=alerts.length>0?"<br><span style=\"color:"+markerColor+";font-size:12px\">"+alerts.length+" segnalaz. aperte</span>":"";
         var noteStr="";
+        // Nota permanente di pericolo
+        var permNote=PERMANENT_STATION_NOTES[String(station.num)];
+        if(permNote){
+          noteStr+='<div style="margin:6px 0;padding:7px 10px;background:#7c2d12;border-radius:6px;color:#fff;font-size:12px;line-height:1.4">'
+            +'<span style="font-weight:700;display:block;margin-bottom:2px">⚠️ Avviso permanente</span>'
+            +permNote.replace(/</g,"&lt;").replace(/>/g,"&gt;")+'</div>';
+        }
         if(stationNotesData[String(station.num)]){
-          noteStr='<div style="margin:6px 0;padding:7px 10px;background:#1a1a1a;border-radius:6px;color:white;font-size:12px;line-height:1.4">'
+          noteStr+='<div style="margin:6px 0;padding:7px 10px;background:#1a1a1a;border-radius:6px;color:white;font-size:12px;line-height:1.4">'
             +'<span style="font-weight:700;display:block;margin-bottom:2px">\u26a0\ufe0f Nota operatore</span>'
-            +String(stationNotesData[String(station.num)]).replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</div>";
+            +String(stationNotesData[String(station.num)]).replace(/</g,"&lt;").replace(/>/g,"&gt;")+'</div>';
         }
         var popup=L.popup({maxWidth:220,keepInView:true,autoPanPadding:[20,20]})
           .setContent(
