@@ -690,7 +690,7 @@ const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
 ZONES.push("Spiaggia libera / Area non concessionata");
 const TYPES={
   emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio","Malore in spiaggia"]},
-  pericolo: {label:"Pericolo", sub:["Vento Garbino","Correnti pericolose","Mare molto mosso","Meduse","Oggetti pericolosi in acqua"]},
+  pericolo: {label:"Pericolo", sub:["Vento Forte","Correnti pericolose","Mare molto mosso","Cane libero senza padrone","Oggetti pericolosi in acqua o spiaggia"]},
 
 };
 
@@ -3354,7 +3354,7 @@ function renderSubmit(page){
 
   const emergencyNote=document.createElement("p");
   emergencyNote.style.cssText="font-size:11px;color:var(--danger-text);text-align:center;margin-top:10px";
-  emergencyNote.textContent="Per emergenze reali contattare immediatamente il 112 o il servizio di salvataggio più vicino.";
+  emergencyNote.textContent="Per emergenze contingenti contattare immediatamente il 112 o il servizio di salvataggio più vicino.";
   wrap.appendChild(emergencyNote);
 
   const submitBtn=document.createElement("button");submitBtn.className="btn-primary";submitBtn.style.marginTop="18px";submitBtn.textContent="Invia segnalazione";
