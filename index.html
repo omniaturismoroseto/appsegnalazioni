@@ -1324,8 +1324,20 @@ function _checkServiceOrEmergency(callback){
 
 function isServiceActive(){var h=new Date().getHours();return h>=9&&h<19;}
 function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
+// Bandiere verdi automatiche 09:00-19:00 fino al 06.09.2026
+function isAutoGreenPeriod(){
+  var now=new Date();
+  var end=new Date(2026,8,6,23,59,59); // mese 8 = settembre (0-based)
+  return now<=end;
+}
+function applyGreenFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="verde";});flagsRef.set(f);}
 var _svcActive=isServiceActive();
-setInterval(function(){var c=isServiceActive();if(_svcActive&&!c)applyServiceFlags();_svcActive=c;},60000);
+setInterval(function(){
+  var c=isServiceActive();
+  if(_svcActive&&!c)applyServiceFlags();          // transizione 19:00 → tutte rosse
+  if(!_svcActive&&c&&isAutoGreenPeriod())applyGreenFlags(); // transizione 09:00 → tutte verdi
+  _svcActive=c;
+},60000);
 if(!isServiceActive())applyServiceFlags();
 function playBeep(){
   try{
