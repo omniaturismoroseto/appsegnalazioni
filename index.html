@@ -1699,6 +1699,8 @@ function addDAEMarkers(){
     daeMarkers.push(m);
   });
   addBoeCantiereMarkers();
+  addCorridoiLancio();
+  addLimitLine();
 }
 
 var _boePopupOpen=false;
@@ -1731,6 +1733,81 @@ function addBoeCantiereMarkers(){
     m.on("popupclose",function(){_boePopupOpen=false;});
     boeCantiereMarkers.push(m);
   });
+}
+
+var _corridoiMarkers=[];
+var CORRIDOI_LANCIO=[
+  {
+    name:"Corridoio di lancio - Circolo Velico Roseto Azzurra",
+    edge1:[[42.68402939139368,14.013749995523458],[42.6852465560769,14.017083788178457]],
+    edge2:[[42.68418535460102,14.01372011238795],[42.68551090544365,14.016919534152802]]
+  },
+  {
+    name:"Corridoio di lancio - Roseto Sud",
+    edge1:[[42.67319602506359,14.02225978436671],[42.67481262649763,14.025272419391557]],
+    edge2:[[42.6730174912171,14.022223830731905],[42.67454815759895,14.025299396024877]]
+  }
+];
+function addCorridoiLancio(){
+  if(!mapObj)return;
+  _corridoiMarkers.forEach(function(l){try{l.remove();}catch(e){}});
+  _corridoiMarkers=[];
+  var ds={color:"#f97316",weight:7,opacity:0.9,dashArray:"1,12",lineCap:"round",lineJoin:"round",interactive:true};
+  CORRIDOI_LANCIO.forEach(function(c){
+    [c.edge1,c.edge2].forEach(function(edge){
+      var ln=L.polyline(edge,ds).addTo(mapObj);
+      ln.bindTooltip(
+        '<div style="font-size:12px;font-weight:700;color:#f97316">⛵ '+c.name+'</div>'
+        +'<div style="font-size:11px;color:#333">Divieto balneazione - Riservato natanti (Ord. 29/2026)</div>',
+        {sticky:true,opacity:0.95});
+      _corridoiMarkers.push(ln);
+      var dot=L.circleMarker(edge[1],{radius:6,color:"#f97316",fillColor:"#f97316",fillOpacity:1,weight:0,interactive:false}).addTo(mapObj);
+      _corridoiMarkers.push(dot);
+    });
+  });
+}
+
+
+var _limitLines=[];
+function addLimitLine(){
+  if(!mapObj)return;
+  _limitLines.forEach(function(l){try{l.remove();}catch(e){}});
+  _limitLines=[];
+
+  // Calcola punto a 'dist' metri in direzione 'bearing' (gradi da nord)
+  function offsetPt(lat,lng,dist,bearing){
+    var R=6371000,br=bearing*Math.PI/180;
+    var lat1=lat*Math.PI/180,lng1=lng*Math.PI/180;
+    var lat2=Math.asin(Math.sin(lat1)*Math.cos(dist/R)+Math.cos(lat1)*Math.sin(dist/R)*Math.cos(br));
+    var lng2=lng1+Math.atan2(Math.sin(br)*Math.sin(dist/R)*Math.cos(lat1),Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
+    return [lat2*180/Math.PI,lng2*180/Math.PI];
+  }
+
+  var lineStyle={color:'#f97316',weight:2.5,opacity:0.8,dashArray:'10,7',interactive:true};
+  var ttHtml='<div style="font-family:sans-serif;font-size:12px;font-weight:700;color:#f97316">'
+    +'\u2693 Limite 300 mt dalla battigia</div>'
+    +'<div style="font-size:11px;color:#333">Divieto navigazione, sosta e ancoraggio natanti (Ord. 29/2026)</div>';
+
+  // Unica linea continua: tutte le postazioni ordinate per lat (sud→nord)
+  var allSt=STATIONS.slice().sort(function(a,b){return a.lat-b.lat;});
+  // Punto extra a sud: limite nord zona Foce Vomano
+  allSt.unshift({lat:42.6572,lng:14.0363,num:0,name:"Foce Vomano"});
+  // Punto extra a nord: limite sud zona Foce Tordino
+  allSt.push({lat:42.73836,lng:13.98111,num:0,name:"Foce Tordino"});
+
+  // Bearing seaward calcolato sull'intera linea costiera
+  function coastBearing(group){
+    var first=group[0],last=group[group.length-1];
+    var dlat=(last.lat-first.lat)*111111;
+    var dlng=(last.lng-first.lng)*81657;
+    return Math.atan2(dlng,dlat)*180/Math.PI+90;
+  }
+
+  var bearing=coastBearing(allSt);
+  var pts=allSt.map(function(s){return offsetPt(s.lat,s.lng,300,bearing);});
+  var line=L.polyline(pts,lineStyle).addTo(mapObj);
+  line.bindTooltip(ttHtml,{sticky:true,opacity:0.95});
+  _limitLines.push(line);
 }
 
 function addGuardiaMedicaMarker(){
