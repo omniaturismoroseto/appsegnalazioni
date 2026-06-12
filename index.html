@@ -1329,23 +1329,47 @@ function _checkServiceOrEmergency(callback){
   overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.remove();});
 }
 
-function isServiceActive(){var h=new Date().getHours();return h>=9&&h<19;}
+// Ora e data correnti nel fuso orario di Roma (indipendente dal dispositivo)
+function romeNow(){
+  try{
+    var parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Rome",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date());
+    var o={};parts.forEach(function(p){o[p.type]=p.value;});
+    return {h:parseInt(o.hour,10),m:parseInt(o.minute,10),date:o.year+"-"+o.month+"-"+o.day};
+  }catch(e){
+    var d=new Date();
+    return {h:d.getHours(),m:d.getMinutes(),date:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+  }
+}
+function isServiceActive(){var h=romeNow().h;return h>=9&&h<19;}
 function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
 // Bandiere verdi automatiche 09:00-19:00 fino al 06.09.2026
 function isAutoGreenPeriod(){
-  var now=new Date();
-  var end=new Date(2026,8,6,23,59,59); // mese 8 = settembre (0-based)
-  return now<=end;
+  return romeNow().date<="2026-09-06";
 }
 function applyGreenFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="verde";});flagsRef.set(f);}
+// Verde automatico: applicato UNA sola volta al giorno (alle 09:00 o al primo avvio dell'app dopo le 09:00).
+// La data dell'ultima applicazione è salvata su Firebase (autoGreenDate), così durante il giorno
+// l'operatore può modificare le bandiere a piacimento senza che vengano sovrascritte.
+function ensureAutoGreen(){
+  if(!isServiceActive()||!isAutoGreenPeriod())return;
+  var today=romeNow().date;
+  _fbFetch("autoGreenDate")
+    .then(function(d){
+      if(d!==today){
+        return _fbFetch("autoGreenDate","PUT",today).then(function(){applyGreenFlags();});
+      }
+    })
+    .catch(function(){/* offline: nessuna azione, riproverà al prossimo controllo */});
+}
 var _svcActive=isServiceActive();
 setInterval(function(){
   var c=isServiceActive();
-  if(_svcActive&&!c)applyServiceFlags();          // transizione 19:00 → tutte rosse
-  if(!_svcActive&&c&&isAutoGreenPeriod())applyGreenFlags(); // transizione 09:00 → tutte verdi
+  if(_svcActive&&!c)applyServiceFlags();   // transizione 19:00 → tutte rosse
+  if(!_svcActive&&c)ensureAutoGreen();     // transizione 09:00 → tutte verdi (una volta al giorno)
   _svcActive=c;
 },60000);
 if(!isServiceActive())applyServiceFlags();
+else ensureAutoGreen(); // app aperta in orario di servizio: applica il verde se oggi non è ancora stato fatto
 function playBeep(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -2443,10 +2467,10 @@ function renderHome(page){
     }
 
     if(!isServiceActive()){
-      var d2=new Date();
+      var rn=romeNow();
       var ob=document.createElement("div");
       ob.style.cssText="padding:10px 14px;border-radius:var(--radius);background:#fef2f2;border:1px solid #fecaca;margin-bottom:14px;font-size:13px;color:#991b1b;text-align:center;font-weight:500";
-      ob.innerHTML='\u26A0\uFE0F Servizio non attivo ('+String(d2.getHours()).padStart(2,"0")+':'+String(d2.getMinutes()).padStart(2,"0")+') &middot; Orario: <strong>09:00 &ndash; 19:00</strong>';
+      ob.innerHTML='\u26A0\uFE0F Servizio non attivo ('+String(rn.h).padStart(2,"0")+':'+String(rn.m).padStart(2,"0")+') &middot; Orario: <strong>09:00 &ndash; 19:00</strong>';
       page.appendChild(ob);
     }
   })();
