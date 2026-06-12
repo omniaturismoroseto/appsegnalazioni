@@ -1731,10 +1731,9 @@ function addDAEMarkers(){
 var _boePopupOpen=false;
 function addBoeCantiereMarkers(){
   if(!mapObj)return;
-  // Non ricreare i marker se un popup è aperto
+  // Layer statico: se già creato non ricrearlo (la rimozione chiuderebbe popup/tooltip ad ogni refresh)
+  if(boeCantiereMarkers.length>0)return;
   if(_boePopupOpen)return;
-  boeCantiereMarkers.forEach(function(m){try{m.remove();}catch(e){}});
-  boeCantiereMarkers=[];
   BOE_CANTIERE_23_2026.forEach(function(b){
     var boaIcon=L.divIcon({
       className:"",
@@ -1785,8 +1784,8 @@ var CORRIDOI_LANCIO=[
 ];
 function addCorridoiLancio(){
   if(!mapObj)return;
-  _corridoiMarkers.forEach(function(l){try{l.remove();}catch(e){}});
-  _corridoiMarkers=[];
+  // Layer statico: se già creato non ricrearlo (la rimozione chiuderebbe il tooltip aperto ad ogni refresh)
+  if(_corridoiMarkers.length>0)return;
   var ds={color:"#f97316",weight:7,opacity:0.9,dashArray:"1,12",lineCap:"round",lineJoin:"round",interactive:true};
   CORRIDOI_LANCIO.forEach(function(c){
     [c.edge1,c.edge2].forEach(function(edge){
@@ -1806,8 +1805,8 @@ function addCorridoiLancio(){
 var _limitLines=[];
 function addLimitLine(){
   if(!mapObj)return;
-  _limitLines.forEach(function(l){try{l.remove();}catch(e){}});
-  _limitLines=[];
+  // Layer statico: se già creato non ricrearlo (la rimozione chiuderebbe il tooltip aperto ad ogni refresh)
+  if(_limitLines.length>0)return;
 
   // Calcola punto a 'dist' metri in direzione 'bearing' (gradi da nord)
   function offsetPt(lat,lng,dist,bearing){
