@@ -1341,35 +1341,45 @@ function romeNow(){
   }
 }
 function isServiceActive(){var h=romeNow().h;return h>=9&&h<19;}
-function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
 // Bandiere verdi automatiche 09:00-19:00 fino al 06.09.2026
 function isAutoGreenPeriod(){
   return romeNow().date<="2026-09-06";
 }
 function applyGreenFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="verde";});flagsRef.set(f);}
-// Verde automatico: applicato UNA sola volta al giorno (alle 09:00 o al primo avvio dell'app dopo le 09:00).
-// La data dell'ultima applicazione è salvata su Firebase (autoGreenDate), così durante il giorno
-// l'operatore può modificare le bandiere a piacimento senza che vengano sovrascritte.
-function ensureAutoGreen(){
-  if(!isServiceActive()||!isAutoGreenPeriod())return;
-  var today=romeNow().date;
-  _fbFetch("autoGreenDate")
+function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
+
+// --- Sincronizzazione automatica delle bandiere ---
+// Controllo idempotente basato sulla DATA dell'ultima applicazione (salvata su Firebase),
+// non sulla "transizione" oraria: questo lo rende robusto anche quando l'app resta aperta
+// e il dispositivo va in sospensione (i timer JS si fermano, ma al risveglio il controllo riparte).
+//
+//  • In orario di servizio (09:00-19:00): tutte VERDI una sola volta al giorno → autoGreenDate.
+//    Dopo l'applicazione l'operatore può modificare le bandiere a piacimento per tutta la giornata.
+//  • Fuori orario: tutte ROSSE una sola volta per chiusura → autoRedDate.
+function _applyDailyFlags(markerKey, today, applyFn){
+  return _fbFetch(markerKey)
     .then(function(d){
       if(d!==today){
-        return _fbFetch("autoGreenDate","PUT",today).then(function(){applyGreenFlags();});
+        return _fbFetch(markerKey,"PUT",today).then(function(){applyFn();});
       }
     })
     .catch(function(){/* offline: nessuna azione, riproverà al prossimo controllo */});
 }
-var _svcActive=isServiceActive();
-setInterval(function(){
-  var c=isServiceActive();
-  if(_svcActive&&!c)applyServiceFlags();   // transizione 19:00 → tutte rosse
-  if(!_svcActive&&c)ensureAutoGreen();     // transizione 09:00 → tutte verdi (una volta al giorno)
-  _svcActive=c;
-},60000);
-if(!isServiceActive())applyServiceFlags();
-else ensureAutoGreen(); // app aperta in orario di servizio: applica il verde se oggi non è ancora stato fatto
+function syncAutoFlags(){
+  var today=romeNow().date;
+  if(isServiceActive()){
+    if(isAutoGreenPeriod())_applyDailyFlags("autoGreenDate",today,applyGreenFlags);
+  }else{
+    _applyDailyFlags("autoRedDate",today,applyServiceFlags);
+  }
+}
+// Trigger multipli: il setInterval da solo non basta perché il browser congela i timer
+// quando il telefono è bloccato. Il controllo va rifatto ad ogni ritorno in primo piano.
+setInterval(syncAutoFlags,60000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)syncAutoFlags();});
+window.addEventListener("focus",syncAutoFlags);
+window.addEventListener("online",syncAutoFlags);
+syncAutoFlags(); // all'avvio
 function playBeep(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
