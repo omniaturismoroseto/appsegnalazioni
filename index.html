@@ -1398,16 +1398,27 @@ function currentFlagSession(){
 function syncAutoFlags(){
   var session=currentFlagSession();
   var isGreen=session.indexOf("green_")===0;
-  // Fuori dal periodo stagionale il verde automatico non si applica (le rosse restano).
-  if(isGreen&&!isAutoGreenPeriod())return;
-  _fbFetch("autoFlagSession")
-    .then(function(last){
-      if(last===session)return;                    // sessione già applicata: non sovrascrivere
-      return _fbFetch("autoFlagSession","PUT",session).then(function(){
-        if(isGreen)applyGreenFlags();else applyServiceFlags();
-      });
-    })
-    .catch(function(){/* offline: riproverà al prossimo controllo */});
+  if(isGreen){
+    // VERDE (giorno): applicato UNA sola volta per sessione, così durante la giornata
+    // l'operatore può modificare le bandiere senza che vengano risovrascritte.
+    if(!isAutoGreenPeriod())return;
+    _fbFetch("autoFlagSession")
+      .then(function(last){
+        if(last===session)return;
+        return _fbFetch("autoFlagSession","PUT",session).then(function(){applyGreenFlags();});
+      })
+      .catch(function(){});
+  }else{
+    // ROSSO (notte): AUTO-CORRETTIVO. Di notte nessuno opera, quindi finché anche una sola
+    // bandiera non è rossa il controllo la riforza ad ogni giro (60s / focus / online).
+    // Questo garantisce che il rosso "attecchisca" anche se un tentativo fallisce, senza
+    // restare bloccato su un marcatore di sessione.
+    var allRed=STATIONS.length>0&&STATIONS.every(function(s){return flagsData[s.num]==="rossa";});
+    if(!allRed)applyServiceFlags();
+    _fbFetch("autoFlagSession")
+      .then(function(last){if(last!==session)return _fbFetch("autoFlagSession","PUT",session);})
+      .catch(function(){});
+  }
 }
 // Trigger multipli: il setInterval da solo non basta perché il browser congela i timer
 // quando il telefono è bloccato. Il controllo va rifatto ad ogni ritorno in primo piano.

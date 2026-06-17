@@ -1,47 +1,81 @@
-// Omnia Adriatic Lifeguard Service - Service Worker
-const CACHE_NAME = 'omnia-v4';
+/* Omnia Segnalazioni — Service Worker PWA
+ * Va nella cartella dell'app:
+ *   https://omniaturismoroseto.github.io/appsegnalazioni/sw.js
+ *
+ * Strategia:
+ *  • index.html e navigazione → NETWORK-FIRST: scarica sempre la versione aggiornata
+ *    se c'è rete, usa la cache solo come riserva offline. Niente più versioni vecchie bloccate.
+ *  • altri file (icone, ecc.) → cache con aggiornamento in background.
+ *
+ * Per forzare un aggiornamento, basta cambiare il numero di versione qui sotto.
+ */
 
-self.addEventListener('install', function(e) {
+const CACHE_VERSION = "omnia-v2026-06-17";
+const APP_SHELL = "/appsegnalazioni/index.html";
+
+self.addEventListener("install", function (event) {
+  // Attiva subito la nuova versione senza aspettare la chiusura delle schede
   self.skipWaiting();
-});
-
-self.addEventListener('activate', function(e) {
-  e.waitUntil(clients.claim());
-});
-
-// Handle push notifications from server (future use)
-self.addEventListener('push', function(e) {
-  var data = e.data ? e.data.json() : {};
-  var title = data.title || '🚨 Omnia – Nuova segnalazione';
-  var options = {
-    body: data.body || 'Nuova segnalazione ricevuta',
-    icon: '/appsegnalazioni/icon-192-fixed.png',
-    badge: '/appsegnalazioni/icon-192-fixed.png',
-    vibrate: [300, 100, 300, 100, 300],
-    tag: 'omnia-segnalazione',
-    renotify: true,
-    data: { url: self.registration.scope }
-  };
-  e.waitUntil(self.registration.showNotification(title, options));
-});
-
-// Handle notification click - open/focus app
-self.addEventListener('notificationclick', function(e) {
-  e.notification.close();
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      for (var i = 0; i < clientList.length; i++) {
-        var client = clientList[i];
-        if ('focus' in client) return client.focus();
-      }
-      if (clients.openWindow) return clients.openWindow(e.notification.data.url || '/appsegnalazioni/');
+  event.waitUntil(
+    caches.open(CACHE_VERSION).then(function (cache) {
+      return cache.add(APP_SHELL).catch(function () {});
     })
   );
 });
 
-// Message from page to show notification (quando app in background)
-self.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'SHOW_NOTIFICATION') {
-    self.registration.showNotification(e.data.title, e.data.options);
+self.addEventListener("activate", function (event) {
+  // Elimina le cache delle versioni precedenti
+  event.waitUntil(
+    caches.keys().then(function (keys) {
+      return Promise.all(
+        keys.filter(function (k) { return k !== CACHE_VERSION; })
+            .map(function (k) { return caches.delete(k); })
+      );
+    }).then(function () { return self.clients.claim(); })
+  );
+});
+
+self.addEventListener("fetch", function (event) {
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+  const isNavigation =
+    req.mode === "navigate" ||
+    url.pathname.endsWith("/") ||
+    url.pathname.endsWith("/index.html");
+
+  if (isNavigation) {
+    // NETWORK-FIRST: prova la rete, ricadi sulla cache solo se offline
+    event.respondWith(
+      fetch(req)
+        .then(function (res) {
+          const copy = res.clone();
+          caches.open(CACHE_VERSION).then(function (c) { c.put(APP_SHELL, copy); });
+          return res;
+        })
+        .catch(function () {
+          return caches.match(APP_SHELL).then(function (r) {
+            return r || caches.match(req);
+          });
+        })
+    );
+    return;
   }
+
+  // Altri GET: cache-first con aggiornamento in background (stale-while-revalidate)
+  event.respondWith(
+    caches.match(req).then(function (cached) {
+      const network = fetch(req)
+        .then(function (res) {
+          if (res && res.status === 200 && res.type === "basic") {
+            const copy = res.clone();
+            caches.open(CACHE_VERSION).then(function (c) { c.put(req, copy); });
+          }
+          return res;
+        })
+        .catch(function () { return cached; });
+      return cached || network;
+    })
+  );
 });
