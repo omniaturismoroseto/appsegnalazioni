@@ -1478,7 +1478,7 @@ function _checkForActiveAlerts(){
 function sendWANotify(r){
   const em={emergenza:"\uD83D\uDEA8 EMERGENZA",pericolo:"\u26A0\uFE0F PERICOLO"};
   const photoNote=r.photo?"\n\uD83D\uDCF7 Foto allegata (visualizza in dashboard)":"";
-  const gpsNote=r.gps?"\n\uD83D\uDCCD GPS: https://maps.google.com/?q="+r.gps.lat.toFixed(6)+","+r.gps.lng.toFixed(6)+(r.gps.acc?"\n\uD83D\uDFE2 Accuratezza ~"+Math.round(r.gps.acc)+"m":""):"";
+  const gpsNote=r.gps?"\nPosizione: https://www.google.com/maps?q="+r.gps.lat.toFixed(6)+","+r.gps.lng.toFixed(6)+(r.gps.acc?" (~"+Math.round(r.gps.acc)+"m)":""):"";
   const txt=`${em[r.type]} \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}${gpsNote}${photoNote}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Lifeguard Service`;
   window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
 }
@@ -3704,6 +3704,7 @@ function renderMinoreForm(page,direction){
   // Foto facoltativa
   w.appendChild(lab("Foto (facoltativa)"));
   let childPhoto=null;
+  let _minoreGpsWarned=false;
   const photoWrap=document.createElement("div");photoWrap.style.cssText="margin-bottom:12px";
   const photoInput=document.createElement("input");photoInput.type="file";photoInput.accept="image/*";photoInput.style.cssText="font-size:13px;width:100%";
   const photoPrev=document.createElement("img");photoPrev.style.cssText="display:none;max-width:100%;border-radius:10px;margin-top:8px;max-height:180px";
@@ -3742,12 +3743,17 @@ function renderMinoreForm(page,direction){
     if(!cloth&&!ageEl.value.trim()){alert("Inserisci almeno l'et\u00e0 o l'abbigliamento per riconoscere il bambino.");return;}
     var pc=document.getElementById("minorePrivacyCheck");
     if(pc&&!pc.checked){alert("Devi accettare l\u2019informativa privacy per inviare la segnalazione.");pc.focus();return;}
+    if(_userLat===null&&!_minoreGpsWarned){
+      _minoreGpsWarned=true;
+      alert("\uD83D\uDCCD La posizione GPS non \u00e8 ancora pronta.\n\nPer aiutare i bagnini a localizzare il punto esatto, attendi qualche secondo che compaia \u201cposizione rilevata\u201d, oppure tocca di nuovo INVIA per procedere comunque senza posizione.");
+      return;
+    }
     submit.disabled=true;submit.textContent="Invio\u2026";
     const r={
       id:Date.now(),
       type:"emergenza",                    // eredita allarme sonoro, anello in mappa, banner operatori
       sub:perso?"Minore smarrito":"Minore ritrovato",
-      zone:nearestStation?("P."+nearestStation.num+" \u2013 "+nearestStation.name):"Posizione GPS",
+      zone:nearestStation?("P."+nearestStation.num+" \u2013 "+nearestStation.name):(_userLat!==null?"Posizione GPS (vedi link)":"Zona non specificata"),
       notes:[ageEl.value.trim()&&("Et\u00e0: "+ageEl.value.trim()),cloth&&("Abbigliamento: "+cloth),nameEl.value.trim()&&("Nome: "+nameEl.value.trim())].filter(Boolean).join(" \u00b7 "),
       author:perso?"Genitore/accompagnatore":"Chi ha trovato",
       phone:null,role:currentRole||"public",
@@ -3881,13 +3887,32 @@ function renderDashboard(page){
     }
     const nt=document.createElement("p");nt.style.cssText="font-size:13px;line-height:1.5;margin-bottom:4px";nt.textContent=r.notes;body.appendChild(nt);
     if(r.photo){const imgWrap=document.createElement("div");imgWrap.style.cssText="position:relative;display:inline-block;margin:4px 0";const img=document.createElement("img");img.src=r.photo;img.style.cssText="max-width:100%;height:90px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block";const dlBtn=document.createElement("a");dlBtn.href=r.photo;dlBtn.download="segnalazione_"+r.id+".jpg";dlBtn.style.cssText="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.65);color:white;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none";dlBtn.textContent="\u2B07\uFE0F";imgWrap.appendChild(img);imgWrap.appendChild(dlBtn);body.appendChild(imgWrap);}
+    // Posizione GPS della segnalazione (apre il navigatore verso il punto esatto)
+    if(r.gps&&typeof r.gps.lat==="number"&&typeof r.gps.lng==="number"){
+      const gp=document.createElement("div");gp.style.cssText="display:flex;align-items:center;gap:8px;margin:6px 0 2px;flex-wrap:wrap";
+      const gpsLink=document.createElement("a");
+      gpsLink.href="https://www.google.com/maps/dir/?api=1&destination="+r.gps.lat+","+r.gps.lng+"&travelmode=walking";
+      gpsLink.target="_blank";
+      gpsLink.style.cssText="display:inline-flex;align-items:center;gap:6px;background:#166534;color:#fff;font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:8px;text-decoration:none";
+      gpsLink.innerHTML="\uD83E\uDDED Posizione sulla mappa"+(r.gps.acc?' <span style="font-weight:500;opacity:.85">(~'+Math.round(r.gps.acc)+'m)</span>':"");
+      gp.appendChild(gpsLink);
+      const coord=document.createElement("span");coord.style.cssText="font-size:11px;color:var(--text3)";
+      coord.textContent=r.gps.lat.toFixed(5)+", "+r.gps.lng.toFixed(5);
+      gp.appendChild(coord);
+      body.appendChild(gp);
+    } else if(r.role==="public"||r.childCase){
+      const noGps=document.createElement("p");noGps.style.cssText="font-size:11.5px;color:var(--text3);margin:6px 0 2px;font-style:italic";
+      noGps.textContent="\uD83D\uDCCD Posizione GPS non disponibile (il segnalante non l'ha attivata)";
+      body.appendChild(noGps);
+    }
     const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}${r.phone?" \u00b7 \uD83D\uDCDE "+r.phone:""}`;body.appendChild(mt);
     top.appendChild(body);
     const acts=document.createElement("div");acts.className="report-actions";
     const wa=document.createElement("button");wa.className="action-btn wa";wa.textContent="WA";
     wa.addEventListener("click",()=>{
       const em={emergenza:"\uD83D\uDEA8",pericolo:"\u26A0\uFE0F"};
-      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Lifeguard Service`;
+      const gpsLine=(r.gps&&typeof r.gps.lat==="number")?"\nPosizione: https://www.google.com/maps?q="+r.gps.lat.toFixed(6)+","+r.gps.lng.toFixed(6)+(r.gps.acc?" (~"+Math.round(r.gps.acc)+"m)":""):"";
+      const txt=`${em[r.type]} *${TYPES[r.type].label.toUpperCase()}* \u2014 ${r.sub}\n\uD83D\uDCCD ${r.zone}\n${r.notes}${r.author?"\n\uD83D\uDC64 "+r.author:""}${r.phone?"\n\uD83D\uDCDE "+r.phone:""}${gpsLine}\n\uD83D\uDD50 ${fmt(r.ts)}\n\n\u2014 Omnia Adriatic Lifeguard Service`;
       window.open(`https://wa.me/${WA_NOTIFY}?text=${encodeURIComponent(txt)}`,"_blank");
     });acts.appendChild(wa);
     if(!res){
