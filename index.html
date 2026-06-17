@@ -1181,11 +1181,31 @@ reportsRef.on("value",snap=>{
   prevReportKeys=newKeys;
   reportsData=snapData;
   fbReady=true;
+  if(currentRole==="operator")_purgeExpiredChildPhotos();
   refreshMarkers();
   if(currentScreen==="dashboard")renderPage();
   if(currentScreen==="home")renderPage();
   renderHeader();
 });
+// Cancellazione differita delle foto dei casi minore chiusi da oltre il TTL (sicurezza in caso di chiusura senza foto azzerata)
+function _purgeExpiredChildPhotos(){
+  try{
+    Object.keys(reportsData||{}).forEach(function(k){
+      var r=reportsData[k];
+      if(r&&r.childCase&&r.photo&&r.childResolvedAt){
+        if(Date.now()-new Date(r.childResolvedAt).getTime()>CHILD_PHOTO_TTL_MS){
+          reportsRef.child(k).update({photo:null});
+        }
+      }
+    });
+  }catch(e){}
+}
+// Avanzamento automatico dei timer dei casi minore aperti nella dashboard
+setInterval(function(){
+  if(currentScreen!=="dashboard"||currentRole!=="operator")return;
+  var hasOpenChild=Object.values(reportsData||{}).some(function(r){return r&&r.childCase&&r.status==="aperta";});
+  if(hasOpenChild)renderPage();
+},30000);
 stationNotesRef.on("value",function(snap){
   var raw=snap.val()||{};
   stationNotesData={};
@@ -1256,7 +1276,14 @@ function addReport(r){return reportsRef.push(r);}
 function resolveReport(key){
   if(_alertReportKey===key)_stopAlertSound();
   setTimeout(_checkForActiveAlerts,500);
-  return reportsRef.child(key).update({status:"risolta"});
+  // Caso minore: alla chiusura azzera la foto (dato sensibile) e marca lo stato come "ricongiunto"
+  var rep=reportsData&&reportsData[key];
+  var upd={status:"risolta"};
+  if(rep&&rep.childCase){
+    upd.photo=null;
+    upd.childResolvedAt=new Date().toISOString();
+  }
+  return reportsRef.child(key).update(upd);
 }
 function deleteReport(key){
   if(_alertReportKey===key)_stopAlertSound();
@@ -2338,6 +2365,10 @@ function renderPage(){
   else if(currentScreen==="ordinanze")renderOrdinanzePage(page);
   else if(currentScreen==="partner")renderPartnerPage(page);
   else if(currentScreen==="install")renderInstallPage(page);
+  else if(currentScreen==="minore")renderMinoreBivio(page);
+  else if(currentScreen==="minore-perso")renderMinoreForm(page,"perso");
+  else if(currentScreen==="minore-trovato")renderMinoreForm(page,"trovato");
+  else if(currentScreen==="minore-done")renderMinoreDone(page);
   else if(currentScreen==="dashboard"){if(currentRole!=="operator"){render("login");return;}renderDashboard(page);}
 }
 
@@ -2488,7 +2519,15 @@ function renderHome(page){
   const b1=document.createElement("button");b1.className="home-btn primary";
   b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo \u26A0\uFE0F</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
   b1.addEventListener("click",()=>{_checkServiceOrEmergency(function(){currentRole="public";render("submit");});});
-  btns.appendChild(b1);page.appendChild(btns);
+  btns.appendChild(b1);
+
+  // Pulsante dedicato MINORE SMARRITO (accesso pubblico, sempre visibile)
+  const bMin=document.createElement("button");bMin.className="home-btn";
+  bMin.style.cssText="background:linear-gradient(135deg,#d81b8c 0%,#a30f66 100%);color:#fff;border:none";
+  bMin.innerHTML=`<h3 style="color:#fff">\uD83D\uDC66 Minore smarrito \uD83D\uDC67</h3><p style="color:rgba(255,255,255,.9)">Ho perso o ho trovato un bambino &middot; allerta immediata</p>`;
+  bMin.addEventListener("click",()=>{render("minore");});
+  btns.appendChild(bMin);
+  page.appendChild(btns);
 
   // chiama + scrivi su WA
   const contacts=document.createElement("div");
@@ -3551,7 +3590,164 @@ function renderDone(page){
   b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{render("home");});w.appendChild(b2);page.appendChild(w);
 }
 
-// DASHBOARD
+// ============================================================
+// MINORE SMARRITO — flusso dedicato (perso / trovato)
+// ============================================================
+const CHILD_PHOTO_TTL_MS=6*60*60*1000;   // foto minore cancellata 6h dopo la chiusura del caso
+const CHILD_ESCALATE_MIN=10;             // oltre N minuti: scheda in escalation, ribadisce 112
+let _lastChildKey=null;                  // chiave dell'ultimo caso inviato (per la schermata done)
+
+// Banner intestazione 112 riutilizzabile
+function _child112Banner(){
+  const a=document.createElement("a");a.href="tel:112";
+  a.style.cssText="display:flex;align-items:center;justify-content:center;gap:8px;background:#b91c1c;color:#fff;font-size:16px;font-weight:800;padding:13px;border-radius:12px;text-decoration:none;margin-bottom:16px;box-shadow:0 2px 8px rgba(185,29,29,.3)";
+  a.innerHTML='\uD83D\uDCDE In caso di pericolo immediato chiama il 112';
+  return a;
+}
+
+// Schermata bivio: ho perso / ho trovato
+function renderMinoreBivio(page){
+  const w=document.createElement("div");w.style.cssText="padding:4px 2px";
+  w.appendChild(_child112Banner());
+
+  const h=document.createElement("h2");
+  h.style.cssText="font-size:19px;font-weight:800;margin:0 0 6px;color:var(--text)";
+  h.textContent="Minore smarrito";w.appendChild(h);
+  const p=document.createElement("p");
+  p.style.cssText="font-size:13px;color:var(--text2);margin:0 0 18px;line-height:1.5";
+  p.textContent="Scegli la situazione. L'allerta raggiunge subito tutte le postazioni di salvataggio.";w.appendChild(p);
+
+  const mk=(grad,emoji,title,desc,scr)=>{
+    const b=document.createElement("button");
+    b.style.cssText="display:block;width:100%;text-align:left;border:none;border-radius:14px;padding:20px 18px;margin-bottom:12px;cursor:pointer;color:#fff;background:"+grad;
+    b.innerHTML=`<div style="font-size:32px;margin-bottom:6px">${emoji}</div><div style="font-size:17px;font-weight:800;margin-bottom:3px">${title}</div><div style="font-size:12.5px;opacity:.9;line-height:1.4">${desc}</div>`;
+    b.addEventListener("click",()=>render(scr));
+    return b;
+  };
+  w.appendChild(mk("linear-gradient(135deg,#d81b8c,#a30f66)","\uD83D\uDE22","Ho perso un bambino","Segnala ora la scomparsa: descrizione e ultimo punto in cui l'hai visto.","minore-perso"));
+  w.appendChild(mk("linear-gradient(135deg,#1a7f4b,#0f5a34)","\uD83D\uDE4B","Ho trovato un bambino","Hai trovato un minore da solo: segnala dove ti trovi adesso.","minore-trovato"));
+
+  const back=document.createElement("button");
+  back.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:8px;width:100%;cursor:pointer";
+  back.textContent="\u2190 Torna alla home";back.addEventListener("click",()=>render("home"));
+  w.appendChild(back);
+  page.appendChild(w);
+}
+
+// Form perso / trovato
+function renderMinoreForm(page,direction){
+  const perso=direction==="perso";
+  const accent=perso?"#d81b8c":"#1a7f4b";
+  const w=document.createElement("div");w.style.cssText="padding:4px 2px";
+  w.appendChild(_child112Banner());
+
+  const h=document.createElement("h2");
+  h.style.cssText="font-size:18px;font-weight:800;margin:0 0 14px;color:var(--text)";
+  h.textContent=perso?"\uD83D\uDE22 Ho perso un bambino":"\uD83D\uDE4B Ho trovato un bambino";
+  w.appendChild(h);
+
+  const fieldStyle="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);margin-bottom:12px;box-sizing:border-box";
+  const lab=(t)=>{const l=document.createElement("label");l.style.cssText="display:block;font-size:12.5px;font-weight:700;color:var(--text);margin:0 0 5px";l.textContent=t;return l;};
+
+  w.appendChild(lab("Et\u00e0 approssimativa"));
+  const ageEl=document.createElement("input");ageEl.type="text";ageEl.placeholder="es. circa 5 anni";ageEl.style.cssText=fieldStyle;w.appendChild(ageEl);
+
+  w.appendChild(lab("Abbigliamento e colore costume"));
+  const clothEl=document.createElement("textarea");clothEl.rows=2;clothEl.placeholder="es. maglietta gialla, costume rosso, sandali blu";clothEl.style.cssText=fieldStyle+";resize:vertical";w.appendChild(clothEl);
+
+  w.appendChild(lab("Nome del bambino (facoltativo)"));
+  const nameEl=document.createElement("input");nameEl.type="text";nameEl.placeholder="se conosciuto";nameEl.style.cssText=fieldStyle;w.appendChild(nameEl);
+
+  // Foto facoltativa
+  w.appendChild(lab("Foto (facoltativa)"));
+  let childPhoto=null;
+  const photoWrap=document.createElement("div");photoWrap.style.cssText="margin-bottom:12px";
+  const photoInput=document.createElement("input");photoInput.type="file";photoInput.accept="image/*";photoInput.style.cssText="font-size:13px;width:100%";
+  const photoPrev=document.createElement("img");photoPrev.style.cssText="display:none;max-width:100%;border-radius:10px;margin-top:8px;max-height:180px";
+  photoInput.addEventListener("change",e=>{const f=e.target.files[0];if(f)resizeImg(f,d=>{childPhoto=d;photoPrev.src=d;photoPrev.style.display="block";});});
+  photoWrap.appendChild(photoInput);photoWrap.appendChild(photoPrev);w.appendChild(photoWrap);
+  const photoNote=document.createElement("p");photoNote.style.cssText="font-size:11px;color:var(--text3);margin:-4px 0 14px;line-height:1.4";
+  photoNote.textContent="\uD83D\uDD12 La foto di un minore \u00e8 un dato sensibile: resta visibile solo agli operatori durante la ricerca e viene eliminata automaticamente alla chiusura del caso.";w.appendChild(photoNote);
+
+  // Posizione GPS
+  const gpsBox=document.createElement("div");
+  gpsBox.style.cssText="background:var(--bg2,#f1f5f9);border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:12.5px;color:var(--text2);line-height:1.5";
+  const gpsLabel=perso?"Ultimo punto in cui l'hai visto":"Dove ti trovi adesso";
+  function gpsText(){
+    if(_userLat!==null)return "\uD83D\uDCCD "+gpsLabel+": posizione rilevata (~"+Math.round(_userGpsAcc||0)+"m)";
+    return "\uD83D\uDCCD "+gpsLabel+": rilevamento posizione in corso\u2026 attiva il GPS se richiesto.";
+  }
+  gpsBox.textContent=gpsText();w.appendChild(gpsBox);
+  if(_userLat===null)requestGPS();
+  const _gpsPoll=setInterval(()=>{gpsBox.textContent=gpsText();if(_userLat!==null)clearInterval(_gpsPoll);},1500);
+
+  // Informativa privacy dedicata (minore + foto = dati particolarmente sensibili)
+  const privacyWrap=document.createElement("div");
+  privacyWrap.style.cssText="margin-top:4px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2)";
+  privacyWrap.innerHTML=
+    '<p style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">Informativa privacy &mdash; segnalazione minore</p>'
+    +'<p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">Ai sensi del Regolamento UE 2016/679 (GDPR), i dati forniti &mdash; et\u00e0, descrizione, eventuale nome, la posizione GPS se attiva e l\u2019eventuale fotografia &mdash; sono trattati da Omnia Servizi al Turismo SRLS al solo scopo di ricercare e ricongiungere il minore. La fotografia, in quanto dato di un minore, \u00e8 visibile solo agli operatori di salvataggio durante la ricerca ed \u00e8 <b>eliminata automaticamente alla chiusura del caso</b>; non viene conservata nell\u2019archivio delle segnalazioni. Il trattamento risponde a una necessit\u00e0 di tutela vitale del minore (art. 6 e art. 9 GDPR).</p>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text);margin:0"><input type="checkbox" id="minorePrivacyCheck" style="margin-top:2px;flex-shrink:0"> <span>Dichiaro di fornire questi dati per la ricerca del minore e acconsento al loro trattamento, inclusa l\u2019eventuale foto e posizione GPS, per le finalit\u00e0 indicate.</span></label>';
+  w.appendChild(privacyWrap);
+
+  // Submit
+  const submit=document.createElement("button");
+  submit.className="btn-primary";submit.style.cssText="margin-top:14px;background:"+accent;
+  submit.textContent=perso?"\uD83D\uDEA8 DIRAMA ALLERTA":"\u2714 SEGNALA RITROVAMENTO";
+  submit.addEventListener("click",()=>{
+    const cloth=clothEl.value.trim();
+    if(!cloth&&!ageEl.value.trim()){alert("Inserisci almeno l'et\u00e0 o l'abbigliamento per riconoscere il bambino.");return;}
+    var pc=document.getElementById("minorePrivacyCheck");
+    if(pc&&!pc.checked){alert("Devi accettare l\u2019informativa privacy per inviare la segnalazione.");pc.focus();return;}
+    submit.disabled=true;submit.textContent="Invio\u2026";
+    const r={
+      id:Date.now(),
+      type:"emergenza",                    // eredita allarme sonoro, anello in mappa, banner operatori
+      sub:perso?"Minore smarrito":"Minore ritrovato",
+      zone:nearestStation?("P."+nearestStation.num+" \u2013 "+nearestStation.name):"Posizione GPS",
+      notes:[ageEl.value.trim()&&("Et\u00e0: "+ageEl.value.trim()),cloth&&("Abbigliamento: "+cloth),nameEl.value.trim()&&("Nome: "+nameEl.value.trim())].filter(Boolean).join(" \u00b7 "),
+      author:perso?"Genitore/accompagnatore":"Chi ha trovato",
+      phone:null,role:currentRole||"public",
+      ts:new Date().toISOString(),status:"aperta",
+      photo:childPhoto||null,
+      gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null,
+      childCase:{
+        direction:direction,
+        age:ageEl.value.trim()||null,
+        clothing:cloth||null,
+        name:nameEl.value.trim()||null,
+        matchedKey:null
+      }
+    };
+    addReport(r).then(ref=>{
+      _lastChildKey=ref&&ref.key?ref.key:null;
+      sendWANotify(r);
+      render("minore-done");
+    }).catch(e=>{submit.disabled=false;submit.textContent=perso?"\uD83D\uDEA8 DIRAMA ALLERTA":"\u2714 SEGNALA RITROVAMENTO";alert("Errore: "+e.message);});
+  });
+  w.appendChild(submit);
+
+  const back=document.createElement("button");
+  back.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:12px;width:100%;cursor:pointer";
+  back.textContent="\u2190 Indietro";back.addEventListener("click",()=>{clearInterval(_gpsPoll);render("minore");});
+  w.appendChild(back);
+  page.appendChild(w);
+}
+
+// Conferma invio
+function renderMinoreDone(page){
+  const w=document.createElement("div");w.className="confirm-wrap";
+  const ic=document.createElement("div");ic.className="confirm-icon";ic.style.background="#d81b8c";ic.textContent="\uD83D\uDEA8";w.appendChild(ic);
+  const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:700;margin-bottom:8px";h.textContent="Allerta diramata";w.appendChild(h);
+  const p=document.createElement("p");p.style.cssText="color:var(--text2);font-size:14px;margin-bottom:6px;line-height:1.5";
+  p.textContent="Tutte le postazioni di salvataggio sono state avvisate e stanno cercando. Resta dove sei e tieni il telefono a portata.";w.appendChild(p);
+  const call=document.createElement("a");call.href="tel:112";
+  call.style.cssText="display:block;background:#b91c1c;color:#fff;font-size:16px;font-weight:800;padding:13px;border-radius:10px;text-decoration:none;margin:14px 0";
+  call.textContent="\uD83D\uDCDE Chiama il 112";w.appendChild(call);
+  const b2=document.createElement("button");b2.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:6px;width:100%;cursor:pointer";
+  b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>render("home"));w.appendChild(b2);
+  page.appendChild(w);
+}
 function renderDashboard(page){
   const reports=getReports(),open=reports.filter(r=>r.status==="aperta");
   const tb=document.createElement("div");tb.className="dash-toolbar";
@@ -3615,6 +3811,31 @@ function renderDashboard(page){
     if(res){const t=document.createElement("span");t.className="tag-resolved";t.textContent="\u2713 risolta";hr.appendChild(t);}
     if(r.role==="public"){const t=document.createElement("span");t.className="tag-public";t.textContent="pubblico";hr.appendChild(t);}
     body.appendChild(hr);
+    // --- Caso MINORE: badge, timer, incrocio perso/trovato ---
+    if(r.childCase){
+      const dir=r.childCase.direction;
+      const cb=document.createElement("span");
+      cb.style.cssText="font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:#fff;background:"+(dir==="perso"?"#d81b8c":"#1a7f4b");
+      cb.textContent=dir==="perso"?"\uD83D\uDC66 MINORE SMARRITO":"\uD83D\uDE4B MINORE RITROVATO";
+      hr.insertBefore(cb,hr.firstChild.nextSibling);
+      if(!res){
+        // Timer dal momento della segnalazione
+        const mins=Math.floor((Date.now()-new Date(r.ts).getTime())/60000);
+        const esc=mins>=CHILD_ESCALATE_MIN;
+        const tm=document.createElement("div");
+        tm.style.cssText="display:flex;align-items:center;gap:7px;margin:6px 0 2px;font-size:12.5px;font-weight:700;padding:7px 10px;border-radius:8px;"+(esc?"background:#7f1d1d;color:#fff":"background:var(--danger-bg);color:var(--danger-text)");
+        tm.innerHTML="\u23F1\uFE0F Aperto da "+(mins<1?"meno di 1 min":mins+" min")+(esc?" \u2014 oltre "+CHILD_ESCALATE_MIN+' min: coinvolgi le forze dell\u2019ordine, <a href="tel:112" style="color:#fff;text-decoration:underline">chiama 112</a>':"");
+        body.appendChild(tm);
+        // Incrocio: cerca un caso aperto della direzione opposta
+        const opp=open.find(function(o){return o._key!==r._key&&o.childCase&&o.childCase.direction!==dir;});
+        if(opp){
+          const xm=document.createElement("div");
+          xm.style.cssText="margin:6px 0 2px;font-size:12px;font-weight:700;padding:8px 10px;border-radius:8px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;line-height:1.4";
+          xm.innerHTML="\u26A0\uFE0F Possibile riscontro: c'\u00e8 anche "+(dir==="perso"?"un <b>ritrovamento</b>":"una <b>scomparsa</b>")+" aperta ("+opp.zone+"). Verifica se coincidono.";
+          body.appendChild(xm);
+        }
+      }
+    }
     const nt=document.createElement("p");nt.style.cssText="font-size:13px;line-height:1.5;margin-bottom:4px";nt.textContent=r.notes;body.appendChild(nt);
     if(r.photo){const imgWrap=document.createElement("div");imgWrap.style.cssText="position:relative;display:inline-block;margin:4px 0";const img=document.createElement("img");img.src=r.photo;img.style.cssText="max-width:100%;height:90px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border);display:block";const dlBtn=document.createElement("a");dlBtn.href=r.photo;dlBtn.download="segnalazione_"+r.id+".jpg";dlBtn.style.cssText="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.65);color:white;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;text-decoration:none";dlBtn.textContent="\u2B07\uFE0F";imgWrap.appendChild(img);imgWrap.appendChild(dlBtn);body.appendChild(imgWrap);}
     const mt=document.createElement("p");mt.className="report-meta";mt.textContent=`${r.zone} \u00b7 ${fmt(r.ts)}${r.author?" \u00b7 "+r.author:""}${r.phone?" \u00b7 \uD83D\uDCDE "+r.phone:""}`;body.appendChild(mt);
