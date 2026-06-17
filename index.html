@@ -1376,29 +1376,38 @@ function applyGreenFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)
 function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
 
 // --- Sincronizzazione automatica delle bandiere ---
-// Controllo idempotente basato sulla DATA dell'ultima applicazione (salvata su Firebase),
-// non sulla "transizione" oraria: questo lo rende robusto anche quando l'app resta aperta
-// e il dispositivo va in sospensione (i timer JS si fermano, ma al risveglio il controllo riparte).
-//
-//  • In orario di servizio (09:00-19:00): tutte VERDI una sola volta al giorno → autoGreenDate.
-//    Dopo l'applicazione l'operatore può modificare le bandiere a piacimento per tutta la giornata.
-//  • Fuori orario: tutte ROSSE una sola volta per chiusura → autoRedDate.
-function _applyDailyFlags(markerKey, today, applyFn){
-  return _fbFetch(markerKey)
-    .then(function(d){
-      if(d!==today){
-        return _fbFetch(markerKey,"PUT",today).then(function(){applyFn();});
-      }
-    })
-    .catch(function(){/* offline: nessuna azione, riproverà al prossimo controllo */});
+// Si ragiona per SESSIONI, non per date, perché "fuori servizio" copre due finestre nello
+// stesso giorno solare (notte 00-09 e sera 19-24): usare solo la data farebbe saltare il rosso
+// serale se quello notturno era già stato applicato.
+//   • Sessione VERDE  = giorno X, ore 09:00-19:00          → "green_<data X>"
+//   • Sessione ROSSA  = dalle 19:00 di X fino alle 09:00 di X+1 (attraversa la mezzanotte)
+//                       → "red_<data della sera in cui è iniziata>"
+// Il cambio si applica una sola volta per sessione (marcatore "autoFlagSession" su Firebase);
+// dentro la sessione l'operatore può modificare le bandiere a piacimento.
+function _prevDate(dateStr){
+  var d=new Date(dateStr+"T12:00:00Z");
+  d.setUTCDate(d.getUTCDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function currentFlagSession(){
+  var n=romeNow(); // {h, m, date}
+  if(n.h>=9&&n.h<19)return "green_"+n.date;        // giorno: servizio attivo
+  if(n.h>=19)return "red_"+n.date;                 // sera: notte iniziata oggi
+  return "red_"+_prevDate(n.date);                 // notte dopo mezzanotte: appartiene a ieri sera
 }
 function syncAutoFlags(){
-  var today=romeNow().date;
-  if(isServiceActive()){
-    if(isAutoGreenPeriod())_applyDailyFlags("autoGreenDate",today,applyGreenFlags);
-  }else{
-    _applyDailyFlags("autoRedDate",today,applyServiceFlags);
-  }
+  var session=currentFlagSession();
+  var isGreen=session.indexOf("green_")===0;
+  // Fuori dal periodo stagionale il verde automatico non si applica (le rosse restano).
+  if(isGreen&&!isAutoGreenPeriod())return;
+  _fbFetch("autoFlagSession")
+    .then(function(last){
+      if(last===session)return;                    // sessione già applicata: non sovrascrivere
+      return _fbFetch("autoFlagSession","PUT",session).then(function(){
+        if(isGreen)applyGreenFlags();else applyServiceFlags();
+      });
+    })
+    .catch(function(){/* offline: riproverà al prossimo controllo */});
 }
 // Trigger multipli: il setInterval da solo non basta perché il browser congela i timer
 // quando il telefono è bloccato. Il controllo va rifatto ad ogni ritorno in primo piano.
