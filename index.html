@@ -3710,10 +3710,10 @@ function renderMinoreForm(page,direction){
   w.appendChild(lab("Il tuo nome e cognome"));
   const reporterEl=document.createElement("input");reporterEl.type="text";reporterEl.placeholder="es. Mario Rossi";reporterEl.style.cssText=fieldStyle;w.appendChild(reporterEl);
 
-  w.appendChild(lab("Il tuo numero di telefono"));
-  const phoneEl=document.createElement("input");phoneEl.type="tel";phoneEl.inputMode="tel";phoneEl.placeholder="es. 333 1234567";phoneEl.style.cssText=fieldStyle;w.appendChild(phoneEl);
+  w.appendChild(lab("Il tuo numero di telefono *"));
+  const phoneEl=document.createElement("input");phoneEl.type="tel";phoneEl.inputMode="tel";phoneEl.placeholder="es. 333 1234567 (obbligatorio)";phoneEl.style.cssText=fieldStyle;w.appendChild(phoneEl);
   const phoneNote=document.createElement("p");phoneNote.style.cssText="font-size:11px;color:var(--text3);margin:-6px 0 14px;line-height:1.4";
-  phoneNote.textContent="\u260E\uFE0F Importante: lascia un recapito raggiungibile, i bagnini potrebbero doverti richiamare subito.";w.appendChild(phoneNote);
+  phoneNote.textContent="\u260E\uFE0F Obbligatorio: lascia un recapito raggiungibile, i bagnini potrebbero doverti richiamare subito.";w.appendChild(phoneNote);
 
   // Foto facoltativa
   w.appendChild(lab("Foto (facoltativa)"));
@@ -3755,6 +3755,8 @@ function renderMinoreForm(page,direction){
   submit.addEventListener("click",()=>{
     const cloth=clothEl.value.trim();
     if(!cloth&&!ageEl.value.trim()){alert("Inserisci almeno l'et\u00e0 o l'abbigliamento per riconoscere il bambino.");return;}
+    const reporterPhoneVal=phoneEl.value.trim();
+    if(reporterPhoneVal.replace(/\D/g,"").length<8){alert("\u260E\uFE0F Inserisci un numero di telefono valido.\n\n\u00c8 obbligatorio: i bagnini devono poterti richiamare subito durante la ricerca.");phoneEl.focus();return;}
     var pc=document.getElementById("minorePrivacyCheck");
     if(pc&&!pc.checked){alert("Devi accettare l\u2019informativa privacy per inviare la segnalazione.");pc.focus();return;}
     if(_userLat===null&&!_minoreGpsWarned){
