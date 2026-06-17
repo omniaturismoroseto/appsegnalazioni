@@ -1506,7 +1506,7 @@ function _onGPSPosition(pos){
     // Aggiorna marcatore postazione più vicina (anello blu)
     refreshMarkers();
   }
-  if(currentScreen==="home")renderPage();
+  if(currentScreen==="home"||currentScreen==="minore")renderPage();
 }
 
 function requestGPS(){
@@ -1525,7 +1525,7 @@ function requestGPS(){
       }
       nearestStation=null;
       _gpsError=true;
-      if(currentScreen==="home")renderPage();
+      if(currentScreen==="home"||currentScreen==="minore")renderPage();
     },
     {enableHighAccuracy:true,timeout:30000,maximumAge:30000}
   );
@@ -3605,8 +3605,43 @@ function _child112Banner(){
   return a;
 }
 
+// Card "postazione di salvataggio più vicina + come arrivarci" (riutilizzabile)
+function _nearestStationNavCard(){
+  const ns=document.createElement("div");
+  if(nearestStation){
+    ns.style.cssText="border-radius:var(--radius-lg);margin-bottom:8px;background:#f0fdf4;border:1px solid #bbf7d0;overflow:hidden";
+    const infoRow=document.createElement("div");
+    infoRow.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 14px 10px";
+    infoRow.innerHTML='<span style="font-size:22px">\uD83C\uDFD6\uFE0F</span>'
+      +'<div style="flex:1;min-width:0">'
+      +'<p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 2px">P.'+nearestStation.num+' \u2013 '+nearestStation.name+'</p>'
+      +'<p style="font-size:12px;color:var(--text2);margin:0">Postazione pi\u00f9 vicina'+(nearestDist?' &nbsp;\u00b7&nbsp; a <strong>'+fmtDist(nearestDist)+'</strong> da te':'')+'</p>'
+      +'</div>';
+    ns.appendChild(infoRow);
+    const navBtn=document.createElement("button");
+    navBtn.style.cssText="display:block;width:100%;padding:12px 8px;background:#166534;border:none;font-size:14px;font-weight:700;color:#fff;cursor:pointer";
+    navBtn.innerHTML='\uD83E\uDDED Come arrivarci \u2192';
+    navBtn.addEventListener("click",function(){
+      const lat=nearestStation.lat,lng=nearestStation.lng;
+      const ua=navigator.userAgent||"";
+      const url=/iPhone|iPad|iPod/i.test(ua)
+        ? "maps://maps.apple.com/?daddr="+lat+","+lng+"&dirflg=w"
+        : "https://www.google.com/maps/dir/?api=1&destination="+lat+","+lng+"&travelmode=walking";
+      window.open(url,"_blank");
+    });
+    ns.appendChild(navBtn);
+  } else {
+    ns.style.cssText="display:flex;align-items:center;gap:8px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:8px;background:var(--bg2);border:1px solid var(--border);cursor:pointer";
+    ns.innerHTML='<span style="font-size:18px">\uD83D\uDCCD</span><span style="font-size:13px;color:var(--text2)">Tocca per rilevare la postazione di salvataggio pi\u00f9 vicina</span>';
+    ns.addEventListener("click",function(){requestGPS();});
+    if(_userLat===null)requestGPS();
+  }
+  return ns;
+}
+
 // Schermata bivio: ho perso / ho trovato
 function renderMinoreBivio(page){
+  if(nearestStation===null)requestGPS();
   const w=document.createElement("div");w.style.cssText="padding:4px 2px";
   w.appendChild(_child112Banner());
 
@@ -3614,8 +3649,8 @@ function renderMinoreBivio(page){
   h.style.cssText="font-size:19px;font-weight:800;margin:0 0 6px;color:var(--text)";
   h.textContent="Minore smarrito";w.appendChild(h);
   const p=document.createElement("p");
-  p.style.cssText="font-size:13px;color:var(--text2);margin:0 0 18px;line-height:1.5";
-  p.textContent="Scegli la situazione. L'allerta raggiunge subito tutte le postazioni di salvataggio.";w.appendChild(p);
+  p.style.cssText="font-size:13px;color:var(--text2);margin:0 0 16px;line-height:1.5";
+  p.textContent="Scegli la situazione. L'allerta raggiunge subito il responsabile Omnia ALS.";w.appendChild(p);
 
   const mk=(grad,emoji,title,desc,scr)=>{
     const b=document.createElement("button");
@@ -3626,6 +3661,14 @@ function renderMinoreBivio(page){
   };
   w.appendChild(mk("linear-gradient(135deg,#d81b8c,#a30f66)","\uD83D\uDE22","Ho perso un bambino","Segnala ora la scomparsa: descrizione e ultimo punto in cui l'hai visto.","minore-perso"));
   w.appendChild(mk("linear-gradient(135deg,#1a7f4b,#0f5a34)","\uD83D\uDE4B","Ho trovato un bambino","Hai trovato un minore da solo: segnala dove ti trovi adesso.","minore-trovato"));
+
+  // Dopo la segnalazione: recati alla postazione di salvataggio più vicina
+  const guide=document.createElement("div");
+  guide.style.cssText="margin-top:6px;padding:12px 14px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe";
+  guide.innerHTML='<p style="font-size:13px;font-weight:700;color:#1e3a8a;margin:0 0 4px">\uD83D\uDEA9 Dopo la segnalazione</p>'
+    +'<p style="font-size:12.5px;color:#1e40af;margin:0;line-height:1.5">Recati alla postazione di salvataggio pi\u00f9 vicina: i bagnini ti aiuteranno e coordineranno la ricerca.</p>';
+  w.appendChild(guide);
+  w.appendChild(_nearestStationNavCard());
 
   const back=document.createElement("button");
   back.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:8px;width:100%;cursor:pointer";
