@@ -1368,65 +1368,15 @@ function romeNow(){
   }
 }
 function isServiceActive(){var h=romeNow().h;return h>=9&&h<19;}
-// Bandiere verdi automatiche 09:00-19:00 fino al 06.09.2026
-function isAutoGreenPeriod(){
-  return romeNow().date<="2026-09-06";
-}
-function applyGreenFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="verde";});flagsRef.set(f);}
-function applyServiceFlags(){var f={};STATIONS.forEach(function(s){f[String(s.num)]="rossa";});flagsRef.set(f);}
 
-// --- Sincronizzazione automatica delle bandiere ---
-// Si ragiona per SESSIONI, non per date, perché "fuori servizio" copre due finestre nello
-// stesso giorno solare (notte 00-09 e sera 19-24): usare solo la data farebbe saltare il rosso
-// serale se quello notturno era già stato applicato.
-//   • Sessione VERDE  = giorno X, ore 09:00-19:00          → "green_<data X>"
-//   • Sessione ROSSA  = dalle 19:00 di X fino alle 09:00 di X+1 (attraversa la mezzanotte)
-//                       → "red_<data della sera in cui è iniziata>"
-// Il cambio si applica una sola volta per sessione (marcatore "autoFlagSession" su Firebase);
-// dentro la sessione l'operatore può modificare le bandiere a piacimento.
-function _prevDate(dateStr){
-  var d=new Date(dateStr+"T12:00:00Z");
-  d.setUTCDate(d.getUTCDate()-1);
-  return d.toISOString().slice(0,10);
-}
-function currentFlagSession(){
-  var n=romeNow(); // {h, m, date}
-  if(n.h>=9&&n.h<19)return "green_"+n.date;        // giorno: servizio attivo
-  if(n.h>=19)return "red_"+n.date;                 // sera: notte iniziata oggi
-  return "red_"+_prevDate(n.date);                 // notte dopo mezzanotte: appartiene a ieri sera
-}
-function syncAutoFlags(){
-  var session=currentFlagSession();
-  var isGreen=session.indexOf("green_")===0;
-  if(isGreen){
-    // VERDE (giorno): applicato UNA sola volta per sessione, così durante la giornata
-    // l'operatore può modificare le bandiere senza che vengano risovrascritte.
-    if(!isAutoGreenPeriod())return;
-    _fbFetch("autoFlagSession")
-      .then(function(last){
-        if(last===session)return;
-        return _fbFetch("autoFlagSession","PUT",session).then(function(){applyGreenFlags();});
-      })
-      .catch(function(){});
-  }else{
-    // ROSSO (notte): AUTO-CORRETTIVO. Di notte nessuno opera, quindi finché anche una sola
-    // bandiera non è rossa il controllo la riforza ad ogni giro (60s / focus / online).
-    // Questo garantisce che il rosso "attecchisca" anche se un tentativo fallisce, senza
-    // restare bloccato su un marcatore di sessione.
-    var allRed=STATIONS.length>0&&STATIONS.every(function(s){return flagsData[s.num]==="rossa";});
-    if(!allRed)applyServiceFlags();
-    _fbFetch("autoFlagSession")
-      .then(function(last){if(last!==session)return _fbFetch("autoFlagSession","PUT",session);})
-      .catch(function(){});
-  }
-}
-// Trigger multipli: il setInterval da solo non basta perché il browser congela i timer
-// quando il telefono è bloccato. Il controllo va rifatto ad ogni ritorno in primo piano.
-setInterval(syncAutoFlags,60000);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)syncAutoFlags();});
-window.addEventListener("focus",syncAutoFlags);
-window.addEventListener("online",syncAutoFlags);
-syncAutoFlags(); // all'avvio
+// --- Bandiere automatiche: GESTITE LATO SERVER ---
+// Il cambio automatico (tutte VERDI alle 09:00, tutte ROSSE alle 19:00, ora di Roma)
+// è eseguito da un processo schedulato (GitHub Actions) che scrive direttamente su
+// Firebase, INDIPENDENTEMENTE da qualsiasi dispositivo, cache o impostazione utente.
+// Vedi il workflow ".github/workflows/bandiere.yml" nel repository.
+// Il client si limita a LEGGERE e mostrare le bandiere; l'operatore può comunque
+// modificarle manualmente durante la giornata dall'editor Bandiere.
+
 function playBeep(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
