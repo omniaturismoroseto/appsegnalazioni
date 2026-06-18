@@ -1,3 +1,9 @@
+/* Omnia Segnalazioni — Service Worker per le notifiche push (FCM)
+ * Questo file DEVE stare nella ROOT del percorso dell'app:
+ *   https://omniaturismoroseto.github.io/appsegnalazioni/firebase-messaging-sw.js
+ * Gestisce i messaggi push quando l'app è chiusa o in secondo piano.
+ */
+
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
 
@@ -8,52 +14,40 @@ firebase.initializeApp({
   projectId: "app-segnalazioni-omnia-roseto",
   storageBucket: "app-segnalazioni-omnia-roseto.firebasestorage.app",
   messagingSenderId: "699028105579",
-  appId: "1:699028105579:web:cdc0a432083b7fe18d442e"
+  appId: "1:699028105579:web:cdc0a432083b7fe18d442e",
 });
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-  const data = payload.data || {};
-
-  const title = data.title || "🚨 Omnia – Nuova segnalazione";
+// Messaggi ricevuti mentre l'app NON è in primo piano
+messaging.onBackgroundMessage(function (payload) {
+  const n = payload.notification || {};
+  const d = payload.data || {};
+  const title = n.title || "🚨 Omnia — Nuova segnalazione";
   const options = {
-    body: data.body || "Apri la dashboard operatore",
-    icon: "/appsegnalazioni/icon-192-fixed.png",
-    badge: "/appsegnalazioni/icon-192-fixed.png",
-    vibrate: [500, 200, 500, 200, 500],
-    tag: data.tag || "omnia-alert",
-    renotify: true,
-    requireInteraction: true,
-    data: {
-      url: data.url || "/appsegnalazioni/?screen=dashboard",
-      reportId: data.reportId || ""
-    }
+    body: n.body || "",
+    icon: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
+    badge: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
+    tag: d.reportId ? "report_" + d.reportId : "omnia_report",
+    requireInteraction: d.type === "emergenza",
+    vibrate: [200, 100, 200, 100, 200],
+    data: { url: d.url || "https://omniaturismoroseto.github.io/appsegnalazioni/" },
   };
-
-  self.registration.showNotification(title, options);
+  return self.registration.showNotification(title, options);
 });
 
-self.addEventListener("notificationclick", (event) => {
+// Tocco sulla notifica: porta l'operatore all'app (o la mette in primo piano)
+self.addEventListener("notificationclick", function (event) {
   event.notification.close();
-
-  const targetUrl =
+  const url =
     (event.notification.data && event.notification.data.url) ||
-    "/appsegnalazioni/?screen=dashboard";
-
+    "https://omniaturismoroseto.github.io/appsegnalazioni/";
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ("focus" in client) {
-          try {
-            client.navigate(targetUrl);
-          } catch (e) {}
-          return client.focus();
-        }
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+      for (const c of list) {
+        if (c.url.indexOf("/appsegnalazioni") !== -1 && "focus" in c) return c.focus();
       }
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
+      if (clients.openWindow) return clients.openWindow(url);
     })
   );
 });

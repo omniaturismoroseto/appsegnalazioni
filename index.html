@@ -1249,22 +1249,10 @@ flagsRef.on("value",snap=>{
 function onNewReport(){
   renderHeader();
   _checkForActiveAlerts();
-  if(window.Notification&&Notification.permission==="granted"){
-    var open=Object.values(reportsData).filter(function(r){return r.status==="aperta";});
-    var last=open[0];
-    var body=last?last.type.toUpperCase()+": "+last.sub+" \u2014 "+last.zone:"Nuova segnalazione ricevuta";
-    var notifOpts={body:body,icon:"logo.png",badge:"logo.png",vibrate:[300,100,300,100,300],tag:"omnia-segnalazione",renotify:true};
-    if("serviceWorker" in navigator){
-      navigator.serviceWorker.ready.then(function(reg){
-        // showNotification via SW funziona anche con app in background
-        return reg.showNotification("\uD83D\uDEA8 Omnia \u2013 Nuova segnalazione",notifOpts);
-      }).catch(function(){
-        if(Notification.permission==="granted")new Notification("\uD83D\uDEA8 Omnia \u2013 Nuova segnalazione",notifOpts);
-      });
-    } else if(Notification.permission==="granted"){
-      new Notification("\uD83D\uDEA8 Omnia \u2013 Nuova segnalazione",notifOpts);
-    }
-  }
+  // La notifica push di sistema è ora inviata dalla Cloud Function (sendPushOnNewReport),
+  // che funziona anche ad app chiusa e con il testo corretto. Qui NON generiamo più una
+  // notifica locale, per evitare doppioni e messaggi datati. Resta solo l'allarme sonoro
+  // gestito da _checkForActiveAlerts() quando l'app è in primo piano.
 }
 
 // DATA HELPERS
