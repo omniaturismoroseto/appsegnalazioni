@@ -3379,6 +3379,7 @@ function renderLogin(page){
 
 function renderSubmit(page){
   let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
+  let _submitGpsWarned=false;
 
   // Banner 112
   const banner112=document.createElement("div");
@@ -3395,7 +3396,21 @@ function renderSubmit(page){
   });
   page.appendChild(banner112);
 
-  const wrap=document.createElement("div");wrap.className="form-wrap";
+  // Richiedi subito il GPS così la segnalazione include la posizione (e il link Maps)
+  if(_userLat===null)requestGPS();
+  const gpsBox=document.createElement("div");
+  gpsBox.style.cssText="display:flex;align-items:center;gap:8px;padding:10px 13px;border-radius:var(--radius-lg);margin-bottom:16px;font-size:12.5px;line-height:1.4;background:var(--bg2);border:1px solid var(--border)";
+  function _gpsBoxText(){
+    if(_userLat!==null){
+      gpsBox.style.background="#f0fdf4";gpsBox.style.borderColor="#bbf7d0";
+      gpsBox.innerHTML='<span style="font-size:16px">\uD83D\uDCCD</span><span style="color:#166534">Posizione rilevata (~'+Math.round(_userGpsAcc||0)+'m): sar\u00e0 inclusa con il link alla mappa.</span>';
+    }else{
+      gpsBox.innerHTML='<span style="font-size:16px">\uD83D\uDCCD</span><span style="color:var(--text2)">Rilevamento posizione in corso\u2026 attiva il GPS se richiesto, cos\u00ec gli operatori vedono il punto esatto.</span>';
+    }
+  }
+  _gpsBoxText();
+  page.appendChild(gpsBox);
+  const _gpsPoll=setInterval(function(){_gpsBoxText();if(_userLat!==null)clearInterval(_gpsPoll);},1500);
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
   const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Nuova segnalazione";wrap.appendChild(h);
@@ -3524,6 +3539,11 @@ function renderSubmit(page){
     var privacyCheck=document.getElementById("privacyCheck");
     if(privacyCheck&&!privacyCheck.checked){
       alert("Devi leggere e accettare l’informativa privacy per procedere.");return;
+    }
+    if(_userLat===null&&!_submitGpsWarned){
+      _submitGpsWarned=true;
+      alert("\uD83D\uDCCD La posizione GPS non \u00e8 ancora pronta.\n\nAttendi qualche secondo che compaia \u201cposizione rilevata\u201d, cos\u00ec gli operatori ricevono il punto esatto sulla mappa. Oppure tocca di nuovo INVIA per procedere comunque senza posizione.");
+      return;
     }
     submitBtn.disabled=true;submitBtn.textContent="Invio...";
     const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null,gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null};
