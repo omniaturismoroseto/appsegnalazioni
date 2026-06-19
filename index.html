@@ -2489,7 +2489,7 @@ function renderHome(page){
   // Pulsante dedicato MINORE SMARRITO (accesso pubblico, sempre visibile)
   const bMin=document.createElement("button");bMin.className="home-btn";
   bMin.style.cssText="background:linear-gradient(135deg,#d81b8c 0%,#a30f66 100%);color:#fff;border:none";
-  bMin.innerHTML=`<h3 style="color:#fff">\uD83D\uDC66 Minore smarrito \uD83D\uDC67</h3><p style="color:rgba(255,255,255,.9)">Ho perso o ho trovato un bambino &middot; allerta immediata</p>`;
+  bMin.innerHTML=`<h3 style="color:#fff">\uD83D\uDEA8 Minore / persona smarrita</h3><p style="color:rgba(255,255,255,.9)">Ho perso o ho trovato una persona &middot; allerta immediata</p>`;
   bMin.addEventListener("click",()=>{render("minore");});
   btns.appendChild(bMin);
   page.appendChild(btns);
@@ -3405,6 +3405,8 @@ function renderSubmit(page){
   });
   page.appendChild(banner112);
 
+  const wrap=document.createElement("div");wrap.className="form-wrap";
+
   // Richiedi subito il GPS così la segnalazione include la posizione (e il link Maps)
   if(_userLat===null)requestGPS();
   const gpsBox=document.createElement("div");
@@ -3418,11 +3420,11 @@ function renderSubmit(page){
     }
   }
   _gpsBoxText();
-  page.appendChild(gpsBox);
   const _gpsPoll=setInterval(function(){_gpsBoxText();if(_userLat!==null)clearInterval(_gpsPoll);},1500);
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
   const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Nuova segnalazione";wrap.appendChild(h);
+  wrap.appendChild(gpsBox);
   const lbT=document.createElement("label");lbT.textContent="Tipo segnalazione";wrap.appendChild(lbT);
   const tg=document.createElement("div");tg.className="type-grid";
   const typeBtns={};
@@ -3634,7 +3636,7 @@ function renderMinoreBivio(page){
 
   const h=document.createElement("h2");
   h.style.cssText="font-size:19px;font-weight:800;margin:0 0 6px;color:var(--text)";
-  h.textContent="Minore smarrito";w.appendChild(h);
+  h.textContent="Minore / persona smarrita";w.appendChild(h);
   const p=document.createElement("p");
   p.style.cssText="font-size:13px;color:var(--text2);margin:0 0 16px;line-height:1.5";
   p.textContent="Scegli la situazione. L'allerta raggiunge subito il responsabile Omnia ALS.";w.appendChild(p);
@@ -3646,8 +3648,8 @@ function renderMinoreBivio(page){
     b.addEventListener("click",()=>render(scr));
     return b;
   };
-  w.appendChild(mk("linear-gradient(135deg,#d81b8c,#a30f66)","\uD83D\uDE22","Ho perso un bambino","Segnala ora la scomparsa: descrizione e ultimo punto in cui l'hai visto.","minore-perso"));
-  w.appendChild(mk("linear-gradient(135deg,#1a7f4b,#0f5a34)","\uD83D\uDE4B","Ho trovato un bambino","Hai trovato un minore da solo: segnala dove ti trovi adesso.","minore-trovato"));
+  w.appendChild(mk("linear-gradient(135deg,#d81b8c,#a30f66)","\uD83D\uDE22","Ho perso una persona","Segnala ora la scomparsa: descrizione e ultimo punto in cui l'hai vista.","minore-perso"));
+  w.appendChild(mk("linear-gradient(135deg,#1a7f4b,#0f5a34)","\uD83D\uDE4B","Ho trovato una persona","Hai trovato una persona smarrita: segnala dove ti trovi adesso.","minore-trovato"));
 
   // Dopo la segnalazione: recati alla postazione di salvataggio più vicina
   const guide=document.createElement("div");
@@ -3673,7 +3675,7 @@ function renderMinoreForm(page,direction){
 
   const h=document.createElement("h2");
   h.style.cssText="font-size:18px;font-weight:800;margin:0 0 14px;color:var(--text)";
-  h.textContent=perso?"\uD83D\uDE22 Ho perso un bambino":"\uD83D\uDE4B Ho trovato un bambino";
+  h.textContent=perso?"\uD83D\uDE22 Ho perso una persona":"\uD83D\uDE4B Ho trovato una persona";
   w.appendChild(h);
 
   const fieldStyle="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);margin-bottom:12px;box-sizing:border-box";
