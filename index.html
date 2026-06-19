@@ -1176,12 +1176,19 @@ reportsRef.on("value",snap=>{
   if(fbReady&&currentRole==="operator"){
     let added=0;
     newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&snapData[k]&&snapData[k].status==="aperta")added++;});
-    if(added>0){newReportCount+=added;onNewReport();}
+    if(added>0)newReportCount+=added;
   }
   prevReportKeys=newKeys;
   reportsData=snapData;
   fbReady=true;
-  if(currentRole==="operator")_purgeExpiredChildPhotos();
+  if(currentRole==="operator"){
+    _purgeExpiredChildPhotos();
+    renderHeader();
+    // Controlla SEMPRE se c'è un'emergenza/pericolo aperto e fa partire l'allarme:
+    // così suona anche se l'operatore è entrato DOPO la creazione della segnalazione
+    // (non dipende dal rilevarla come "appena aggiunta").
+    _checkForActiveAlerts();
+  }
   refreshMarkers();
   if(currentScreen==="dashboard")renderPage();
   if(currentScreen==="home")renderPage();
@@ -3353,6 +3360,8 @@ function renderLogin(page){
       if(window._requestNotifPermission)_requestNotifPermission();
       if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
       render("dashboard");
+      // Se c'è già un'emergenza/pericolo aperto al momento dell'accesso, fai partire subito l'allarme
+      setTimeout(_checkForActiveAlerts,300);
     }catch(e){
       btn.disabled=false;btn.textContent="Accedi";
       err.style.display="block";
