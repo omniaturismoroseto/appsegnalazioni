@@ -194,3 +194,40 @@ exports.repeatOpenAlerts = onSchedule(
     console.log("Ripetizione inviata per", daRipetere.length, "segnalazioni aperte");
   }
 );
+
+// ============================================================
+// 3) BANDIERE AUTOMATICHE (Cloud Scheduler, puntuale al minuto)
+//    Scrive direttamente su /flags, indipendentemente da qualsiasi dispositivo.
+//      • 09:00 ora di Roma → tutte VERDI
+//      • 19:00 ora di Roma → tutte ROSSE
+//    Le postazioni vanno da P.10 a P.35.
+// ============================================================
+function buildFlags(color) {
+  const flags = {};
+  for (let n = 10; n <= 35; n++) flags[String(n)] = color;
+  return flags;
+}
+
+exports.bandiereVerdi = onSchedule(
+  {
+    schedule: "0 9 * * *",        // 09:00
+    timeZone: "Europe/Rome",      // gestisce automaticamente ora legale/solare
+    region: "europe-west1",
+  },
+  async () => {
+    await admin.database().ref("flags").set(buildFlags("verde"));
+    console.log("Bandiere impostate a VERDE (09:00 Roma)");
+  }
+);
+
+exports.bandiereRosse = onSchedule(
+  {
+    schedule: "0 19 * * *",       // 19:00
+    timeZone: "Europe/Rome",
+    region: "europe-west1",
+  },
+  async () => {
+    await admin.database().ref("flags").set(buildFlags("rossa"));
+    console.log("Bandiere impostate a ROSSO (19:00 Roma)");
+  }
+);
