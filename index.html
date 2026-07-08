@@ -2294,6 +2294,37 @@ function _showOnboarding(){
 }
 // ===================== FINE ONBOARDING =====================
 
+// Pop-up che invita a chiamare il 112 PRIMA di allertare il servizio (solo per le emergenze).
+// Mostra due scelte: chiamare subito il 112, oppure proseguire con la segnalazione.
+// onProceed viene eseguito solo se l'utente sceglie di continuare.
+function _emergency112Prompt(onProceed){
+  // Evita doppioni se già aperto
+  if(document.getElementById("emg112Overlay"))return;
+  const ov=document.createElement("div");ov.id="emg112Overlay";
+  ov.style.cssText="position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px";
+  const box=document.createElement("div");
+  box.style.cssText="background:#fff;border-radius:18px;max-width:420px;width:100%;padding:22px 20px;box-shadow:0 12px 40px rgba(0,0,0,.35);text-align:center";
+  box.innerHTML=
+     '<div style="font-size:44px;line-height:1;margin-bottom:10px">\uD83D\uDEA8</div>'
+    +'<h3 style="font-size:18px;font-weight:900;color:#b91c1c;margin:0 0 8px">\u00c8 un\u2019emergenza?</h3>'
+    +'<p style="font-size:13.5px;color:#333;line-height:1.5;margin:0 0 18px">Se c\u2019\u00e8 pericolo immediato per la vita o l\u2019incolumit\u00e0 di una persona, <b>chiama subito il 112</b> prima di procedere. Poi puoi allertare anche il servizio di salvataggio con questa segnalazione.</p>';
+  const callBtn=document.createElement("a");
+  callBtn.href="tel:112";
+  callBtn.style.cssText="display:flex;align-items:center;justify-content:center;gap:8px;background:#b91c1c;color:#fff;font-size:17px;font-weight:900;padding:14px;border-radius:12px;text-decoration:none;margin-bottom:10px;box-shadow:0 3px 10px rgba(185,29,29,.35)";
+  callBtn.innerHTML="\uD83D\uDCDE Chiama subito il 112";
+  const goBtn=document.createElement("button");
+  goBtn.style.cssText="display:block;width:100%;background:#f0f0f0;color:#333;font-size:14px;font-weight:700;padding:12px;border:none;border-radius:12px;cursor:pointer";
+  goBtn.textContent="Ho gi\u00e0 chiamato \u2013 prosegui con la segnalazione";
+  goBtn.addEventListener("click",function(){
+    ov.remove();
+    if(typeof onProceed==="function")onProceed();
+  });
+  box.appendChild(callBtn);
+  box.appendChild(goBtn);
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+}
+
 function render(screen){
   currentScreen=screen;
   if(!suppressHistory){
@@ -2490,7 +2521,7 @@ function renderHome(page){
   const bMin=document.createElement("button");bMin.className="home-btn";
   bMin.style.cssText="background:linear-gradient(135deg,#d81b8c 0%,#a30f66 100%);color:#fff;border:none";
   bMin.innerHTML=`<h3 style="color:#fff">\uD83D\uDEA8 Minore / persona smarrita</h3><p style="color:rgba(255,255,255,.9)">Ho perso o ho trovato una persona &middot; allerta immediata</p>`;
-  bMin.addEventListener("click",()=>{render("minore");});
+  bMin.addEventListener("click",()=>{_emergency112Prompt(function(){render("minore");});});
   btns.appendChild(bMin);
   page.appendChild(btns);
 
@@ -3467,7 +3498,12 @@ function renderSubmit(page){
   }
   Object.entries(TYPES).forEach(([k,v])=>{
     const btn=document.createElement("button");btn.className="type-btn";btn.textContent=v.label;
-    btn.addEventListener("click",()=>setType(k));typeBtns[k]=btn;tg.appendChild(btn);
+    btn.addEventListener("click",()=>{
+      // Per le EMERGENZE mostra prima l'invito a chiamare il 112; per il pericolo generico no.
+      if(k==="emergenza")_emergency112Prompt(function(){setType(k);});
+      else setType(k);
+    });
+    typeBtns[k]=btn;tg.appendChild(btn);
   });
   wrap.appendChild(tg);
   const lbS=document.createElement("label");lbS.textContent="Dettaglio";wrap.appendChild(lbS);
