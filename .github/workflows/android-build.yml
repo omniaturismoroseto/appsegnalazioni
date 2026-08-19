@@ -23,11 +23,11 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Imposta JDK 17
+      - name: Imposta JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
 
       - name: Installa dipendenze npm
         run: npm install
