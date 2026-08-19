@@ -567,6 +567,7 @@ function _getAuth(){
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
 const stationNotesRef=db.ref("stationNotes");
+const stationDevicesRef=db.ref("stationDevices");
 let _fcmApp = null;
 let _fcmMessaging = null;
 let _fcmToken = null;
@@ -3345,16 +3346,19 @@ function renderLogin(page){
   back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render("home"));page.appendChild(back);
 
+  const loginFormWrap=document.createElement("div");
+  page.appendChild(loginFormWrap);
+
   const h=document.createElement("h2");
   h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";
-  h.textContent="Accesso operatori";page.appendChild(h);
+  h.textContent="Accesso operatori";loginFormWrap.appendChild(h);
 
-  const lbE=document.createElement("label");lbE.textContent="Email";page.appendChild(lbE);
+  const lbE=document.createElement("label");lbE.textContent="Email";loginFormWrap.appendChild(lbE);
   const emailInp=document.createElement("input");emailInp.type="email";
   emailInp.placeholder="operatore@omnialifeguard.it";
-  emailInp.autocomplete="email";page.appendChild(emailInp);
+  emailInp.autocomplete="email";loginFormWrap.appendChild(emailInp);
 
-  const lbP=document.createElement("label");lbP.textContent="Password";page.appendChild(lbP);
+  const lbP=document.createElement("label");lbP.textContent="Password";loginFormWrap.appendChild(lbP);
   const passWrap=document.createElement("div");passWrap.style.cssText="position:relative";
   const passInp=document.createElement("input");passInp.type="password";
   passInp.placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
@@ -3369,11 +3373,11 @@ function renderLogin(page){
     else{passInp.type="password";eyeBtn.textContent="\uD83D\uDC41\uFE0F";}
   });
   passWrap.appendChild(eyeBtn);
-  page.appendChild(passWrap);
+  loginFormWrap.appendChild(passWrap);
 
   const err=document.createElement("p");
   err.style.cssText="color:var(--danger-text);font-size:12px;margin:4px 0 10px;display:none";
-  err.textContent="Email o password non corretti";page.appendChild(err);
+  err.textContent="Email o password non corretti";loginFormWrap.appendChild(err);
 
   const btn=document.createElement("button");btn.className="btn-primary";
   btn.textContent="Accedi";
@@ -3411,10 +3415,96 @@ function renderLogin(page){
 
   passInp.addEventListener("keydown",e=>{if(e.key==="Enter")go();});
   emailInp.addEventListener("keydown",e=>{if(e.key==="Enter")passInp.focus();});
-  btn.addEventListener("click",go);page.appendChild(btn);
+  btn.addEventListener("click",go);loginFormWrap.appendChild(btn);
 
   // Auto-fill email if remembered
   try{const saved=localStorage.getItem("omnia_op_email");if(saved)emailInp.value=saved;}catch(e){}
+
+  // ---- Attivazione dispositivo di postazione (nessuna credenziale, solo abilitazione da remoto) ----
+  const divider=document.createElement("div");
+  divider.style.cssText="display:flex;align-items:center;gap:10px;margin:22px 0 14px;color:var(--text3);font-size:11px";
+  divider.innerHTML='<span style="flex:1;height:1px;background:var(--border2)"></span>oppure<span style="flex:1;height:1px;background:var(--border2)"></span>';
+  page.appendChild(divider);
+
+  const toggleBtn=document.createElement("button");
+  toggleBtn.type="button";
+  toggleBtn.style.cssText="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:11px 14px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer";
+  toggleBtn.textContent="📱 Questo è un dispositivo di postazione";
+  page.appendChild(toggleBtn);
+
+  const deviceWrap=document.createElement("div");
+  deviceWrap.style.cssText="display:none;margin-top:14px";
+  page.appendChild(deviceWrap);
+
+  let _deviceStatusRef=null;
+  toggleBtn.addEventListener("click",function(){
+    const showingDevice=deviceWrap.style.display!=="none";
+    if(showingDevice){
+      deviceWrap.style.display="none";loginFormWrap.style.display="";divider.style.display="";
+      toggleBtn.textContent="📱 Questo è un dispositivo di postazione";
+      if(_deviceStatusRef){_deviceStatusRef.off();_deviceStatusRef=null;}
+    }else{
+      loginFormWrap.style.display="none";divider.style.display="none";
+      toggleBtn.textContent="← Torna al login operatori";
+      _renderDeviceActivation(deviceWrap,function(ref){_deviceStatusRef=ref;});
+    }
+  });
+}
+
+// Genera/recupera un identificativo persistente per questo dispositivo (nessun account, nessuna password)
+function _getDeviceId(){
+  try{
+    var id=localStorage.getItem("omnia_device_id");
+    if(id)return id;
+    id=(crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
+      var r=Math.random()*16|0,v=c==="x"?r:(r&0x3|0x8);return v.toString(16);
+    });
+    localStorage.setItem("omnia_device_id",id);
+    return id;
+  }catch(e){return null;}
+}
+
+function _renderDeviceActivation(wrap,onRef){
+  wrap.innerHTML="";
+  const deviceId=_getDeviceId();
+  if(!deviceId){
+    const p=document.createElement("p");p.style.cssText="font-size:12.5px;color:var(--danger-text)";
+    p.textContent="Impossibile identificare questo dispositivo (memoria locale non disponibile).";
+    wrap.appendChild(p);return;
+  }
+  const box=document.createElement("div");
+  box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:var(--bg2);border:1px solid var(--border);font-size:13px;line-height:1.5";
+  box.textContent="Verifica dello stato del dispositivo…";
+  wrap.appendChild(box);
+
+  const ref=stationDevicesRef.child(deviceId);
+  if(onRef)onRef(ref);
+  ref.on("value",function(snap){
+    const data=snap.val();
+    box.innerHTML="";
+    if(data&&data.enabled&&data.station){
+      box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:13px;line-height:1.5;font-weight:600";
+      box.textContent="✅ Dispositivo attivo per la postazione "+data.station+".";
+    }else if(data){
+      box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning-text);font-size:13px;line-height:1.5";
+      box.textContent="⏳ Richiesta inviata. In attesa che il centro operativo attivi questo dispositivo per una postazione.";
+    }else{
+      const txt=document.createElement("p");
+      txt.style.cssText="font-size:12.5px;color:var(--text2);line-height:1.5;margin-bottom:10px";
+      txt.textContent="Richiedi l'attivazione di questo dispositivo come pannello dedicato di una postazione. Un operatore dovrà approvarla dal centro operativo.";
+      const reqBtn=document.createElement("button");reqBtn.className="btn-primary";
+      reqBtn.textContent="Richiedi attivazione";
+      reqBtn.addEventListener("click",function(){
+        reqBtn.disabled=true;reqBtn.textContent="Invio richiesta…";
+        ref.set({requestedAt:Date.now(),enabled:false,userAgent:String(navigator.userAgent||"").slice(0,200)}).catch(function(e){
+          reqBtn.disabled=false;reqBtn.textContent="Richiedi attivazione";
+          console.error("Errore richiesta attivazione dispositivo:",e);
+        });
+      });
+      box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:var(--bg2);border:1px solid var(--border)";
+      box.appendChild(txt);box.appendChild(reqBtn);
+    }
+  });
 }
 
 function renderSubmit(page){
@@ -3957,7 +4047,7 @@ function renderDashboard(page){
       const ph=document.createElement("a");
       ph.href="tel:"+String(r.phone).replace(/\s+/g,"");
       ph.style.cssText="display:inline-flex;align-items:center;gap:6px;background:#0d3d7a;color:#fff;font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:8px;text-decoration:none;margin:6px 0 2px";
-      ph.innerHTML="\uD83D\uDCDE Chiama segnalante \u00b7 "+r.phone;
+      ph.textContent="\uD83D\uDCDE Chiama segnalante \u00b7 "+r.phone;
       body.appendChild(ph);
     } else if(r.childCase){
       const noPh=document.createElement("p");noPh.style.cssText="font-size:11.5px;color:#b45309;margin:6px 0 2px;font-style:italic";
