@@ -24,13 +24,14 @@ messaging.onBackgroundMessage(function (payload) {
   const n = payload.notification || {};
   const d = payload.data || {};
   const title = n.title || "🚨 Omnia — Nuova segnalazione";
+  const isStationEmergency = d.type === "station_emergency";
   const options = {
     body: n.body || "",
     icon: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
     badge: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
-    tag: d.reportId ? "report_" + d.reportId : "omnia_report",
-    requireInteraction: d.type === "emergenza",
-    vibrate: [200, 100, 200, 100, 200],
+    tag: d.reportId ? "report_" + d.reportId : (isStationEmergency ? "station_emergency_" + d.station + "_" + Date.now() : "omnia_report"),
+    requireInteraction: d.type === "emergenza" || isStationEmergency,
+    vibrate: isStationEmergency ? [500, 200, 500, 200, 500] : [200, 100, 200, 100, 200],
     data: { url: d.url || "https://omniaturismoroseto.github.io/appsegnalazioni/" },
   };
   return self.registration.showNotification(title, options);
