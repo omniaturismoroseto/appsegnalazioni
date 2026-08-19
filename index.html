@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://www.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net https://www.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=(), payment=()"/>
@@ -411,6 +411,7 @@ label:first-child{margin-top:0}
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-functions-compat.js"></script>
 <script>
 // Meteomare integrato con Open-Meteo Marine API e Forecast API
 
@@ -564,10 +565,97 @@ function _getAuth(){
     return null;
   }
 }
+
+var _fnsInstance=null;
+function _getFunctions(){
+  if(_fnsInstance)return _fnsInstance;
+  var fbSdk=firebaseSdk;
+  if(!fbSdk||typeof fbSdk.functions!=="function")fbSdk=window.firebase;
+  if(!fbSdk||typeof fbSdk.functions!=="function"){console.error("Firebase Functions SDK non disponibile");return null;}
+  try{
+    var app=fbSdk.apps&&fbSdk.apps.length>0?fbSdk.apps[0]:fbSdk.initializeApp(firebaseConfig);
+    _fnsInstance=fbSdk.functions(app,"europe-west1");
+    return _fnsInstance;
+  }catch(e){console.error("Errore init Firebase Functions:",e);return null;}
+}
+
+// ---- Modalità postazione: scambia il deviceId abilitato con una sessione Auth reale ----
+// (custom token rilasciato dalla Cloud Function getStationToken, scoped alla propria postazione)
+async function _activateStationMode(deviceId,station){
+  try{
+    var fns=_getFunctions();
+    if(!fns)throw new Error("Functions non disponibile");
+    var callable=fns.httpsCallable("getStationToken");
+    var res=await callable({deviceId:deviceId});
+    var token=res.data&&res.data.token;
+    if(!token)throw new Error("Token mancante nella risposta");
+    var _a=_getAuth();
+    if(!_a)throw new Error("Auth non disponibile");
+    await _a.signInWithCustomToken(token);
+    stationMode=String((res.data&&res.data.station)||station);
+    render("station");
+    _registerStationPush(deviceId);
+  }catch(e){
+    console.error("Errore attivazione modalità postazione:",e);
+    stationMode=null;
+    render(currentRole==="operator"?"dashboard":"home");
+  }
+}
+
+// ---- Registra il token push del dispositivo di postazione (dopo il sign-in col custom token) ----
+async function _registerStationPush(deviceId){
+  if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
+  try{
+    if (!_fcmApp){
+      try{_fcmApp = firebaseSdk.initializeApp(firebaseConfig, "fcmApp");}
+      catch(e){_fcmApp = firebaseSdk.app("fcmApp");}
+    }
+    if (!_fcmMessaging) _fcmMessaging = firebaseSdk.messaging(_fcmApp);
+    let permission = Notification.permission;
+    if (permission !== "granted") permission = await Notification.requestPermission();
+    if (permission !== "granted"){console.log("Notifiche postazione: permesso negato");return;}
+    const registration = await navigator.serviceWorker.register(
+      "/appsegnalazioni/firebase-messaging-sw.js", { scope: "/appsegnalazioni/" }
+    );
+    const token = await _fcmMessaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
+    if (!token) return;
+    await stationDevicesRef.child(deviceId).update({ pushToken: token, lastSeen: Date.now() });
+    console.log("✅ Push postazione registrata");
+  }catch(e){console.error("Errore registrazione push postazione:",e);}
+}
+
+// ---- Registra il token push di un contatto emergenza (admin/coordinatore) sul dispositivo corrente ----
+async function _registerContactPush(roleKey,btnEl){
+  if (!("serviceWorker" in navigator) || !("Notification" in window)) { alert("Notifiche non supportate su questo browser/dispositivo."); return; }
+  if(btnEl){btnEl.disabled=true;btnEl.textContent="Attivazione…";}
+  try{
+    if (!_fcmApp){
+      try{_fcmApp = firebaseSdk.initializeApp(firebaseConfig, "fcmApp");}
+      catch(e){_fcmApp = firebaseSdk.app("fcmApp");}
+    }
+    if (!_fcmMessaging) _fcmMessaging = firebaseSdk.messaging(_fcmApp);
+    let permission = Notification.permission;
+    if (permission !== "granted") permission = await Notification.requestPermission();
+    if (permission !== "granted"){ alert("Permesso notifiche negato."); return; }
+    const registration = await navigator.serviceWorker.register(
+      "/appsegnalazioni/firebase-messaging-sw.js", { scope: "/appsegnalazioni/" }
+    );
+    const token = await _fcmMessaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
+    if (!token){ alert("Impossibile ottenere il token di notifica."); return; }
+    await emergencyContactsRef.child(roleKey).update({ pushToken: token });
+    alert("Notifiche di emergenza attivate su questo dispositivo.");
+  }catch(e){
+    alert("Errore: "+e.message);
+  }finally{
+    if(btnEl){btnEl.disabled=false;btnEl.textContent="🔔 Attiva su questo dispositivo";}
+  }
+}
 const reportsRef=db.ref("reports");
 const flagsRef=db.ref("flags");
 const stationNotesRef=db.ref("stationNotes");
 const stationDevicesRef=db.ref("stationDevices");
+const stationEmergenciesRef=db.ref("stationEmergencies");
+const emergencyContactsRef=db.ref("config/emergencyContacts");
 let _fcmApp = null;
 let _fcmMessaging = null;
 let _fcmToken = null;
@@ -790,6 +878,7 @@ function _refreshNotePanel(){
 }
 
 let currentScreen="home";
+let stationMode=null;
 var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
 let currentRole=_savedAuth?"operator":null;
 if(_savedAuth){if(window._requestNotifPermission)setTimeout(function(){try{_requestNotifPermission();}catch(e){}},500);}
@@ -1193,6 +1282,7 @@ reportsRef.on("value",snap=>{
   refreshMarkers();
   if(currentScreen==="dashboard")renderPage();
   if(currentScreen==="home")renderPage();
+  if(currentScreen==="station")renderPage();
   renderHeader();
 });
 // Cancellazione differita delle foto dei casi minore chiusi da oltre il TTL (sicurezza in caso di chiusura senza foto azzerata)
@@ -1221,6 +1311,7 @@ stationNotesRef.on("value",function(snap){
   try{localStorage.setItem("fb_stationNotes",JSON.stringify(raw));}catch(e){}
   refreshMarkers();
   if(currentScreen==="home")renderPage();
+  if(currentScreen==="station")renderPage();
   // Note tab: no auto-rerender to avoid losing keyboard/input
   if(currentScreen==="dashboard"&&activeDashTab==="note")_refreshNotePanel();
 });
@@ -1231,6 +1322,7 @@ flagsRef.on("value",snap=>{
   STATIONS.forEach(s=>{flagsData[s.num]=fsnap[String(s.num)]||fsnap[s.num]||"verde";});
   refreshMarkers();
   if(currentScreen==="home")renderPage();
+  if(currentScreen==="station")renderPage();
   if(currentScreen==="dashboard"&&activeDashTab==="bandiere")renderPage();
 });
 
@@ -1525,6 +1617,8 @@ function callEmergency112(){
 // HEADER
 function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
+  if(stationMode){hdr.style.display="none";return;}
+  hdr.style.display="";
   const logoWrap=document.createElement("div");logoWrap.className="header-logo";
   logoWrap.addEventListener("click",()=>render("home"));
   var logoImg=document.createElement("img");
@@ -2338,6 +2432,10 @@ function _emergency112Prompt(onProceed){
 }
 
 function render(screen){
+  // Un dispositivo di postazione può usare i propri sotto-flussi (es. "Segnala"),
+  // ma non può mai raggiungere l'home pubblica, il login operatori o la dashboard
+  // generale: quelle vengono sempre rimandate al pannello di postazione.
+  if(stationMode&&(screen==="home"||screen==="login"||screen==="dashboard"))screen="station";
   currentScreen=screen;
   if(!suppressHistory){
     try{
@@ -2364,6 +2462,8 @@ function render(screen){
 }
 function renderPage(){
   const page=document.getElementById("page");page.innerHTML="";
+  const _emBar=document.getElementById("_stEmergencyBar");
+  if(_emBar)_emBar.style.display=(currentScreen==="station")?"":"none";
   if(currentScreen==="home")renderHome(page);
   else if(currentScreen==="login")renderLogin(page);
   else if(currentScreen==="submit")renderSubmit(page);
@@ -2378,6 +2478,7 @@ function renderPage(){
   else if(currentScreen==="minore-trovato")renderMinoreForm(page,"trovato");
   else if(currentScreen==="minore-done")renderMinoreDone(page);
   else if(currentScreen==="dashboard"){if(currentRole!=="operator"){render("login");return;}renderDashboard(page);}
+  else if(currentScreen==="station")renderStationPanel(page);
 }
 
 // HOME
@@ -3495,7 +3596,9 @@ function _renderDeviceActivation(wrap,onRef){
     box.innerHTML="";
     if(data&&data.enabled&&data.station){
       box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:13px;line-height:1.5;font-weight:600";
-      box.textContent="✅ Dispositivo attivo per la postazione "+data.station+".";
+      box.textContent="✅ Dispositivo attivato per la postazione "+data.station+" — apertura del pannello…";
+      ref.off();
+      _activateStationMode(deviceId,String(data.station));
     }else if(data){
       box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning-text);font-size:13px;line-height:1.5";
       box.textContent="⏳ Richiesta inviata. In attesa che il centro operativo attivi questo dispositivo per una postazione.";
@@ -3640,10 +3743,10 @@ function renderSubmit(page){
   wrap.appendChild(fileInp);wrap.appendChild(photoWrap);
   const lbA=document.createElement("label");lbA.textContent="Nome (opzionale)";wrap.appendChild(lbA);
   const authorEl=document.createElement("input");authorEl.type="text";
-  authorEl.placeholder=currentRole==="operator"?"Operatore":"Nome";
+  authorEl.placeholder=currentRole==="operator"?"Operatore":(stationMode?"Postazione P."+stationMode:"Nome");
   authorEl.addEventListener("input",()=>author=authorEl.value);wrap.appendChild(authorEl);
-  // Telefono obbligatorio (solo pubblico)
-  if(currentRole!=="operator"){
+  // Telefono obbligatorio (solo pubblico — non per operatori né per dispositivi di postazione)
+  if(currentRole!=="operator"&&!stationMode){
     const lbP=document.createElement("label");
     lbP.innerHTML="Telefono <span style=\"color:var(--red)\">*</span> <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(obbligatorio)</span>";
     wrap.appendChild(lbP);
@@ -3680,7 +3783,7 @@ function renderSubmit(page){
     var phoneEl2=document.getElementById("segnalazione-phone");
     if(phoneEl2)phone=phoneEl2.value.trim();
     if(!sub){alert("Seleziona il tipo di segnalazione.");return;}
-    if(currentRole!=="operator"&&phone.length<9){
+    if(currentRole!=="operator"&&!stationMode&&phone.length<9){
       if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
       alert("Inserisci un numero di telefono valido per procedere.");return;
     }
@@ -3694,8 +3797,8 @@ function renderSubmit(page){
       return;
     }
     submitBtn.disabled=true;submitBtn.textContent="Invio...";
-    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:currentRole||"public",ts:new Date().toISOString(),status:"aperta",photo:photo||null,gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null};
-    addReport(r).then(()=>{sendWANotify(r);render("done");})
+    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:stationMode?"station":(currentRole||"public"),ts:new Date().toISOString(),status:"aperta",photo:photo||null,gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null};
+    addReport(r).then(()=>{if(!stationMode)sendWANotify(r);render("done");})
     .catch(e=>{submitBtn.disabled=false;submitBtn.textContent="Invia segnalazione";alert("Errore: "+e.message);});
   });
   wrap.appendChild(submitBtn);
@@ -3710,7 +3813,9 @@ function renderDone(page){
   const ic=document.createElement("div");ic.className="confirm-icon";ic.textContent="\u2713";w.appendChild(ic);
   const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:8px";h.textContent="Segnalazione inviata";w.appendChild(h);
   const p=document.createElement("p");p.style.cssText="color:var(--text2);font-size:14px;margin-bottom:4px";p.textContent="Grazie. Gli operatori sono stati avvisati.";w.appendChild(p);
-  const wn=document.createElement("p");wn.style.cssText="font-size:12px;color:var(--success-text);margin-bottom:20px";wn.textContent="\uD83D\uDCAC Notifica WhatsApp inviata";w.appendChild(wn);
+  if(!stationMode){
+    const wn=document.createElement("p");wn.style.cssText="font-size:12px;color:var(--success-text);margin-bottom:20px";wn.textContent="\uD83D\uDCAC Notifica WhatsApp inviata";w.appendChild(wn);
+  }
   const b1=document.createElement("button");b1.className="btn-primary";b1.textContent="Nuova segnalazione";b1.addEventListener("click",()=>render("submit"));w.appendChild(b1);
   const b2=document.createElement("button");b2.style.cssText="background:none;border:none;color:var(--text2);font-size:13px;margin-top:10px;width:100%;cursor:pointer";
   b2.textContent="\u2190 Torna alla home";b2.addEventListener("click",()=>{render("home");});w.appendChild(b2);page.appendChild(w);
@@ -4162,6 +4267,42 @@ function renderDispositivi(page){
   sub.textContent="Attivati dalla pagina di login dell'app con “Questo è un dispositivo di postazione”.";
   hdr.appendChild(sub);panel.appendChild(hdr);
 
+  // ---- Contatti emergenza (admin + coordinatore) ----
+  var contactsTitle=document.createElement("div");
+  contactsTitle.style.cssText="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--text2)";
+  contactsTitle.textContent="CONTATTI EMERGENZA";
+  panel.appendChild(contactsTitle);
+  var contactsSub=document.createElement("p");
+  contactsSub.style.cssText="padding:0 16px 8px;font-size:11px;color:var(--text3)";
+  contactsSub.textContent="Ricevono sempre l'allarme del pulsante EMERGENZA dalle postazioni, oltre alle 2 postazioni più vicine a nord e a sud.";
+  panel.appendChild(contactsSub);
+  [["admin","Admin"],["coordinator","Coordinatore"]].forEach(function([roleKey,roleLabel]){
+    var row=document.createElement("div");
+    row.style.cssText="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;gap:8px";
+    var lbl=document.createElement("span");lbl.style.cssText="font-size:12.5px;font-weight:700;min-width:90px";lbl.textContent=roleLabel;
+    var nameInp=document.createElement("input");nameInp.type="text";nameInp.placeholder="Nome";nameInp.style.cssText="width:auto;flex:1;min-width:100px;padding:6px 8px;font-size:12.5px";
+    var phoneInp=document.createElement("input");phoneInp.type="tel";phoneInp.placeholder="Telefono";phoneInp.style.cssText="width:auto;flex:1;min-width:110px;padding:6px 8px;font-size:12.5px";
+    var saveBtn=document.createElement("button");saveBtn.style.cssText="width:auto;font-size:12px;padding:6px 10px;background:var(--bg2);border-color:var(--border2);color:var(--text)";
+    saveBtn.textContent="Salva";
+    saveBtn.addEventListener("click",function(){
+      saveBtn.disabled=true;saveBtn.textContent="Salvataggio…";
+      emergencyContactsRef.child(roleKey).update({name:nameInp.value.trim(),phone:phoneInp.value.trim()})
+        .then(function(){saveBtn.textContent="✓ Salvato";setTimeout(function(){saveBtn.disabled=false;saveBtn.textContent="Salva";},1500);})
+        .catch(function(e){saveBtn.disabled=false;saveBtn.textContent="Salva";alert("Errore: "+e.message);});
+    });
+    var pushBtn=document.createElement("button");pushBtn.style.cssText="width:auto;font-size:12px;padding:6px 10px;background:var(--info-bg,var(--bg2));border-color:var(--border2);color:var(--text)";
+    pushBtn.textContent="🔔 Attiva su questo dispositivo";
+    pushBtn.title="Da premere sul telefono personale di questo contatto, mentre è aperto";
+    pushBtn.addEventListener("click",function(){_registerContactPush(roleKey,pushBtn);});
+    row.appendChild(lbl);row.appendChild(nameInp);row.appendChild(phoneInp);row.appendChild(saveBtn);row.appendChild(pushBtn);
+    panel.appendChild(row);
+    emergencyContactsRef.child(roleKey).once("value").then(function(snap){
+      var c=snap.val();if(!c)return;
+      if(c.name)nameInp.value=c.name;
+      if(c.phone)phoneInp.value=c.phone;
+    }).catch(function(){});
+  });
+
   var entries=Object.entries(stationDevicesData||{});
   var pending=entries.filter(function(e){return !e[1].enabled;});
   var active=entries.filter(function(e){return e[1].enabled;});
@@ -4244,6 +4385,185 @@ function renderDispositivi(page){
   page.appendChild(panel);
 }
 
+// PANNELLO DI POSTAZIONE (dispositivo dedicato, nessun accesso alla dashboard generale)
+function _stationNeighborsClient(num){
+  var ordered=STATIONS.slice().sort(function(a,b){return a.lat-b.lat;});
+  var idx=ordered.findIndex(function(s){return String(s.num)===String(num);});
+  if(idx===-1)return{north:[],south:[]};
+  return{south:ordered.slice(Math.max(0,idx-2),idx),north:ordered.slice(idx+1,idx+3)};
+}
+
+function _sendStationEmergency(num,zoneStr){
+  const r={id:Date.now(),type:"emergenza",sub:"Allarme rapido",
+    notes:"🚨 Allarme EMERGENZA inviato dal pulsante rapido della postazione",
+    zone:zoneStr,author:"Postazione P."+num,phone:null,role:"station",
+    ts:new Date().toISOString(),status:"aperta",photo:null,gps:null};
+  return Promise.all([
+    addReport(r),
+    stationEmergenciesRef.push({station:String(num),ts:Date.now()})
+  ]);
+}
+
+function renderStationPanel(page){
+  const num=stationMode;
+  const st=STATIONS.find(s=>String(s.num)===String(num));
+  const stName=st?st.name:"";
+  const zoneStr="P."+num+" – "+stName;
+  const flagColor=flagsData[num]||"verde";
+  const note=stationNotesData[String(num)];
+  const openReports=Object.values(reportsData||{}).filter(r=>r&&r.status==="aperta"&&r.zone===zoneStr);
+
+  const wrap=document.createElement("div");wrap.style.cssText="padding-bottom:110px";
+
+  // Header
+  const hdr=document.createElement("div");
+  hdr.style.cssText="background:#D62B1F;color:#fff;border-radius:var(--radius-lg);padding:14px 16px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline";
+  const hdrTitle=document.createElement("span");hdrTitle.style.cssText="font-size:19px;font-weight:700";
+  hdrTitle.textContent="P."+num+" · "+stName;
+  const hdrClock=document.createElement("span");hdrClock.id="_stClock";hdrClock.style.cssText="font-size:13px;opacity:.85";
+  hdrClock.textContent=new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+  hdr.appendChild(hdrTitle);hdr.appendChild(hdrClock);wrap.appendChild(hdr);
+
+  const grid=document.createElement("div");
+  grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:6px";
+
+  // Tile BANDIERA
+  const flagLabels={verde:"VERDE",gialla:"GIALLA",rossa:"ROSSA"};
+  const flagTile=document.createElement("button");
+  flagTile.type="button";
+  flagTile.style.cssText="grid-column:span 2;background:"+FLAG_COLORS[flagColor]+";color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  flagTile.innerHTML='<span style="font-size:14px;font-weight:700;opacity:.9">BANDIERA</span>'
+    +'<span><span style="font-size:28px;font-weight:700;display:block">'+flagLabels[flagColor]+'</span>'
+    +'<span style="font-size:13px;opacity:.9">tocca per cambiare</span></span>';
+  const flagChooser=document.createElement("div");
+  flagChooser.style.cssText="grid-column:span 2;display:none;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:-2px";
+  [["verde","VERDE"],["gialla","GIALLA"],["rossa","ROSSA"]].forEach(function([v,l]){
+    const b=document.createElement("button");b.type="button";
+    b.style.cssText="background:"+FLAG_COLORS[v]+";color:#fff;border:none;border-radius:4px;padding:14px 4px;font-weight:700;font-size:13px;cursor:pointer"+(v===flagColor?";outline:3px solid #0b0b0b;outline-offset:-3px":"");
+    b.textContent=l;
+    b.addEventListener("click",function(){
+      setFlag(num,v).catch(function(e){alert("Errore: "+e.message);});
+      flagChooser.style.display="none";
+    });
+    flagChooser.appendChild(b);
+  });
+  flagTile.addEventListener("click",function(){
+    flagChooser.style.display=flagChooser.style.display==="none"?"grid":"none";
+  });
+  grid.appendChild(flagTile);grid.appendChild(flagChooser);
+
+  // Tile SEGNALAZIONI + SEGNALA
+  const repTile=document.createElement("button");repTile.type="button";
+  repTile.style.cssText="background:#1A3B8C;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  repTile.innerHTML='<span style="font-size:14px;font-weight:700;opacity:.9">SEGNALAZIONI</span>'
+    +'<span><span style="font-size:26px;font-weight:700;display:block">'+openReports.length+'</span>'
+    +'<span style="font-size:13px;opacity:.9">apert'+(openReports.length===1?"a":"e")+'</span></span>';
+  const repList=document.createElement("div");
+  repList.style.cssText="grid-column:span 2;display:none;flex-direction:column;gap:6px";
+  repTile.addEventListener("click",function(){
+    repList.style.display=repList.style.display==="none"?"flex":"none";
+  });
+
+  const segTile=document.createElement("button");segTile.type="button";
+  segTile.style.cssText="background:#D62B1F;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  segTile.innerHTML='<span style="font-size:16px;font-weight:700">🚨</span><span style="font-size:20px;font-weight:700">SEGNALA</span>';
+  segTile.addEventListener("click",function(){activeStation=zoneStr;render("submit");});
+
+  grid.appendChild(repTile);grid.appendChild(segTile);
+  grid.appendChild(repList);
+  openReports.forEach(function(r){
+    const card=document.createElement("div");
+    card.style.cssText="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px";
+    card.innerHTML='<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px">'
+      +'<span class="badge badge-'+r.type+'" style="font-size:10.5px">'+TYPES[r.type].label.toUpperCase()+'</span>'
+      +'<span style="font-size:12.5px;font-weight:600">'+r.sub+'</span></div>'
+      +'<div style="font-size:12px;color:var(--text2)">'+fmt(r.ts)+(r.notes?" · "+r.notes:"")+'</div>';
+    repList.appendChild(card);
+  });
+
+  // Fascia NOTA POSTAZIONE
+  const noteBar=document.createElement("button");noteBar.type="button";
+  noteBar.style.cssText="grid-column:span 2;background:#333;color:#fff;border:none;border-radius:4px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left";
+  noteBar.innerHTML='<span style="font-size:12px;font-weight:700;opacity:.9">NOTA POSTAZIONE</span>'
+    +'<span style="font-size:12px;opacity:.85">'+(note?String(note).substring(0,40)+(note.length>40?"...":""):"nessuna nota · tocca per aggiungere")+'</span>';
+  noteBar.addEventListener("click",function(){_openNoteModal(num,stName,note);});
+  grid.appendChild(noteBar);
+
+  // Tile METEO E DIARIO (placeholder in attesa dell'integrazione dati reale)
+  const meteoTile=document.createElement("div");
+  meteoTile.style.cssText="grid-column:span 2;background:#0ea5e9;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:96px";
+  meteoTile.innerHTML='<span style="font-size:14px;font-weight:700;opacity:.9">METEO E DIARIO</span>'
+    +'<span style="font-size:15px;opacity:.85">Dati non ancora collegati</span>';
+  grid.appendChild(meteoTile);
+
+  // Tile CHAT + WALKIE-TALKIE (riservate, in arrivo)
+  const chatTile=document.createElement("div");
+  chatTile.style.cssText="background:#4a4a46;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;opacity:.65";
+  chatTile.innerHTML='<span style="font-size:14px;font-weight:700">💬 CHAT</span><span style="font-size:13.5px">presto disponibile</span>';
+  const wtTile=document.createElement("div");
+  wtTile.style.cssText="background:#4a4a46;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;opacity:.65";
+  wtTile.innerHTML='<span style="font-size:14px;font-weight:700">🎙️ WALKIE-TALKIE</span><span style="font-size:13.5px">presto disponibile</span>';
+  grid.appendChild(chatTile);grid.appendChild(wtTile);
+
+  wrap.appendChild(grid);
+  page.appendChild(wrap);
+
+  // Barra EMERGENZA fissa in basso, tieni-premuto per confermare l'invio
+  let emBar=document.getElementById("_stEmergencyBar");
+  if(!emBar){
+    emBar=document.createElement("div");emBar.id="_stEmergencyBar";
+    emBar.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:500;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:#0b0b0b";
+    document.body.appendChild(emBar);
+  }
+  emBar.innerHTML="";
+  const emBtn=document.createElement("button");emBtn.type="button";
+  emBtn.style.cssText="position:relative;overflow:hidden;width:100%;max-width:660px;margin:0 auto;display:block;background:#a5140a;color:#fff;text-align:center;padding:20px 18px;border:none;border-radius:4px;font-weight:700;font-size:22px;letter-spacing:.03em;cursor:pointer;-webkit-user-select:none;user-select:none";
+  const emFill=document.createElement("div");
+  emFill.style.cssText="position:absolute;left:0;top:0;bottom:0;width:0%;background:rgba(255,255,255,.35);transition:width linear";
+  const emLabel=document.createElement("span");emLabel.style.cssText="position:relative";emLabel.textContent="⚠️ EMERGENZA — tieni premuto";
+  emBtn.appendChild(emFill);emBtn.appendChild(emLabel);
+  emBar.appendChild(emBtn);
+
+  const HOLD_MS=1500;
+  let holdTimer=null,holdStart=0,sent=false;
+  function holdCancel(){
+    if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
+    emFill.style.transition="width .15s linear";emFill.style.width="0%";
+    emLabel.textContent="⚠️ EMERGENZA — tieni premuto";
+  }
+  function holdStart_(){
+    if(sent)return;
+    holdStart=Date.now();
+    emFill.style.transition="width "+HOLD_MS+"ms linear";
+    requestAnimationFrame(function(){emFill.style.width="100%";});
+    emLabel.textContent="Rilascia per annullare…";
+    holdTimer=setTimeout(function(){
+      sent=true;
+      emLabel.textContent="Invio in corso…";
+      const {north,south}=_stationNeighborsClient(num);
+      _sendStationEmergency(num,zoneStr).then(function(){
+        const names=function(arr){return arr.map(function(s){return "P."+s.num;}).join(", ")||"nessuna";};
+        emLabel.textContent="✅ Allarme inviato — nord: "+names(north)+" · sud: "+names(south)+" + admin/coordinatore";
+        setTimeout(function(){sent=false;holdCancel();},4000);
+      }).catch(function(e){
+        emLabel.textContent="Errore invio: "+e.message;
+        setTimeout(function(){sent=false;holdCancel();},4000);
+      });
+    },HOLD_MS);
+  }
+  emBtn.addEventListener("pointerdown",function(e){e.preventDefault();holdStart_();});
+  emBtn.addEventListener("pointerup",function(){if(!sent)holdCancel();});
+  emBtn.addEventListener("pointerleave",function(){if(!sent)holdCancel();});
+  emBtn.addEventListener("pointercancel",function(){if(!sent)holdCancel();});
+
+  if(!window._stClockInterval){
+    window._stClockInterval=setInterval(function(){
+      var el=document.getElementById("_stClock");
+      if(el)el.textContent=new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+    },15000);
+  }
+}
+
 // BANDIERE
 function renderBandiere(page){
   const flags=getFlags();
@@ -4279,7 +4599,16 @@ function renderBandiere(page){
 }
 
 try{
-  render(currentRole==="operator" ? "dashboard" : "home");
+  var _bootDeviceId=null;try{_bootDeviceId=localStorage.getItem("omnia_device_id");}catch(e){}
+  if(_bootDeviceId){
+    stationDevicesRef.child(_bootDeviceId).once("value").then(function(snap){
+      var d=snap.val();
+      if(d&&d.enabled&&d.station)_activateStationMode(_bootDeviceId,String(d.station));
+      else render(currentRole==="operator"?"dashboard":"home");
+    }).catch(function(){render(currentRole==="operator"?"dashboard":"home");});
+  }else{
+    render(currentRole==="operator" ? "dashboard" : "home");
+  }
 
   [250,700,1200].forEach(function(t){
     setTimeout(function(){
