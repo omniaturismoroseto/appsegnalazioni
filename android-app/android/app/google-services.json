@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "699028105579",
+    "firebase_url": "https://app-segnalazioni-omnia-roseto-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "app-segnalazioni-omnia-roseto",
+    "storage_bucket": "app-segnalazioni-omnia-roseto.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:699028105579:android:c1c005090b8f26d18d442e",
+        "android_client_info": {
+          "package_name": "it.omniaadriatic.segnalazioni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzYqH8CCmuiAcq8uLuJL02KeWS3sgZddo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

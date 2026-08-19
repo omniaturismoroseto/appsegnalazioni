@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Omnia Postazioni</string>
+    <string name="title_activity_main">Omnia Postazioni</string>
+    <string name="package_name">it.omniaadriatic.segnalazioni</string>
+    <string name="custom_url_scheme">it.omniaadriatic.segnalazioni</string>
+</resources>

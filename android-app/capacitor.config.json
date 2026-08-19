@@ -1,0 +1,12 @@
+{
+  "appId": "it.omniaadriatic.segnalazioni",
+  "appName": "Omnia Postazioni",
+  "webDir": "www",
+  "server": {
+    "url": "https://omniaturismoroseto.github.io/appsegnalazioni/",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
