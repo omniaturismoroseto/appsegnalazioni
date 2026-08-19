@@ -806,7 +806,7 @@ let activeFilter="aperte",activeStation=null,activeDashTab="segnalazioni";
 let mapObj=null,mapMarkers=[],userMarker=null,locamareMarker=null;
 let nearestStation=null,nearestDist=null;
 let fbReady=false,newReportCount=0;
-let reportsData={},flagsData={},stationNotesData={};
+let reportsData={},flagsData={},stationNotesData={},stationDevicesData={};
 let meteoData=null,meteoLoading=false,meteoError="",meteoLastFetch=0;
 const DAE_POINTS=[
   {name:"DAE Palazzo del Mare",lat:42.66946,lng:14.02375,avail:"\uD83D\uDFE2 Disponibile sempre — area pubblica"},
@@ -1248,6 +1248,17 @@ flagsRef.on("value",snap=>{
           console.warn("Sessione operatore non valida: accesso revocato");
           if(currentScreen==="dashboard")render("home");
           else renderHeader();
+        }
+        // L'elenco dispositivi (stationDevices) è leggibile solo da operatori autenticati:
+        // ci si iscrive solo con sessione valida, mai per i visitatori pubblici.
+        stationDevicesRef.off();
+        if(user){
+          stationDevicesRef.on("value",function(snap){
+            stationDevicesData=snap.val()||{};
+            if(currentScreen==="dashboard"&&activeDashTab==="dispositivi")renderPage();
+          });
+        }else{
+          stationDevicesData={};
         }
       });
     }
@@ -3963,13 +3974,14 @@ function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"]].forEach(([k,l])=>{
+  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"],["dispositivi","\ud83d\udcf1 Dispositivi"]].forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(activeDashTab===k?" active":"");btn.textContent=l;
     btn.addEventListener("click",()=>{activeDashTab=k;renderPage();});tabBar.appendChild(btn);
   });
   page.appendChild(tabBar);
   if(activeDashTab==="bandiere"){renderBandiere(page);return;}
   if(activeDashTab==="note"){renderNote(page);return;}
+  if(activeDashTab==="dispositivi"){renderDispositivi(page);return;}
   if(activeStation){
     const bar=document.createElement("div");bar.className="zone-filter-bar";
     bar.innerHTML=`<span style="font-size:12px;flex:1;color:var(--text2)">Filtro: ${activeStation}</span>`;
@@ -4140,6 +4152,97 @@ function renderNote(page){
   page.appendChild(panel);
 }
 
+
+// DISPOSITIVI DI POSTAZIONE
+function renderDispositivi(page){
+  var panel=document.createElement("div");panel.className="bandiere-panel";
+  var hdr=document.createElement("div");hdr.className="bandiere-header";
+  var title=document.createElement("h3");title.textContent="Dispositivi di postazione";hdr.appendChild(title);
+  var sub=document.createElement("p");sub.style.cssText="font-size:11px;color:var(--text2);margin:2px 0 0";
+  sub.textContent="Attivati dalla pagina di login dell'app con “Questo è un dispositivo di postazione”.";
+  hdr.appendChild(sub);panel.appendChild(hdr);
+
+  var entries=Object.entries(stationDevicesData||{});
+  var pending=entries.filter(function(e){return !e[1].enabled;});
+  var active=entries.filter(function(e){return e[1].enabled;});
+
+  var pendTitle=document.createElement("div");
+  pendTitle.style.cssText="padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--text2)";
+  pendTitle.textContent="IN ATTESA ("+pending.length+")";
+  panel.appendChild(pendTitle);
+
+  if(!pending.length){
+    var emp=document.createElement("p");emp.style.cssText="padding:2px 16px 14px;font-size:12.5px;color:var(--text3)";
+    emp.textContent="Nessuna richiesta in attesa.";panel.appendChild(emp);
+  }
+  pending.forEach(function(entry){
+    var deviceId=entry[0],d=entry[1];
+    var row=document.createElement("div");
+    row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;gap:8px";
+    var info=document.createElement("div");info.style.cssText="flex:1;min-width:180px";
+    info.innerHTML='<span style="font-size:12.5px">Richiesta del '+fmt(d.requestedAt)+'</span><br><span style="font-size:10.5px;color:var(--text3)">'+String(d.userAgent||"").substring(0,60)+'</span>';
+    row.appendChild(info);
+    var sel=document.createElement("select");sel.style.cssText="width:auto;padding:6px 8px;font-size:12.5px";
+    var ph=document.createElement("option");ph.value="";ph.textContent="Scegli postazione…";sel.appendChild(ph);
+    STATIONS.forEach(function(s){var o=document.createElement("option");o.value=String(s.num);o.textContent="P."+s.num+" – "+s.name;sel.appendChild(o);});
+    row.appendChild(sel);
+    var actBtn=document.createElement("button");actBtn.className="btn-primary";actBtn.style.cssText="width:auto;font-size:12px;padding:6px 12px";
+    actBtn.textContent="Attiva";
+    actBtn.addEventListener("click",function(){
+      if(!sel.value){alert("Scegli prima una postazione.");return;}
+      actBtn.disabled=true;actBtn.textContent="Attivazione…";
+      stationDevicesRef.child(deviceId).update({enabled:true,station:sel.value}).catch(function(e){
+        actBtn.disabled=false;actBtn.textContent="Attiva";
+        alert("Errore: "+e.message);
+      });
+    });
+    row.appendChild(actBtn);
+    var rejBtn=document.createElement("button");rejBtn.title="Rifiuta ed elimina la richiesta";
+    rejBtn.style.cssText="width:auto;font-size:12px;padding:6px 10px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent";
+    rejBtn.textContent="✕";
+    rejBtn.addEventListener("click",function(){
+      if(confirm("Eliminare questa richiesta di attivazione?"))stationDevicesRef.child(deviceId).remove();
+    });
+    row.appendChild(rejBtn);
+    panel.appendChild(row);
+  });
+
+  var actTitle=document.createElement("div");
+  actTitle.style.cssText="padding:14px 16px 4px;font-size:12px;font-weight:700;color:var(--text2)";
+  actTitle.textContent="ATTIVI ("+active.length+")";
+  panel.appendChild(actTitle);
+  if(!active.length){
+    var emp2=document.createElement("p");emp2.style.cssText="padding:2px 16px 14px;font-size:12.5px;color:var(--text3)";
+    emp2.textContent="Nessun dispositivo attivo.";panel.appendChild(emp2);
+  }
+  active.forEach(function(entry){
+    var deviceId=entry[0],d=entry[1];
+    var st=STATIONS.find(function(s){return String(s.num)===String(d.station);});
+    var row=document.createElement("div");
+    row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
+    var info=document.createElement("div");info.style.cssText="flex:1;min-width:0";
+    info.innerHTML='<span style="font-size:13px;font-weight:600">P.'+d.station+(st?" – "+st.name:"")+'</span><br><span style="font-size:10.5px;color:var(--text3)">'+String(d.userAgent||"").substring(0,60)+'</span>';
+    row.appendChild(info);
+    var offBtn=document.createElement("button");offBtn.style.cssText="width:auto;font-size:12px;padding:6px 10px;background:var(--bg2);border-color:var(--border2);color:var(--text)";
+    offBtn.textContent="Disattiva";
+    offBtn.addEventListener("click",function(){
+      if(confirm("Disattivare questo dispositivo dalla postazione P."+d.station+"?"))
+        stationDevicesRef.child(deviceId).update({enabled:false});
+    });
+    row.appendChild(offBtn);
+    var delBtn=document.createElement("button");delBtn.title="Rimuovi definitivamente";
+    delBtn.style.cssText="width:auto;font-size:12px;padding:6px 10px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent";
+    delBtn.textContent="✕";
+    delBtn.addEventListener("click",function(){
+      if(confirm("Rimuovere definitivamente questo dispositivo? Dovrà rifare la richiesta di attivazione."))
+        stationDevicesRef.child(deviceId).remove();
+    });
+    row.appendChild(delBtn);
+    panel.appendChild(row);
+  });
+
+  page.appendChild(panel);
+}
 
 // BANDIERE
 function renderBandiere(page){
