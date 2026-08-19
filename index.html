@@ -602,6 +602,21 @@ async function _activateStationMode(deviceId,station){
   }
 }
 
+// ---- Gestisce una push ricevuta ad app aperta (schermo acceso): banner + suono in loop ----
+// Funziona per i dispositivi di postazione destinatari dell'allarme mirato E per
+// admin/coordinatore se hanno attivato le notifiche sul proprio telefono.
+function _handleStationPush(payload){
+  var d=(payload&&payload.data)||{};
+  if(d.type!=="station_emergency")return;
+  var origin=String(d.station||"");
+  _startAlertSound({_key:"stEm_"+origin+"_"+Date.now(),type:"emergenza",sub:"Allarme rapido postazione",zone:"P."+origin});
+}
+function _ensureStationPushForegroundHandler(){
+  if(window._stFgMsgHandlerSet||!_fcmMessaging)return;
+  window._stFgMsgHandlerSet=true;
+  _fcmMessaging.onMessage(_handleStationPush);
+}
+
 // ---- Registra il token push del dispositivo di postazione (dopo il sign-in col custom token) ----
 async function _registerStationPush(deviceId){
   if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
@@ -611,6 +626,7 @@ async function _registerStationPush(deviceId){
       catch(e){_fcmApp = firebaseSdk.app("fcmApp");}
     }
     if (!_fcmMessaging) _fcmMessaging = firebaseSdk.messaging(_fcmApp);
+    _ensureStationPushForegroundHandler();
     let permission = Notification.permission;
     if (permission !== "granted") permission = await Notification.requestPermission();
     if (permission !== "granted"){console.log("Notifiche postazione: permesso negato");return;}
@@ -634,6 +650,7 @@ async function _registerContactPush(roleKey,btnEl){
       catch(e){_fcmApp = firebaseSdk.app("fcmApp");}
     }
     if (!_fcmMessaging) _fcmMessaging = firebaseSdk.messaging(_fcmApp);
+    _ensureStationPushForegroundHandler();
     let permission = Notification.permission;
     if (permission !== "granted") permission = await Notification.requestPermission();
     if (permission !== "granted"){ alert("Permesso notifiche negato."); return; }
