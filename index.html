@@ -4396,7 +4396,7 @@ function _stationNeighborsClient(num){
 function _sendStationEmergency(num,zoneStr){
   const r={id:Date.now(),type:"emergenza",sub:"Allarme rapido",
     notes:"🚨 Allarme EMERGENZA inviato dal pulsante rapido della postazione",
-    zone:zoneStr,author:"Postazione P."+num,phone:null,role:"station",
+    zone:zoneStr,author:"Postazione P."+num,phone:null,role:"station",quickAlert:true,
     ts:new Date().toISOString(),status:"aperta",photo:null,gps:null};
   return Promise.all([
     addReport(r),
