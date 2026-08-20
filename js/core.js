@@ -228,7 +228,7 @@ async function enableOperatorPush(){
 
   const tokenKey = _safeTokenKey(token);
 
-  await _fbFetch("operatorTokens/" + tokenKey, "PUT", {
+  await _realDb.ref("operatorTokens/" + tokenKey).set({
     token: token,
     enabled: true,
     role: "operator",
@@ -249,8 +249,10 @@ async function disableOperatorPush(){
 
     const tokenKey = _safeTokenKey(_fcmToken);
 
-    await _fbFetch("operatorTokens/" + tokenKey + "/enabled", "PUT", false);
-    await _fbFetch("operatorTokens/" + tokenKey + "/lastDisabled", "PUT", Date.now());
+    await _realDb.ref("operatorTokens/" + tokenKey).update({
+      enabled: false,
+      lastDisabled: Date.now()
+    });
 
     console.log("🔕 PUSH DISATTIVATO");
   }catch(e){
