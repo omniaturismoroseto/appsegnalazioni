@@ -10,7 +10,7 @@
  * Per forzare un aggiornamento, basta cambiare il numero di versione qui sotto.
  */
 
-const CACHE_VERSION = "omnia-v2026-08-19";
+const CACHE_VERSION = "omnia-v2026-08-20a";
 const APP_SHELL = "/appsegnalazioni/index.html";
 
 self.addEventListener("install", function (event) {
@@ -46,9 +46,11 @@ self.addEventListener("fetch", function (event) {
     url.pathname.endsWith("/index.html");
 
   if (isNavigation) {
-    // NETWORK-FIRST: prova la rete, ricadi sulla cache solo se offline
+    // NETWORK-FIRST: prova la rete forzando il bypass della cache HTTP del
+    // browser (altrimenti anche un fetch "di rete" può restituire una risposta
+    // salvata lì sotto), ricadi sulla cache solo se offline.
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-store" })
         .then(function (res) {
           const copy = res.clone();
           caches.open(CACHE_VERSION).then(function (c) { c.put(APP_SHELL, copy); });
