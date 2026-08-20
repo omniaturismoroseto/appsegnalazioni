@@ -10,7 +10,7 @@
  * Per forzare un aggiornamento, basta cambiare il numero di versione qui sotto.
  */
 
-const CACHE_VERSION = "omnia-v2026-06-17";
+const CACHE_VERSION = "omnia-v2026-08-19";
 const APP_SHELL = "/appsegnalazioni/index.html";
 
 self.addEventListener("install", function (event) {
