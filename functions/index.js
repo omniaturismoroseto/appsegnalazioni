@@ -2,6 +2,23 @@ const { onValueCreated } = require("firebase-functions/v2/database");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const Sentry = require("@sentry/google-cloud-serverless");
+
+Sentry.init({
+  dsn: "https://ef8a222e773db61d93b710620e7bf8b4@o4511943579926528.ingest.de.sentry.io/4511944270217296",
+  tracesSampleRate: 0,
+});
+
+// Manda l'errore a Sentry E ai log di Cloud Functions, e aspetta l'invio
+// prima di proseguire — necessario in ambiente serverless, dove il processo
+// può terminare prima che la richiesta di rete verso Sentry sia completata.
+async function reportError(error, context) {
+  console.error(context, error);
+  Sentry.captureException(error, { tags: { context } });
+  try {
+    await Sentry.flush(2000);
+  } catch (e) {}
+}
 
 admin.initializeApp();
 
@@ -134,7 +151,7 @@ exports.sendPushOnNewReport = onValueCreated(
       console.log("Push iniziale:", response.successCount, "Errori:", response.failureCount);
       await cleanupInvalidTokens(response, tokens);
     } catch (error) {
-      console.error("Errore push iniziale:", error);
+      await reportError(error, "sendPushOnNewReport");
     }
     return null;
   }
@@ -155,7 +172,7 @@ exports.repeatOpenAlerts = onSchedule(
     try {
       tokens = await getEnabledTokens();
     } catch (e) {
-      console.error("Errore lettura token:", e);
+      await reportError(e, "repeatOpenAlerts:getEnabledTokens");
       return;
     }
     if (!tokens.length) return;
@@ -187,7 +204,7 @@ exports.repeatOpenAlerts = onSchedule(
           const resp = await admin.messaging().sendEachForMulticast(message);
           await cleanupInvalidTokens(resp, tokens);
         } catch (e) {
-          console.error("Errore ripetizione per", id, e);
+          await reportError(e, "repeatOpenAlerts:inviaRaffica:" + id);
         }
       }
     }
@@ -221,8 +238,12 @@ exports.bandiereVerdi = onSchedule(
     region: "europe-west1",
   },
   async () => {
-    await admin.database().ref("flags").set(buildFlags("verde"));
-    console.log("Bandiere impostate a VERDE (09:00 Roma)");
+    try {
+      await admin.database().ref("flags").set(buildFlags("verde"));
+      console.log("Bandiere impostate a VERDE (09:00 Roma)");
+    } catch (e) {
+      await reportError(e, "bandiereVerdi");
+    }
   }
 );
 
@@ -233,8 +254,12 @@ exports.bandiereRosse = onSchedule(
     region: "europe-west1",
   },
   async () => {
-    await admin.database().ref("flags").set(buildFlags("rossa"));
-    console.log("Bandiere impostate a ROSSO (19:00 Roma)");
+    try {
+      await admin.database().ref("flags").set(buildFlags("rossa"));
+      console.log("Bandiere impostate a ROSSO (19:00 Roma)");
+    } catch (e) {
+      await reportError(e, "bandiereRosse");
+    }
   }
 );
 
@@ -268,18 +293,25 @@ function stationNeighbors(stationNum) {
 // che le regole del Realtime Database usano per limitare i permessi di scrittura
 // alla sola postazione di competenza.
 exports.getStationToken = onCall({ region: "europe-west1" }, async (request) => {
-  const deviceId = request.data && request.data.deviceId;
-  if (!deviceId || typeof deviceId !== "string") {
-    throw new HttpsError("invalid-argument", "deviceId mancante");
+  try {
+    const deviceId = request.data && request.data.deviceId;
+    if (!deviceId || typeof deviceId !== "string") {
+      throw new HttpsError("invalid-argument", "deviceId mancante");
+    }
+    const snap = await admin.database().ref("stationDevices/" + deviceId).once("value");
+    const d = snap.val();
+    if (!d || d.enabled !== true || !d.station) {
+      throw new HttpsError("permission-denied", "Dispositivo non abilitato per nessuna postazione");
+    }
+    const station = String(d.station);
+    const token = await admin.auth().createCustomToken(deviceId, { role: "station", station });
+    return { token, station };
+  } catch (e) {
+    // I rifiuti "attesi" (deviceId mancante/non abilitato) non sono bug: li
+    // rilanciamo così come sono, senza inondare Sentry di eventi normali.
+    if (!(e instanceof HttpsError)) await reportError(e, "getStationToken");
+    throw e;
   }
-  const snap = await admin.database().ref("stationDevices/" + deviceId).once("value");
-  const d = snap.val();
-  if (!d || d.enabled !== true || !d.station) {
-    throw new HttpsError("permission-denied", "Dispositivo non abilitato per nessuna postazione");
-  }
-  const station = String(d.station);
-  const token = await admin.auth().createCustomToken(deviceId, { role: "station", station });
-  return { token, station };
 });
 
 // ---- Allarme EMERGENZA da un pannello di postazione ----
@@ -378,7 +410,7 @@ exports.sendStationEmergency = onValueCreated(
         }
       }
     } catch (e) {
-      console.error("Errore invio emergenza postazione:", e);
+      await reportError(e, "sendStationEmergency");
     }
     return null;
   }
@@ -398,25 +430,29 @@ exports.purgeExpiredChildPhotos = onSchedule(
     region: "europe-west1",
   },
   async () => {
-    const snap = await admin.database().ref("reports").once("value");
-    const reports = snap.val() || {};
-    const now = Date.now();
-    let purged = 0;
+    try {
+      const snap = await admin.database().ref("reports").once("value");
+      const reports = snap.val() || {};
+      const now = Date.now();
+      let purged = 0;
 
-    const updates = {};
-    for (const [id, r] of Object.entries(reports)) {
-      if (!r || !r.childCase || !r.photo || !r.childResolvedAt) continue;
-      const closedAt = new Date(r.childResolvedAt).getTime();
-      if (!closedAt) continue;
-      if (now - closedAt > CHILD_PHOTO_TTL_MS) {
-        updates[id + "/photo"] = null;
-        purged++;
+      const updates = {};
+      for (const [id, r] of Object.entries(reports)) {
+        if (!r || !r.childCase || !r.photo || !r.childResolvedAt) continue;
+        const closedAt = new Date(r.childResolvedAt).getTime();
+        if (!closedAt) continue;
+        if (now - closedAt > CHILD_PHOTO_TTL_MS) {
+          updates[id + "/photo"] = null;
+          purged++;
+        }
       }
-    }
 
-    if (purged > 0) {
-      await admin.database().ref("reports").update(updates);
+      if (purged > 0) {
+        await admin.database().ref("reports").update(updates);
+      }
+      console.log("Pulizia foto minori: " + purged + " foto rimosse");
+    } catch (e) {
+      await reportError(e, "purgeExpiredChildPhotos");
     }
-    console.log("Pulizia foto minori: " + purged + " foto rimosse");
   }
 );
