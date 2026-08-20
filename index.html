@@ -412,7 +412,6 @@ label:first-child{margin-top:0}
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-functions-compat.js"></script>
 <script>
 // Meteomare integrato con Open-Meteo Marine API e Forecast API
 
@@ -492,18 +491,6 @@ function _getAuth(){
   }
 }
 
-var _fnsInstance=null;
-function _getFunctions(){
-  if(_fnsInstance)return _fnsInstance;
-  var fbSdk=firebaseSdk;
-  if(!fbSdk||typeof fbSdk.functions!=="function")fbSdk=window.firebase;
-  if(!fbSdk||typeof fbSdk.functions!=="function"){console.error("Firebase Functions SDK non disponibile");return null;}
-  try{
-    var app=fbSdk.apps&&fbSdk.apps.length>0?fbSdk.apps[0]:fbSdk.initializeApp(firebaseConfig);
-    _fnsInstance=app.functions("europe-west1");
-    return _fnsInstance;
-  }catch(e){console.error("Errore init Firebase Functions:",e);return null;}
-}
 
 var _realDbInstance=null;
 function _getRealDb(){
@@ -520,18 +507,23 @@ function _getRealDb(){
 
 // ---- Modalità postazione: scambia il deviceId abilitato con una sessione Auth reale ----
 // (custom token rilasciato dalla Cloud Function getStationToken, scoped alla propria postazione)
+// Chiamata diretta via fetch (protocollo "callable" v2) invece dell'SDK Functions:
+// l'SDK risultava inaffidabile nel rispettare la regione europe-west1 in questo contesto.
 async function _activateStationMode(deviceId,station){
   try{
-    var fns=_getFunctions();
-    if(!fns)throw new Error("Functions non disponibile");
-    var callable=fns.httpsCallable("getStationToken");
-    var res=await callable({deviceId:deviceId});
-    var token=res.data&&res.data.token;
+    var resp=await fetch("https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/getStationToken",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({data:{deviceId:deviceId}})
+    });
+    var j=await resp.json();
+    if(j.error)throw new Error(j.error.message||"Errore attivazione dispositivo");
+    var token=j.result&&j.result.token;
     if(!token)throw new Error("Token mancante nella risposta");
     var _a=_getAuth();
     if(!_a)throw new Error("Auth non disponibile");
     await _a.signInWithCustomToken(token);
-    stationMode=String((res.data&&res.data.station)||station);
+    stationMode=String((j.result&&j.result.station)||station);
     render("station");
     _registerStationPush(deviceId);
   }catch(e){
