@@ -9,6 +9,16 @@
   src="https://js-de.sentry-cdn.com/aa986c5b778097da921cc83e2485e79b.min.js"
   crossorigin="anonymous"
 ></script>
+<script>
+// Manda a Sentry anche tutti i console.error() già sparsi nel codice
+// (invece di modificarli uno per uno), così restano visibili anche i
+// fallimenti che oggi finivano solo in una console che nessuno guardava.
+Sentry.onLoad(function(){
+  Sentry.init({
+    integrations:[Sentry.consoleLoggingIntegration({levels:["error"]})]
+  });
+});
+</script>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=(), payment=()"/>
@@ -427,6 +437,7 @@ var firebaseSdk = window.firebase;
 window.addEventListener("load",function(){
   function boot(){
     try{startApp();}catch(e){
+      if(window.Sentry)window.Sentry.captureException(e);
       document.getElementById("page").innerHTML='<div style="padding:20px;color:red;font-size:13px"><b>Errore:</b><br>'+e.toString()+'</div>';
     }
   }
@@ -4582,6 +4593,7 @@ try{
     }, t);
   });
 }catch(e2){
+  if(window.Sentry)window.Sentry.captureException(e2);
   document.body.innerHTML='<div style="padding:20px;font-family:sans-serif">'
     +'<h2 style="color:red">Errore render</h2>'
     +'<pre style="background:#f5f5f5;padding:10px;font-size:11px;white-space:pre-wrap">'+e2.toString()+'\n'+e2.stack+'</pre>'
