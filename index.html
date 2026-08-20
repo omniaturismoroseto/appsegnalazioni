@@ -10,12 +10,24 @@
   crossorigin="anonymous"
 ></script>
 <script>
+// Identificativo di versione da incrementare a ogni pubblicazione (come
+// CACHE_VERSION in sw.js): permette a Sentry di dire "questo errore è
+// comparso DOPO la modifica X" invece di mescolare tutto insieme.
+var SENTRY_RELEASE="omnia-2026-08-20a";
 // Manda a Sentry anche tutti i console.error() già sparsi nel codice
 // (invece di modificarli uno per uno), così restano visibili anche i
 // fallimenti che oggi finivano solo in una console che nessuno guardava.
+// Session Replay: registra cosa vedeva/cliccava l'utente prima di un errore
+// (testo/input mascherati di default per privacy — dati sensibili nell'app).
 Sentry.onLoad(function(){
   Sentry.init({
-    integrations:[Sentry.consoleLoggingIntegration({levels:["error"]})]
+    release:SENTRY_RELEASE,
+    integrations:[
+      Sentry.consoleLoggingIntegration({levels:["error"]}),
+      Sentry.replayIntegration()
+    ],
+    replaysSessionSampleRate:0.1,
+    replaysOnErrorSampleRate:1.0
   });
 });
 </script>
@@ -449,6 +461,7 @@ window.addEventListener("load",function(){
   }
 });
 function startApp(){
+  if(window.Sentry)Sentry.setTag("role","public"); // valore di default, aggiornato al login/attivazione postazione
   history.replaceState({screen:"home"}, "", "");
   // Avvia GPS subito, prima del primo render
   setTimeout(function(){try{requestGPS();}catch(e){}}, 0);
@@ -540,6 +553,7 @@ async function _activateStationMode(deviceId,station){
     if(!_a)throw new Error("Auth non disponibile");
     await _a.signInWithCustomToken(token);
     stationMode=String((j.result&&j.result.station)||station);
+    if(window.Sentry){Sentry.setTag("role","station");Sentry.setTag("station",stationMode);}
     render("station");
     _registerStationPush(deviceId);
   }catch(e){
@@ -819,6 +833,7 @@ let currentScreen="home";
 let stationMode=null;
 var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
 let currentRole=_savedAuth?"operator":null;
+if(_savedAuth&&window.Sentry)Sentry.setTag("role","operator");
 if(_savedAuth){if(window._requestNotifPermission)setTimeout(function(){try{_requestNotifPermission();}catch(e){}},500);}
 if(_savedAuth){setTimeout(function(){enableOperatorPush().catch(console.error);},1200);}
 // Se già autenticato, rimanda alla dashboard dopo init variabili
@@ -3454,6 +3469,7 @@ function renderLogin(page){
       var _a=_getAuth();if(!_a)throw new Error("Auth non disponibile");
       const cred=await _a.signInWithEmailAndPassword(email,pass);
       currentRole="operator";newReportCount=0;
+      if(window.Sentry)Sentry.setTag("role","operator");
       try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
       if(window._requestNotifPermission)_requestNotifPermission();
       if(window.Notification&&Notification.permission==="default")Notification.requestPermission();
@@ -4013,6 +4029,7 @@ function renderDashboard(page){
   logoutBtn.addEventListener("click",function(){
     if(confirm("Vuoi uscire dall\u2019area operatori?")){
       currentRole=null;newReportCount=0;
+      if(window.Sentry)Sentry.setTag("role","public");
       try{localStorage.removeItem("omnia_op_auth");}catch(e){}
       try{var _ao=_getAuth();if(_ao)_ao.signOut();}catch(e){}
       currentRole=null;
