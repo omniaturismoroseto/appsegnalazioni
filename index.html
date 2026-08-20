@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app https://*.googleapis.com https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net https://www.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net https://www.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com; font-src 'self' data: https://cdnjs.cloudflare.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=(), payment=()"/>
@@ -410,97 +410,15 @@ label:first-child{margin-top:0}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-functions-compat.js"></script>
 <script>
 // Meteomare integrato con Open-Meteo Marine API e Forecast API
 
-// Firebase REST API - no SDK needed, works everywhere
-var FB_URL="https://app-segnalazioni-omnia-roseto-default-rtdb.europe-west1.firebasedatabase.app";
-var _fbListeners={};
-
-// Storage ibrido: Firebase REST se online, localStorage se offline
-var _fbOnline=false;
-function _lsGet(k){try{return JSON.parse(localStorage.getItem("fb_"+k)||"null");}catch(e){return null;}}
-function _lsSet(k,v){try{localStorage.setItem("fb_"+k,JSON.stringify(v));}catch(e){}}
-
-function _fbFetch(path,method,body){
-  var opts={method:method||"GET",headers:{"Content-Type":"application/json"}};
-  if(body!==undefined)opts.body=JSON.stringify(body);
-  function doFetch(url){
-    return fetch(url,opts).then(function(r){if(!r.ok)throw new Error(r.status);_fbOnline=true;return r.json();});
-  }
-  var url=FB_URL+"/"+path+".json";
-  // Se c'è una sessione Firebase Auth valida (operatore o dispositivo di postazione),
-  // allega sempre il token: molte scritture/letture ora richiedono autenticazione.
-  var _a;try{_a=typeof _getAuth==="function"?_getAuth():null;}catch(e){_a=null;}
-  var user=_a&&_a.currentUser;
-  if(!user)return doFetch(url);
-  return user.getIdToken().then(function(token){
-    return doFetch(url+"?auth="+encodeURIComponent(token));
-  }).catch(function(){return doFetch(url);});
-}
+// Accesso al Realtime Database tramite il vero SDK Firebase (autenticazione
+// gestita automaticamente dall'SDK stesso — niente più token da allegare a mano).
 var firebaseSdk = window.firebase;
-var firebase={
-  _db:{
-    ref:function(path){
-      return {
-        _path:path,
-        on:function(evt,cb,pollInterval){
-          var self=this;
-          var lsKey=self._path;
-          // Intervalli differenziati per path (ms)
-          var _POLL_MAP={"flags":5000,"reports":10000,"stationNotes":15000};
-          var _pi=pollInterval||_POLL_MAP[lsKey]||10000;
-          // Avvia subito con dati locali
-          var local=_lsGet(lsKey);
-          if(local!==null)cb({val:function(){return local;}});
-          // Poi tenta Firebase in background
-          function poll(){
-            _fbFetch(self._path)
-              .then(function(data){
-                _lsSet(lsKey,data);
-                cb({val:function(){return data;}});
-              })
-              .catch(function(){/* silenzioso - usa localStorage */});
-          }
-          poll();
-          setTimeout(poll,1500); // secondo tentativo rapido
-          setInterval(poll,_pi);
-        },
-        push:function(data){
-          var lsKey=this._path;
-          // Salva sempre in locale
-          var arr=_lsGet(lsKey)||{};
-          var tempKey="local_"+Date.now();
-          arr[tempKey]=data;
-          _lsSet(lsKey,arr);
-          // Tenta Firebase
-          return _fbFetch(lsKey,"POST",data)
-            .then(function(d){return {key:d.name};})
-            .catch(function(){return {key:tempKey};});
-        },
-        set:function(data){
-          _lsSet(this._path,data);
-          return _fbFetch(this._path,"PUT",data).catch(function(){return null;});
-        },
-        update:function(data){
-          var cur=_lsGet(this._path)||{};
-          Object.assign(cur,data);
-          _lsSet(this._path,cur);
-          return _fbFetch(this._path,"PATCH",data).catch(function(){return null;});
-        },
-        remove:function(){
-          _lsSet(this._path,null);
-          return _fbFetch(this._path,"DELETE").catch(function(){return null;});
-        },
-        child:function(sub){return firebase._db.ref(this._path+"/"+sub);}
-      };
-    }
-  },
-  database:function(){return firebase._db;}
-};
-firebase.initializeApp=function(){};
 
 window.addEventListener("load",function(){
   function boot(){
@@ -548,8 +466,6 @@ const firebaseConfig={
   appId:"1:699028105579:web:cdc0a432083b7fe18d442e"
 };
 const FCM_VAPID_KEY = "BHJrW95NpOuHuRHcx9uLFrAxOfL6mhhM8JsuYycCFfY0Y9F8LB9skDgKfZ2nYzSjxs_qsgVziMe9zADuH0kvB_E";
-// Firebase REST - no initializeApp needed
-const db=firebase.database();
 // Firebase Auth - inizializzazione diretta
 var auth=null;
 function _getAuth(){
@@ -587,6 +503,19 @@ function _getFunctions(){
     _fnsInstance=fbSdk.functions(app,"europe-west1");
     return _fnsInstance;
   }catch(e){console.error("Errore init Firebase Functions:",e);return null;}
+}
+
+var _realDbInstance=null;
+function _getRealDb(){
+  if(_realDbInstance)return _realDbInstance;
+  var fbSdk=firebaseSdk;
+  if(!fbSdk||typeof fbSdk.database!=="function")fbSdk=window.firebase;
+  if(!fbSdk||typeof fbSdk.database!=="function"){console.error("Firebase Database SDK non disponibile");return null;}
+  try{
+    var app=fbSdk.apps&&fbSdk.apps.length>0?fbSdk.apps[0]:fbSdk.initializeApp(firebaseConfig);
+    _realDbInstance=fbSdk.database(app);
+    return _realDbInstance;
+  }catch(e){console.error("Errore init Firebase Database:",e);return null;}
 }
 
 // ---- Modalità postazione: scambia il deviceId abilitato con una sessione Auth reale ----
@@ -677,12 +606,13 @@ async function _registerContactPush(roleKey,btnEl){
     if(btnEl){btnEl.disabled=false;btnEl.textContent="🔔 Attiva su questo dispositivo";}
   }
 }
-const reportsRef=db.ref("reports");
-const flagsRef=db.ref("flags");
-const stationNotesRef=db.ref("stationNotes");
-const stationDevicesRef=db.ref("stationDevices");
-const stationEmergenciesRef=db.ref("stationEmergencies");
-const emergencyContactsRef=db.ref("config/emergencyContacts");
+const _realDb=_getRealDb();
+const reportsRef=_realDb.ref("reports");
+const flagsRef=_realDb.ref("flags");
+const stationNotesRef=_realDb.ref("stationNotes");
+const stationDevicesRef=_realDb.ref("stationDevices");
+const stationEmergenciesRef=_realDb.ref("stationEmergencies");
+const emergencyContactsRef=_realDb.ref("config/emergencyContacts");
 let _fcmApp = null;
 let _fcmMessaging = null;
 let _fcmToken = null;
@@ -1398,7 +1328,10 @@ function getReports(){
   return Object.entries(reportsData).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.id-a.id);
 }
 function getFlags(){return{...flagsData};}
-function addReport(r){return reportsRef.push(r);}
+function addReport(r){
+  var newRef=reportsRef.push();
+  return newRef.set(r).then(function(){return {key:newRef.key};});
+}
 function resolveReport(key){
   if(_alertReportKey===key)_stopAlertSound();
   setTimeout(_checkForActiveAlerts,500);
