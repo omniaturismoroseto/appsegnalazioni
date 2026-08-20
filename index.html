@@ -500,7 +500,7 @@ function _getFunctions(){
   if(!fbSdk||typeof fbSdk.functions!=="function"){console.error("Firebase Functions SDK non disponibile");return null;}
   try{
     var app=fbSdk.apps&&fbSdk.apps.length>0?fbSdk.apps[0]:fbSdk.initializeApp(firebaseConfig);
-    _fnsInstance=fbSdk.functions(app,"europe-west1");
+    _fnsInstance=app.functions("europe-west1");
     return _fnsInstance;
   }catch(e){console.error("Errore init Firebase Functions:",e);return null;}
 }
