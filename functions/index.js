@@ -96,11 +96,7 @@ async function cleanupInvalidTokens(response, tokens) {
         code === "messaging/invalid-registration-token" ||
         code === "messaging/invalid-argument"
       ) {
-        const key = Buffer.from(tokens[i])
-          .toString("base64")
-          .replace(/\+/g, "-")
-          .replace(/\//g, "_")
-          .replace(/=+$/g, "");
+        const key = Buffer.from(tokens[i]).toString("base64url");
         removals.push(admin.database().ref("operatorTokens/" + key).remove());
       }
     }
@@ -304,17 +300,22 @@ exports.sendStationEmergency = onValueCreated(
 
     const devicesSnap = await admin.database().ref("stationDevices").once("value");
     const devices = devicesSnap.val() || {};
-    const stationTokens = Object.values(devices)
-      .filter((d) => d && d.enabled && d.pushToken && targetStations.includes(String(d.station)))
-      .map((d) => d.pushToken);
+    const stationEntries = Object.entries(devices)
+      .filter(([, d]) => d && d.enabled && d.pushToken && targetStations.includes(String(d.station)))
+      .map(([id, d]) => ({ token: d.pushToken, path: "stationDevices/" + id + "/pushToken" }));
 
     const contactsSnap = await admin.database().ref("config/emergencyContacts").once("value");
     const contacts = contactsSnap.val() || {};
-    const contactTokens = [contacts.admin, contacts.coordinator]
-      .filter((c) => c && c.pushToken)
-      .map((c) => c.pushToken);
+    const contactEntries = ["admin", "coordinator"]
+      .filter((role) => contacts[role] && contacts[role].pushToken)
+      .map((role) => ({ token: contacts[role].pushToken, path: "config/emergencyContacts/" + role + "/pushToken" }));
 
-    const tokens = [...new Set([...stationTokens, ...contactTokens])];
+    // Mappa token -> percorso da azzerare se il token risulta morto (dedup: primo percorso trovato)
+    const tokenPaths = new Map();
+    [...stationEntries, ...contactEntries].forEach((e) => {
+      if (!tokenPaths.has(e.token)) tokenPaths.set(e.token, e.path);
+    });
+    const tokens = [...tokenPaths.keys()];
     if (!tokens.length) {
       console.log("Emergenza P." + data.station + ": nessun destinatario con push attiva trovato");
       return null;
@@ -357,6 +358,25 @@ exports.sendStationEmergency = onValueCreated(
         "Emergenza P." + data.station + " inviata a", resp.successCount,
         "destinatari (" + targetStations.join(",") + " + contatti), falliti:", resp.failureCount
       );
+      if (resp.failureCount) {
+        const removals = [];
+        resp.responses.forEach((r, i) => {
+          if (r.success) return;
+          const code = r.error && r.error.code;
+          if (
+            code === "messaging/registration-token-not-registered" ||
+            code === "messaging/invalid-registration-token" ||
+            code === "messaging/invalid-argument"
+          ) {
+            const path = tokenPaths.get(tokens[i]);
+            if (path) removals.push(admin.database().ref(path).remove());
+          }
+        });
+        if (removals.length) {
+          await Promise.allSettled(removals);
+          console.log("Token push non validi rimossi:", removals.length);
+        }
+      }
     } catch (e) {
       console.error("Errore invio emergenza postazione:", e);
     }
