@@ -1,0 +1,4 @@
+node_modules/
+*.local
+# Copiato automaticamente da ../stations-data.js ad ogni deploy (vedi predeploy in firebase.json)
+stations-data.js

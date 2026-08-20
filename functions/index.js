@@ -246,36 +246,11 @@ exports.bandiereRosse = onSchedule(
 // 4) DISPOSITIVI DI POSTAZIONE — autenticazione e allarme emergenza mirato
 // ============================================================
 
-// Stessa lista di postazioni del client (index.html), solo num+lat+lng:
-// serve qui per calcolare le postazioni fisicamente vicine a nord/sud.
-const STATIONS = [
-  { num: 10, lat: 42.67120, lng: 14.02308 },
-  { num: 11, lat: 42.67290, lng: 14.02199 },
-  { num: 12, lat: 42.67410, lng: 14.02162 },
-  { num: 13, lat: 42.67514, lng: 14.02057 },
-  { num: 14, lat: 42.67643, lng: 14.01932 },
-  { num: 15, lat: 42.67753, lng: 14.01848 },
-  { num: 16, lat: 42.67885, lng: 14.01741 },
-  { num: 17, lat: 42.68013, lng: 14.01646 },
-  { num: 18, lat: 42.68164, lng: 14.01554 },
-  { num: 19, lat: 42.68282, lng: 14.01457 },
-  { num: 20, lat: 42.68372, lng: 14.01391 },
-  { num: 21, lat: 42.68511, lng: 14.01286 },
-  { num: 22, lat: 42.68657, lng: 14.01179 },
-  { num: 23, lat: 42.68774, lng: 14.01106 },
-  { num: 24, lat: 42.68898, lng: 14.01014 },
-  { num: 25, lat: 42.69022, lng: 14.00906 },
-  { num: 26, lat: 42.69139, lng: 14.00815 },
-  { num: 27, lat: 42.69265, lng: 14.00706 },
-  { num: 28, lat: 42.69426, lng: 14.00533 },
-  { num: 29, lat: 42.69532, lng: 14.00436 },
-  { num: 30, lat: 42.69630, lng: 14.00378 },
-  { num: 31, lat: 42.72301, lng: 13.98858 },
-  { num: 32, lat: 42.72457, lng: 13.98758 },
-  { num: 33, lat: 42.69927, lng: 14.00192 },
-  { num: 34, lat: 42.66747, lng: 14.02596 },
-  { num: 35, lat: 42.66836, lng: 14.02542 },
-];
+// Stessa lista di postazioni del client (index.html): fonte unica in
+// ../stations-data.js, copiata qui automaticamente ad ogni deploy (vedi
+// "predeploy" in firebase.json) — non modificare stations-data.js in questa
+// cartella a mano, si perde al prossimo deploy.
+const STATIONS = require("./stations-data.js");
 
 // Ordina le postazioni da sud a nord per LATITUDINE REALE (non per numero:
 // P.31-35 non sono in sequenza geografica col resto), poi prende fino a 2
@@ -386,5 +361,42 @@ exports.sendStationEmergency = onValueCreated(
       console.error("Errore invio emergenza postazione:", e);
     }
     return null;
+  }
+);
+
+// ============================================================
+// 5) PULIZIA FOTO MINORI SCADUTE — server-side, indipendente da qualsiasi
+//    dispositivo/operatore connesso (dato sensibile, non può dipendere dal
+//    fatto che qualcuno abbia la dashboard aperta in quel momento).
+// ============================================================
+const CHILD_PHOTO_TTL_MS = 6 * 60 * 60 * 1000; // 6 ore dopo la chiusura del caso
+
+exports.purgeExpiredChildPhotos = onSchedule(
+  {
+    schedule: "0 * * * *", // ogni ora, al minuto 0
+    timeZone: "Europe/Rome",
+    region: "europe-west1",
+  },
+  async () => {
+    const snap = await admin.database().ref("reports").once("value");
+    const reports = snap.val() || {};
+    const now = Date.now();
+    let purged = 0;
+
+    const updates = {};
+    for (const [id, r] of Object.entries(reports)) {
+      if (!r || !r.childCase || !r.photo || !r.childResolvedAt) continue;
+      const closedAt = new Date(r.childResolvedAt).getTime();
+      if (!closedAt) continue;
+      if (now - closedAt > CHILD_PHOTO_TTL_MS) {
+        updates[id + "/photo"] = null;
+        purged++;
+      }
+    }
+
+    if (purged > 0) {
+      await admin.database().ref("reports").update(updates);
+    }
+    console.log("Pulizia foto minori: " + purged + " foto rimosse");
   }
 );
