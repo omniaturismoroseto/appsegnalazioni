@@ -1,5 +1,6 @@
 const { onValueCreated } = require("firebase-functions/v2/database");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
@@ -117,6 +118,14 @@ exports.sendPushOnNewReport = onValueCreated(
     const reportId = event.params.id;
     if (!data) return null;
     if (data.status && data.status !== "aperta") return null;
+    // Gli allarmi rapidi dal pulsante EMERGENZA di postazione NON vanno in broadcast
+    // a tutti gli operatori: li notifica solo sendStationEmergency, in modo mirato
+    // (2 postazioni a nord, 2 a sud, admin/coordinatore). Restano comunque visibili
+    // qui su /reports per lo storico e la dashboard.
+    if (data.quickAlert === true) {
+      console.log("Segnalazione", reportId, "è un quickAlert di postazione: broadcast saltato di proposito");
+      return null;
+    }
 
     try {
       const tokens = await getEnabledTokens();
@@ -163,6 +172,7 @@ exports.repeatOpenAlerts = onSchedule(
     const daRipetere = [];
     for (const [id, r] of Object.entries(reports)) {
       if (!r || r.status !== "aperta") continue;
+      if (r.quickAlert === true) continue; // niente broadcast a tutti per gli allarmi rapidi di postazione
       // r.id è il timestamp di creazione (Date.now() lato app); fallback su r.ts
       const creato = Number(r.id) || (r.ts ? new Date(r.ts).getTime() : 0);
       if (!creato) continue;
@@ -229,5 +239,152 @@ exports.bandiereRosse = onSchedule(
   async () => {
     await admin.database().ref("flags").set(buildFlags("rossa"));
     console.log("Bandiere impostate a ROSSO (19:00 Roma)");
+  }
+);
+
+// ============================================================
+// 4) DISPOSITIVI DI POSTAZIONE — autenticazione e allarme emergenza mirato
+// ============================================================
+
+// Stessa lista di postazioni del client (index.html), solo num+lat+lng:
+// serve qui per calcolare le postazioni fisicamente vicine a nord/sud.
+const STATIONS = [
+  { num: 10, lat: 42.67120, lng: 14.02308 },
+  { num: 11, lat: 42.67290, lng: 14.02199 },
+  { num: 12, lat: 42.67410, lng: 14.02162 },
+  { num: 13, lat: 42.67514, lng: 14.02057 },
+  { num: 14, lat: 42.67643, lng: 14.01932 },
+  { num: 15, lat: 42.67753, lng: 14.01848 },
+  { num: 16, lat: 42.67885, lng: 14.01741 },
+  { num: 17, lat: 42.68013, lng: 14.01646 },
+  { num: 18, lat: 42.68164, lng: 14.01554 },
+  { num: 19, lat: 42.68282, lng: 14.01457 },
+  { num: 20, lat: 42.68372, lng: 14.01391 },
+  { num: 21, lat: 42.68511, lng: 14.01286 },
+  { num: 22, lat: 42.68657, lng: 14.01179 },
+  { num: 23, lat: 42.68774, lng: 14.01106 },
+  { num: 24, lat: 42.68898, lng: 14.01014 },
+  { num: 25, lat: 42.69022, lng: 14.00906 },
+  { num: 26, lat: 42.69139, lng: 14.00815 },
+  { num: 27, lat: 42.69265, lng: 14.00706 },
+  { num: 28, lat: 42.69426, lng: 14.00533 },
+  { num: 29, lat: 42.69532, lng: 14.00436 },
+  { num: 30, lat: 42.69630, lng: 14.00378 },
+  { num: 31, lat: 42.72301, lng: 13.98858 },
+  { num: 32, lat: 42.72457, lng: 13.98758 },
+  { num: 33, lat: 42.69927, lng: 14.00192 },
+  { num: 34, lat: 42.66747, lng: 14.02596 },
+  { num: 35, lat: 42.66836, lng: 14.02542 },
+];
+
+// Ordina le postazioni da sud a nord per LATITUDINE REALE (non per numero:
+// P.31-35 non sono in sequenza geografica col resto), poi prende fino a 2
+// vicine per lato. Se un lato ne ha meno di 2 (o zero), semplicemente non
+// include quelle mancanti — nessun avvolgimento (wrap-around).
+function stationNeighbors(stationNum) {
+  const ordered = STATIONS.slice().sort((a, b) => a.lat - b.lat);
+  const idx = ordered.findIndex((s) => String(s.num) === String(stationNum));
+  if (idx === -1) return { north: [], south: [] };
+  const south = ordered.slice(Math.max(0, idx - 2), idx);
+  const north = ordered.slice(idx + 1, idx + 3);
+  return { north, south };
+}
+
+// ---- Rilascia un custom token Firebase Auth per un dispositivo di postazione ----
+// Chiamabile pubblicamente (il dispositivo non ha ancora nessuna sessione), ma
+// il token viene emesso SOLO se quel deviceId risulta abilitato per una postazione
+// nel pannello admin. Il token porta i claim role:"station" e station:<numero>,
+// che le regole del Realtime Database usano per limitare i permessi di scrittura
+// alla sola postazione di competenza.
+exports.getStationToken = onCall({ region: "europe-west1" }, async (request) => {
+  const deviceId = request.data && request.data.deviceId;
+  if (!deviceId || typeof deviceId !== "string") {
+    throw new HttpsError("invalid-argument", "deviceId mancante");
+  }
+  const snap = await admin.database().ref("stationDevices/" + deviceId).once("value");
+  const d = snap.val();
+  if (!d || d.enabled !== true || !d.station) {
+    throw new HttpsError("permission-denied", "Dispositivo non abilitato per nessuna postazione");
+  }
+  const station = String(d.station);
+  const token = await admin.auth().createCustomToken(deviceId, { role: "station", station });
+  return { token, station };
+});
+
+// ---- Allarme EMERGENZA da un pannello di postazione ----
+// Scattato dalla scrittura su /stationEmergencies/{id} (solo un dispositivo di
+// postazione autenticato con il proprio custom token può scriverci, e solo per
+// la propria postazione — vedi database.rules.json). Invia una push mirata SOLO
+// alle 2 postazioni più vicine a nord, alle 2 più vicine a sud, e ai contatti
+// admin/coordinatore — non a tutti gli operatori (quello lo fa già la segnalazione
+// "emergenza" normale creata in parallelo dal client su /reports).
+exports.sendStationEmergency = onValueCreated(
+  { ref: "/stationEmergencies/{id}", region: "europe-west1" },
+  async (event) => {
+    const data = event.data.val();
+    if (!data || !data.station) return null;
+
+    const { north, south } = stationNeighbors(data.station);
+    const targetStations = [...north, ...south].map((s) => String(s.num));
+
+    const devicesSnap = await admin.database().ref("stationDevices").once("value");
+    const devices = devicesSnap.val() || {};
+    const stationTokens = Object.values(devices)
+      .filter((d) => d && d.enabled && d.pushToken && targetStations.includes(String(d.station)))
+      .map((d) => d.pushToken);
+
+    const contactsSnap = await admin.database().ref("config/emergencyContacts").once("value");
+    const contacts = contactsSnap.val() || {};
+    const contactTokens = [contacts.admin, contacts.coordinator]
+      .filter((c) => c && c.pushToken)
+      .map((c) => c.pushToken);
+
+    const tokens = [...new Set([...stationTokens, ...contactTokens])];
+    if (!tokens.length) {
+      console.log("Emergenza P." + data.station + ": nessun destinatario con push attiva trovato");
+      return null;
+    }
+
+    const message = {
+      tokens,
+      notification: {
+        title: "🚨 EMERGENZA — P." + data.station,
+        body: "Allarme immediato dalla postazione P." + data.station + ". Intervieni o coordina i soccorsi.",
+      },
+      data: { type: "station_emergency", station: String(data.station) },
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "omnia_emergenze",
+          sound: "default",
+          color: "#a5140a",
+          defaultVibrateTimings: false,
+          vibrateTimingsMillis: [0, 500, 200, 500, 200, 500],
+          tag: "station_emergency_" + data.station + "_" + Date.now(),
+        },
+      },
+      apns: { headers: { "apns-priority": "10" }, payload: { aps: { sound: "default", badge: 1 } } },
+      webpush: {
+        headers: { Urgency: "high", TTL: "120" },
+        notification: {
+          icon: "/appsegnalazioni/icon-192-fixed.png",
+          badge: "/appsegnalazioni/icon-192-fixed.png",
+          requireInteraction: true,
+          vibrate: [500, 200, 500, 200, 500],
+        },
+        fcmOptions: { link: "https://omniaturismoroseto.github.io/appsegnalazioni/" },
+      },
+    };
+
+    try {
+      const resp = await admin.messaging().sendEachForMulticast(message);
+      console.log(
+        "Emergenza P." + data.station + " inviata a", resp.successCount,
+        "destinatari (" + targetStations.join(",") + " + contatti), falliti:", resp.failureCount
+      );
+    } catch (e) {
+      console.error("Errore invio emergenza postazione:", e);
+    }
+    return null;
   }
 );

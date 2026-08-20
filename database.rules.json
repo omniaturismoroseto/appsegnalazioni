@@ -1,0 +1,66 @@
+{
+  "rules": {
+    "reports": {
+      ".read": true,
+      "$reportId": {
+        ".write": "!data.exists() || (auth != null && auth.token.role !== 'station')",
+        ".validate": "newData.hasChildren(['type','sub','zone','ts','status']) && newData.child('type').val().matches(/^(emergenza|pericolo)$/) && newData.child('status').val().matches(/^(aperta|risolta)$/) && newData.child('ts').isString() && newData.child('zone').isString() && newData.child('zone').val().length < 100 && newData.child('sub').isString() && newData.child('sub').val().length < 200 && (!newData.hasChild('notes') || (newData.child('notes').isString() && newData.child('notes').val().length < 1000)) && (!newData.hasChild('photo') || (newData.child('photo').isString() && newData.child('photo').val().length < 400000)) && (!newData.hasChild('phone') || (newData.child('phone').isString() && newData.child('phone').val().length < 40)) && (!newData.hasChild('author') || (newData.child('author').isString() && newData.child('author').val().length < 100))"
+      }
+    },
+    "flags": {
+      ".read": true,
+      ".write": "auth != null && auth.token.role !== 'station'",
+      "$stationNum": {
+        ".write": "auth != null && (auth.token.role !== 'station' || auth.token.station === $stationNum)",
+        ".validate": "newData.isString() && newData.val().matches(/^(verde|gialla|rossa)$/)"
+      }
+    },
+    "stationNotes": {
+      ".read": true,
+      ".write": "auth != null && auth.token.role !== 'station'",
+      "$stationNum": {
+        ".write": "auth != null && (auth.token.role !== 'station' || auth.token.station === $stationNum)",
+        ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 500)"
+      }
+    },
+    "operatorTokens": {
+      ".read": false,
+      "$tokenId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['token','enabled','role']) && newData.child('role').val() === 'operator'"
+      }
+    },
+    "stationDevices": {
+      ".read": "auth != null && auth.token.role !== 'station'",
+      "$deviceId": {
+        ".read": true,
+        ".write": "!data.exists() || (auth != null && auth.token.role !== 'station') || (auth != null && auth.token.role === 'station' && auth.uid === $deviceId)",
+        ".validate": "newData.hasChildren(['requestedAt','enabled']) && newData.child('requestedAt').isNumber() && newData.child('enabled').isBoolean() && (newData.child('enabled').val() === false || newData.child('enabled').val() === data.child('enabled').val() || (auth != null && auth.token.role !== 'station')) && (!newData.hasChild('station') || (newData.child('station').isString() && newData.child('station').val().length < 20)) && (!newData.hasChild('label') || (newData.child('label').isString() && newData.child('label').val().length < 60)) && (!newData.hasChild('userAgent') || (newData.child('userAgent').isString() && newData.child('userAgent').val().length < 200)) && (!newData.hasChild('lastSeen') || newData.child('lastSeen').isNumber()) && (!newData.hasChild('pushToken') || (newData.child('pushToken').isString() && newData.child('pushToken').val().length < 300)) && (auth == null || auth.token.role !== 'station' || (newData.child('enabled').val() === data.child('enabled').val() && newData.child('station').val() === data.child('station').val()))"
+      }
+    },
+    "stationEmergencies": {
+      ".read": false,
+      "$alertId": {
+        ".write": "!data.exists() && auth != null && auth.token.role === 'station' && auth.token.station === newData.child('station').val()",
+        ".validate": "newData.hasChildren(['station','ts']) && newData.child('station').isString() && newData.child('ts').isNumber()"
+      }
+    },
+    "config": {
+      "emergencyContacts": {
+        ".read": "auth != null && auth.token.role !== 'station'",
+        "admin": {
+          ".write": "auth != null && auth.token.role !== 'station'",
+          ".validate": "(!newData.hasChild('name') || (newData.child('name').isString() && newData.child('name').val().length < 60)) && (!newData.hasChild('phone') || (newData.child('phone').isString() && newData.child('phone').val().length < 30)) && (!newData.hasChild('pushToken') || (newData.child('pushToken').isString() && newData.child('pushToken').val().length < 300))"
+        },
+        "coordinator": {
+          ".write": "auth != null && auth.token.role !== 'station'",
+          ".validate": "(!newData.hasChild('name') || (newData.child('name').isString() && newData.child('name').val().length < 60)) && (!newData.hasChild('phone') || (newData.child('phone').isString() && newData.child('phone').val().length < 30)) && (!newData.hasChild('pushToken') || (newData.child('pushToken').isString() && newData.child('pushToken').val().length < 300))"
+        }
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
