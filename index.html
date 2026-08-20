@@ -4596,7 +4596,15 @@ function renderBandiere(page){
   bulk.appendChild(bulkSel);
   const bulkBtn=document.createElement("button");bulkBtn.className="bulk-btn";bulkBtn.textContent="Applica a tutte";
   bulkBtn.addEventListener("click",()=>{
-    const val=bulkSel.value,f={};STATIONS.forEach(s=>f[s.num]=val);saveFlags(f);
+    const val=bulkSel.value,f={};STATIONS.forEach(s=>f[s.num]=val);
+    bulkBtn.disabled=true;var prevTxt=bulkBtn.textContent;bulkBtn.textContent="Applico\u2026";
+    saveFlags(f).then(function(){
+      bulkBtn.disabled=false;bulkBtn.textContent=prevTxt;
+    }).catch(function(e){
+      bulkBtn.disabled=false;bulkBtn.textContent=prevTxt;
+      console.error("Errore 'Applica a tutte':",e);
+      alert("Errore nell'applicare la bandiera a tutte le postazioni: "+(e&&e.message?e.message:e)+"\n\nRiprova, e se persiste segnalalo con questo messaggio.");
+    });
   });
   bulk.appendChild(bulkBtn);hdr.appendChild(bulk);panel.appendChild(hdr);
   STATIONS.forEach(s=>{
@@ -4609,7 +4617,20 @@ function renderBandiere(page){
       const o=document.createElement("option");o.value=v;o.textContent=l;
       if((flags[s.num]||"verde")===v)o.selected=true;sel.appendChild(o);
     });
-    sel.addEventListener("change",()=>{dot.style.background=FLAG_COLORS[sel.value];setFlag(s.num,sel.value);});
+    sel.addEventListener("change",()=>{
+      var prevVal=flags[s.num]||"verde";
+      var newVal=sel.value;
+      dot.style.background=FLAG_COLORS[newVal];
+      sel.disabled=true;
+      setFlag(s.num,newVal).then(function(){
+        sel.disabled=false;
+      }).catch(function(e){
+        sel.disabled=false;
+        sel.value=prevVal;dot.style.background=FLAG_COLORS[prevVal];
+        console.error("Errore cambio bandiera P."+s.num+":",e);
+        alert("Errore nel cambiare la bandiera di P."+s.num+": "+(e&&e.message?e.message:e)+"\n\nRiprova, e se persiste segnalalo con questo messaggio.");
+      });
+    });
     row.appendChild(sel);panel.appendChild(row);
   });
   page.appendChild(panel);
