@@ -583,12 +583,24 @@ reportsRef.on("value",snap=>{
 });
 
 export let chatMessages={};
-chatRef.limitToLast(100).on("value",function(snap){
+chatRef.limitToLast(200).on("value",function(snap){
   chatMessages=snap.val()||{};
   // Ridisegna solo se la chat e' davvero la schermata visibile in questo
   // momento (tab "chat" in dashboard, o pannello chat aperto in postazione):
   // stesso schema degli altri listener qui sopra, per non ridisegnare pagine
   // che non c'entrano ad ogni nuovo messaggio.
+  const chatVisible=(currentScreen==="dashboard"&&window.activeDashTab==="chat")
+    ||(currentScreen==="station"&&window._stationChatOpen);
+  if(chatVisible)renderPage();
+});
+
+// Ogni sera (vedi resetChatSerale in functions/index.js) la chat riparte
+// pulita: i messaggi restano tutti nello storico (non vengono cancellati),
+// ma di default se ne mostrano solo quelli successivi a questo momento.
+export const chatResetAtRef=_realDb.ref("chat/resetAt");
+export let chatResetAt=0;
+chatResetAtRef.on("value",function(snap){
+  chatResetAt=snap.val()||0;
   const chatVisible=(currentScreen==="dashboard"&&window.activeDashTab==="chat")
     ||(currentScreen==="station"&&window._stationChatOpen);
   if(chatVisible)renderPage();

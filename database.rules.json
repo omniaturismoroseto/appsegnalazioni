@@ -53,6 +53,9 @@
           ".write": "!data.exists() && auth != null",
           ".validate": "newData.hasChildren(['text','authorLabel','role','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('authorLabel').isString() && newData.child('authorLabel').val().length <= 40 && newData.child('role').val().matches(/^(station|operator)$/) && newData.child('ts').isNumber()"
         }
+      },
+      "resetAt": {
+        ".read": "auth != null"
       }
     },
     "config": {

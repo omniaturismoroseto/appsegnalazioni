@@ -263,6 +263,27 @@ exports.bandiereRosse = onSchedule(
   }
 );
 
+// Reset "visivo" serale della chat interna: i messaggi NON vengono
+// cancellati (restano nello storico completo, vedi il tab chat lato
+// dashboard operatore), ma il client nasconde di default quelli precedenti
+// a questo momento - cosi' ogni turno riparte con una chat pulita. Subito
+// dopo il passaggio a bandiera rossa (fine giornata di servizio).
+exports.resetChatSerale = onSchedule(
+  {
+    schedule: "5 19 * * *",       // 19:05
+    timeZone: "Europe/Rome",
+    region: "europe-west1",
+  },
+  async () => {
+    try {
+      await admin.database().ref("chat/resetAt").set(Date.now());
+      console.log("Chat interna: reset visivo serale (19:05 Roma)");
+    } catch (e) {
+      await reportError(e, "resetChatSerale");
+    }
+  }
+);
+
 // ============================================================
 // 4) DISPOSITIVI DI POSTAZIONE — autenticazione e allarme emergenza mirato
 // ============================================================

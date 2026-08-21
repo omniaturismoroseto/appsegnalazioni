@@ -27,7 +27,7 @@ export function renderStationPanel(page){
     const back=document.createElement("button");back.className="back-btn";back.textContent="← Torna alla postazione";
     back.addEventListener("click",function(){window._stationChatOpen=false;render("station");});
     chatWrap.appendChild(back);
-    renderChatPanel(chatWrap);
+    renderChatPanel(chatWrap,{isStation:true});
     page.appendChild(chatWrap);
     return;
   }
