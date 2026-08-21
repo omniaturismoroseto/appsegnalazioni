@@ -461,13 +461,7 @@ var firebaseSdk = window.firebase;
 function _sentrySetTag(key,val){try{if(window.Sentry&&typeof Sentry.setTag==="function")Sentry.setTag(key,val);}catch(e){}}
 function _sentryCapture(err){try{if(window.Sentry&&typeof Sentry.captureException==="function")Sentry.captureException(err);}catch(e){}}
 </script>
-<script src="js/core.js"></script>
-<script src="js/meteo.js"></script>
-<script src="js/map.js"></script>
-<script src="js/pages-public.js"></script>
-<script src="js/pages-operator.js"></script>
-<script src="js/pages-station.js"></script>
-<script src="js/boot.js"></script>
+<script type="module" src="js/boot.js"></script>
 <script>
 // Registra Service Worker per PWA
 if("serviceWorker" in navigator){

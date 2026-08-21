@@ -1,7 +1,10 @@
+import { _activateStationMode, render, renderPage, stationDevicesRef } from "./core.js";
+import { fetchMeteoMarine } from "./meteo.js";
+
 
 // Tutti i file sono ora caricati: da qui in poi render()/renderPage() possono
-// disegnare in sicurezza (vedi la guardia _appReady in js/core.js).
-_appReady=true;
+// disegnare in sicurezza (vedi la guardia window._appReady in js/core.js).
+window._appReady=true;
 
 setTimeout(function(){try{fetchMeteoMarine(false);}catch(e){}},300);
 
@@ -11,10 +14,10 @@ try{
     stationDevicesRef.child(_bootDeviceId).once("value").then(function(snap){
       var d=snap.val();
       if(d&&d.enabled&&d.station)_activateStationMode(_bootDeviceId,String(d.station));
-      else render(currentRole==="operator"?"dashboard":"home");
-    }).catch(function(){render(currentRole==="operator"?"dashboard":"home");});
+      else render(window.currentRole==="operator"?"dashboard":"home");
+    }).catch(function(){render(window.currentRole==="operator"?"dashboard":"home");});
   }else{
-    render(currentRole==="operator" ? "dashboard" : "home");
+    render(window.currentRole==="operator" ? "dashboard" : "home");
   }
   // Segna l'avvio riuscito: da qui in poi un errore runtime minore non deve
   // più far sparire l'app dietro una pagina d'errore a piena schermo (vedi
@@ -23,7 +26,7 @@ try{
 
   [250,700,1200].forEach(function(t){
     setTimeout(function(){
-      if(mapObj) mapObj.invalidateSize(true);
+      if(window.mapObj) window.mapObj.invalidateSize(true);
     }, t);
   });
 }catch(e2){

@@ -1,19 +1,23 @@
-function renderDashboard(page){
+import { FLAG_COLORS, STATIONS, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
+import { refreshMarkers } from "./map.js";
+import { CHILD_ESCALATE_MIN } from "./pages-public.js";
+
+export function renderDashboard(page){
   const reports=getReports(),open=reports.filter(r=>r.status==="aperta");
   const tb=document.createElement("div");tb.className="dash-toolbar";
   const ti=document.createElement("div");
-  const sd=fbReady?`<span class="sync-dot" title="Sync attivo"></span>`:`<span class="sync-dot off" title="Connessione..."></span>`;
+  const sd=window.fbReady?`<span class="sync-dot" title="Sync attivo"></span>`:`<span class="sync-dot off" title="Connessione..."></span>`;
   ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">Dashboard Operatori ${sd}</h1><p style="font-size:11px;color:var(--text2)">Roseto degli Abruzzi &middot; P.10 \u2013 P.35</p>`;
   const logoutBtn=document.createElement("button");
   logoutBtn.style.cssText="font-size:12px;padding:5px 12px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;border-radius:var(--radius)";
   logoutBtn.innerHTML="\uD83D\uDD13 Esci";
   logoutBtn.addEventListener("click",function(){
     if(confirm("Vuoi uscire dall\u2019area operatori?")){
-      currentRole=null;newReportCount=0;
+      window.currentRole=null;window.newReportCount=0;
       _sentrySetTag("role","public");
       try{localStorage.removeItem("omnia_op_auth");}catch(e){}
       try{var _ao=_getAuth();if(_ao)_ao.signOut();}catch(e){}
-      currentRole=null;
+      window.currentRole=null;
       render("home");
     }
   });
@@ -29,27 +33,27 @@ function renderDashboard(page){
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
   [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"],["dispositivi","\ud83d\udcf1 Dispositivi"]].forEach(([k,l])=>{
-    const btn=document.createElement("button");btn.className="tab-btn"+(activeDashTab===k?" active":"");btn.textContent=l;
-    btn.addEventListener("click",()=>{activeDashTab=k;renderPage();});tabBar.appendChild(btn);
+    const btn=document.createElement("button");btn.className="tab-btn"+(window.activeDashTab===k?" active":"");btn.textContent=l;
+    btn.addEventListener("click",()=>{window.activeDashTab=k;renderPage();});tabBar.appendChild(btn);
   });
   page.appendChild(tabBar);
-  if(activeDashTab==="bandiere"){renderBandiere(page);return;}
-  if(activeDashTab==="note"){renderNote(page);return;}
-  if(activeDashTab==="dispositivi"){renderDispositivi(page);return;}
-  if(activeStation){
+  if(window.activeDashTab==="bandiere"){renderBandiere(page);return;}
+  if(window.activeDashTab==="note"){renderNote(page);return;}
+  if(window.activeDashTab==="dispositivi"){renderDispositivi(page);return;}
+  if(window.activeStation){
     const bar=document.createElement("div");bar.className="zone-filter-bar";
-    bar.innerHTML=`<span style="font-size:12px;flex:1;color:var(--text2)">Filtro: ${activeStation}</span>`;
+    bar.innerHTML=`<span style="font-size:12px;flex:1;color:var(--text2)">Filtro: ${window.activeStation}</span>`;
     const clr=document.createElement("button");clr.style.cssText="font-size:11px;padding:2px 8px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent";clr.textContent="\u2715 rimuovi";
-    clr.addEventListener("click",()=>{activeStation=null;renderPage();});bar.appendChild(clr);page.appendChild(bar);
+    clr.addEventListener("click",()=>{window.activeStation=null;renderPage();});bar.appendChild(clr);page.appendChild(bar);
   }
   const ft=document.createElement("div");ft.className="filters";
   [["aperte","Aperte"],["emergenza","Emergenze"],["pericolo","Pericoli"],["tutte","Tutte"]].forEach(([k,l])=>{
-    const b=document.createElement("button");b.className="filter-btn"+(activeFilter===k?" active":"");b.textContent=l;
-    b.addEventListener("click",()=>{activeFilter=k;renderPage();});ft.appendChild(b);
+    const b=document.createElement("button");b.className="filter-btn"+(window.activeFilter===k?" active":"");b.textContent=l;
+    b.addEventListener("click",()=>{window.activeFilter=k;renderPage();});ft.appendChild(b);
   });
   page.appendChild(ft);
-  let filtered=activeFilter==="tutte"?reports:activeFilter==="aperte"?open:reports.filter(r=>r.type===activeFilter);
-  if(activeStation)filtered=filtered.filter(r=>r.zone===activeStation);
+  let filtered=window.activeFilter==="tutte"?reports:window.activeFilter==="aperte"?open:reports.filter(r=>r.type===window.activeFilter);
+  if(window.activeStation)filtered=filtered.filter(r=>r.zone===window.activeStation);
   if(!filtered.length){const em=document.createElement("p");em.className="empty";em.textContent="Nessuna segnalazione";page.appendChild(em);return;}
   const list=document.createElement("div");list.className="reports-list";
   filtered.forEach(r=>{
@@ -141,7 +145,7 @@ function renderDashboard(page){
   page.appendChild(list);
 }
 
-function renderNote(page){
+export function renderNote(page){
   var panel=document.createElement("div");panel.className="bandiere-panel";
   panel.id="_notePanelRows";
   var hdr=document.createElement("div");hdr.className="bandiere-header";
@@ -196,7 +200,7 @@ function renderNote(page){
           try{var _sn=JSON.parse(localStorage.getItem("fb_stationNotes")||"{}");delete _sn[String(sNum)];localStorage.setItem("fb_stationNotes",JSON.stringify(_sn));}catch(e){}
           refreshMarkers();
           if(currentScreen==="home")renderPage();
-          if(currentScreen==="dashboard"&&activeDashTab==="note")renderPage();
+          if(currentScreen==="dashboard"&&window.activeDashTab==="note")renderPage();
         }
       });
     })(s.num);
@@ -208,7 +212,7 @@ function renderNote(page){
 
 
 // DISPOSITIVI DI POSTAZIONE
-function renderDispositivi(page){
+export function renderDispositivi(page){
   var panel=document.createElement("div");panel.className="bandiere-panel";
   var hdr=document.createElement("div");hdr.className="bandiere-header";
   var title=document.createElement("h3");title.textContent="Dispositivi di postazione";hdr.appendChild(title);
@@ -335,7 +339,7 @@ function renderDispositivi(page){
 }
 
 // PANNELLO DI POSTAZIONE (dispositivo dedicato, nessun accesso alla dashboard generale)
-function renderBandiere(page){
+export function renderBandiere(page){
   const flags=getFlags();
   const panel=document.createElement("div");panel.className="bandiere-panel";
   const hdr=document.createElement("div");hdr.className="bandiere-header";

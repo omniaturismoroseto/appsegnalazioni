@@ -1,10 +1,12 @@
-function knotsFromKmh(v){return Math.round((Number(v||0))*0.539957);}
-function degToCompass(deg){
+import { FLAG_COLORS, METEO_POINT, STATIONS, flagsData, fmt, fmtDist, nearestDist, nearestStation } from "./core.js";
+
+export function knotsFromKmh(v){return Math.round((Number(v||0))*0.539957);}
+export function degToCompass(deg){
   if(deg===undefined||deg===null||isNaN(deg)) return "-";
   const dirs=["N","NE","E","SE","S","SO","O","NO"];
   return dirs[Math.round((((deg%360)+360)%360)/45)%8];
 }
-function getRiskFromMeteo(m){
+export function getRiskFromMeteo(m){
   if(!m) return {level:"n/d",flag:"verde",text:"Dati non disponibili"};
   const wave=Number(m.wave_height||0);
   const windKn=knotsFromKmh(m.wind_speed_10m||0);
@@ -15,14 +17,14 @@ function getRiskFromMeteo(m){
   if(wave>=0.6 || windKn>=12 || gustKn>=18) return {level:"medio",flag:"gialla",text:"Mare mosso o vento sostenuto: attenzione"};
   return {level:"basso",flag:"verde",text:"Condizioni generalmente favorevoli"};
 }
-function fmtHour(iso){
+export function fmtHour(iso){
   try{return new Date(iso).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});}catch(e){return "--:--";}
 }
-async function fetchMeteoMarine(force){
+export async function fetchMeteoMarine(force){
   const now=Date.now();
-  if(meteoLoading) return;
-  if(!force && meteoData && (now-meteoLastFetch)<20*60*1000) return;
-  meteoLoading=true; meteoError="";
+  if(window.meteoLoading) return;
+  if(!force && window.meteoData && (now-window.meteoLastFetch)<20*60*1000) return;
+  window.meteoLoading=true; window.meteoError="";
   
   try{
     const forecastUrl = "https://api.open-meteo.com/v1/forecast?latitude="+METEO_POINT.lat+"&longitude="+METEO_POINT.lng+"&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation&timezone=auto&forecast_days=3";
@@ -55,43 +57,43 @@ async function fetchMeteoMarine(force){
         sea_surface_temperature: mt>=0 && marine.hourly.sea_surface_temperature ? marine.hourly.sea_surface_temperature[mt] : null
       });
     }
-    meteoData = {
+    window.meteoData = {
       current: current,
       hourly: hourly,
       risk: getRiskFromMeteo(current),
       updatedAt: new Date().toISOString()
     };
-    meteoLastFetch = Date.now();
+    window.meteoLastFetch = Date.now();
   }catch(err){
-    meteoError = "Dati meteomarini non disponibili";
+    window.meteoError = "Dati meteomarini non disponibili";
   }finally{
-    meteoLoading=false;
+    window.meteoLoading=false;
     
   }
 }
-function wIcon(kmh){
+export function wIcon(kmh){
   if(kmh==null)return"🌬️";
   const n=Math.round((kmh||0)*0.54);
   if(n<4)return"🌀";if(n<11)return"🍃";if(n<17)return"💨";if(n<22)return"🌬️";if(n<34)return"⛵";return"⚡";
 }
-function wmoIcon(code){
+export function wmoIcon(code){
   if(code==null)return"🌤️";
   if(code<=1)return"☀️";if(code<=3)return"⛅";if(code<=49)return"🌫️";
   if(code<=67)return"🌧️";if(code<=77)return"❄️";if(code<=82)return"🌦️";
   if(code<=86)return"🌨️";return"⛈️";
 }
-function renderMeteoCard(page){
-  if(meteoLoading&&!meteoData){
+export function renderMeteoCard(page){
+  if(window.meteoLoading&&!window.meteoData){
     const c=document.createElement("div");c.className="meteo-card";
     c.innerHTML="<div style='padding:24px;text-align:center;color:var(--text3)'>⏳ Caricamento dati meteomarini...</div>";
     page.appendChild(c);return;
   }
-  if(meteoError&&!meteoData){
+  if(window.meteoError&&!window.meteoData){
     const c=document.createElement("div");c.className="meteo-card";
-    c.innerHTML="<div style='padding:16px;text-align:center;color:var(--danger-text)'>⚠️ "+meteoError+"</div>";
+    c.innerHTML="<div style='padding:16px;text-align:center;color:var(--danger-text)'>⚠️ "+window.meteoError+"</div>";
     page.appendChild(c);return;
   }
-  const m=meteoData;
+  const m=window.meteoData;
 
   // ── Calcola bandiera da mostrare ──────────────────────────────────────────
   // 1. GPS attivo → bandiera della postazione più vicina
@@ -254,30 +256,4 @@ function renderMeteoCard(page){
   }
 }
 
-// FIREBASE LISTENERS
-reportsRef.on("value",snap=>{
-  const snapData=snap.val()||{};
-  const newKeys=new Set(Object.keys(snapData));
-  if(fbReady&&currentRole==="operator"){
-    let added=0;
-    newKeys.forEach(k=>{if(!prevReportKeys.has(k)&&snapData[k]&&snapData[k].status==="aperta")added++;});
-    if(added>0)newReportCount+=added;
-  }
-  prevReportKeys=newKeys;
-  reportsData=snapData;
-  fbReady=true;
-  if(currentRole==="operator"){
-    _purgeExpiredChildPhotos();
-    renderHeader();
-    // Controlla SEMPRE se c'è un'emergenza/pericolo aperto e fa partire l'allarme:
-    // così suona anche se l'operatore è entrato DOPO la creazione della segnalazione
-    // (non dipende dal rilevarla come "appena aggiunta").
-    _checkForActiveAlerts();
-  }
-  refreshMarkers();
-  if(currentScreen==="dashboard")renderPage();
-  if(currentScreen==="home")renderPage();
-  if(currentScreen==="station")renderPage();
-  renderHeader();
-});
 // Cancellazione differita delle foto dei casi minore chiusi da oltre il TTL (sicurezza in caso di chiusura senza foto azzerata)

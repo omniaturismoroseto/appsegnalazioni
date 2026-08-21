@@ -1,5 +1,8 @@
+import { DAE_B64, FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stationDevicesRef, stationMode } from "./core.js";
+import { degToCompass, fetchMeteoMarine, knotsFromKmh, renderMeteoCard } from "./meteo.js";
+
 // ===================== ONBOARDING AL PRIMO AVVIO =====================
-function _showOnboarding(){
+export function _showOnboarding(){
   var OB_KEY='omnia_onboarding_v1';
   try{ if(localStorage.getItem(OB_KEY)==='1') return; }catch(e){}
 
@@ -163,7 +166,7 @@ function _showOnboarding(){
 // Pop-up che invita a chiamare il 112 PRIMA di allertare il servizio (solo per le emergenze).
 // Mostra due scelte: chiamare subito il 112, oppure proseguire con la segnalazione.
 // onProceed viene eseguito solo se l'utente sceglie di continuare.
-function _emergency112Prompt(onProceed){
+export function _emergency112Prompt(onProceed){
   // Evita doppioni se già aperto
   if(document.getElementById("emg112Overlay"))return;
   const ov=document.createElement("div");ov.id="emg112Overlay";
@@ -191,7 +194,7 @@ function _emergency112Prompt(onProceed){
   document.body.appendChild(ov);
 }
 
-function renderHome(page){
+export function renderHome(page){
   fetchMeteoMarine(false);
   
 
@@ -239,8 +242,8 @@ function renderHome(page){
       btnSeg.style.cssText="padding:11px 8px;background:transparent;border:none;border-right:1px solid "+(svc?"#bbf7d0":"#fecaca")+";font-size:13px;font-weight:600;color:"+(svc?"#166534":"#991b1b")+";cursor:pointer";
       btnSeg.innerHTML='\uD83D\uDEA8 Segnala qui';
       btnSeg.addEventListener("click",function(){
-        currentRole="public";
-        activeStation="P."+nearestStation.num+" \u2013 "+nearestStation.name;
+        window.currentRole="public";
+        window.activeStation="P."+nearestStation.num+" \u2013 "+nearestStation.name;
         _checkServiceOrEmergency(function(){render("submit");});
       });
       // Vai (apre navigatore)
@@ -263,7 +266,7 @@ function renderHome(page){
       });
       btnRow.appendChild(btnSeg);btnRow.appendChild(btnNav);
       ns.appendChild(btnRow);
-    } else if(_gpsError){
+    } else if(window._gpsError){
       // Stato 3: errore GPS (permesso negato o timeout)
       ns.style.cssText="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:14px;background:#fff7ed;border:1px solid #fed7aa;";
       var errIcon=document.createElement("span");errIcon.style.cssText="font-size:18px;flex-shrink:0";errIcon.textContent="\u26A0\uFE0F";
@@ -271,10 +274,10 @@ function renderHome(page){
       var errTxt=document.createElement("p");errTxt.style.cssText="font-size:13px;color:#92400e;margin:0 0 4px;font-weight:600";errTxt.textContent="GPS non disponibile";
       var errSub=document.createElement("p");errSub.style.cssText="font-size:11px;color:#b45309;margin:0";errSub.textContent="Verifica che i permessi di posizione siano attivi per questo sito.";
       var errBtn=document.createElement("button");errBtn.style.cssText="margin-top:6px;padding:4px 12px;border-radius:20px;border:1px solid #f97316;background:transparent;font-size:12px;font-weight:600;color:#ea580c;cursor:pointer";errBtn.textContent="Riprova";
-      errBtn.addEventListener("click",function(){_gpsWatchId=null;_gpsError=false;requestGPS();renderPage();});
+      errBtn.addEventListener("click",function(){window._gpsWatchId=null;window._gpsError=false;requestGPS();renderPage();});
       errBody.appendChild(errTxt);errBody.appendChild(errSub);errBody.appendChild(errBtn);
       ns.appendChild(errIcon);ns.appendChild(errBody);
-    } else if(_gpsWatchId!==null){
+    } else if(window._gpsWatchId!==null){
       // Stato 2: GPS avviato, in attesa del fix
       ns.style.cssText="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-lg);margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);";
       var spnWrap=document.createElement("div");spnWrap.style.cssText="width:18px;height:18px;flex-shrink:0;position:relative";
@@ -336,7 +339,7 @@ function renderHome(page){
   const btns=document.createElement("div");btns.className="home-btns";
   const b1=document.createElement("button");b1.className="home-btn primary";
   b1.innerHTML=`<h3>\uD83D\uDEA8 Segnala un pericolo \u26A0\uFE0F</h3><p>Accesso pubblico &middot; senza registrazione</p>`;
-  b1.addEventListener("click",()=>{_checkServiceOrEmergency(function(){currentRole="public";render("submit");});});
+  b1.addEventListener("click",()=>{_checkServiceOrEmergency(function(){window.currentRole="public";render("submit");});});
   btns.appendChild(b1);
 
   // Pulsante dedicato MINORE SMARRITO (accesso pubblico, sempre visibile)
@@ -434,7 +437,7 @@ function renderHome(page){
 
 // LOGIN
 
-function renderSatelliteCard(page){
+export function renderSatelliteCard(page){
   const card=document.createElement("div");card.className="sat-card";
   const tabs=document.createElement("div");tabs.className="sat-tabs";
   const defs=[
@@ -460,7 +463,7 @@ function renderSatelliteCard(page){
   page.appendChild(card);
 }
 
-function renderForecastPage(page){
+export function renderForecastPage(page){
   fetchMeteoMarine(true);
 
   const back=document.createElement("button");back.className="back-btn";
@@ -469,7 +472,7 @@ function renderForecastPage(page){
 
   const hdr=document.createElement("div");
   hdr.className="forecast-intro";
-  const updatedTxt=(meteoData&&meteoData.updatedAt)?fmt(meteoData.updatedAt):"aggiornamento in corso";
+  const updatedTxt=(window.meteoData&&window.meteoData.updatedAt)?fmt(window.meteoData.updatedAt):"aggiornamento in corso";
   hdr.innerHTML=
     '<div class="forecast-intro-top">'+
       '<div>'+
@@ -488,14 +491,14 @@ function renderForecastPage(page){
   // Satellite in cima - NON modificato
   renderSatelliteCard(page);
 
-  if(meteoLoading&&!meteoData){
+  if(window.meteoLoading&&!window.meteoData){
     const b=document.createElement("div");b.className="meteo-card";
     b.innerHTML="<div style='padding:24px;text-align:center;color:var(--text3)'>⏳ Caricamento previsioni...</div>";
     page.appendChild(b);return;
   }
-  if(meteoError&&!meteoData){
+  if(window.meteoError&&!window.meteoData){
     const b=document.createElement("div");b.className="meteo-card";
-    b.innerHTML="<div style='padding:16px;text-align:center;color:var(--danger-text)'>⚠️ "+meteoError+"</div>";
+    b.innerHTML="<div style='padding:16px;text-align:center;color:var(--danger-text)'>⚠️ "+window.meteoError+"</div>";
     page.appendChild(b);return;
   }
 
@@ -507,7 +510,7 @@ function renderForecastPage(page){
   // Dati attuali + striscia ore
   renderMeteoCard(page);
 
-  if(meteoData&&meteoData.hourly&&meteoData.hourly.length>4)  if(meteoData&&meteoData.hourly&&meteoData.hourly.length>4){
+  if(window.meteoData&&window.meteoData.hourly&&window.meteoData.hourly.length>4)  if(window.meteoData&&window.meteoData.hourly&&window.meteoData.hourly.length>4){
     var sec2=document.createElement("div");
     sec2.className="forecast-section-title";
     sec2.innerHTML='<h3>Evoluzione della giornata</h3><span style="font-size:11px;color:var(--text3)">Previsioni ora per ora</span>';
@@ -529,7 +532,7 @@ function renderForecastPage(page){
     }
     // Raggruppa per giorno e fascia oraria
     var dayMap={};
-    meteoData.hourly.forEach(function(h){
+    window.meteoData.hourly.forEach(function(h){
       var d=new Date(h.time);
       var dk=d.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"});
       var hr=d.getHours();
@@ -639,7 +642,7 @@ function renderForecastPage(page){
   page.appendChild(credit);
 }
 
-function renderPartnerPage(page){
+export function renderPartnerPage(page){
   var back=document.createElement("button");back.className="back-btn";
   back.textContent="\u2190 Torna alla home";back.onclick=function(){render("home");};page.appendChild(back);
   var hdr=document.createElement("div");
@@ -665,7 +668,7 @@ function renderPartnerPage(page){
 }
 
 
-function renderOrdinanzePage(page){
+export function renderOrdinanzePage(page){
   // Header
   var backBtn=document.createElement("button");
   backBtn.innerHTML="← Torna alla Home";
@@ -869,7 +872,7 @@ function renderOrdinanzePage(page){
 
 }
 
-function renderInstallPage(page){
+export function renderInstallPage(page){
   var back=document.createElement("button");back.className="back-btn";
   back.textContent="\u2190 Torna alla Home";back.onclick=function(){render("home");};page.appendChild(back);
 
@@ -927,7 +930,7 @@ function renderInstallPage(page){
   page.appendChild(nota);
 }
 
-function renderConsigliPage(page){
+export function renderConsigliPage(page){
   if(!document.getElementById("_consigliStyle")){
     var st=document.createElement("style");st.id="_consigliStyle";
     st.textContent=
@@ -1162,7 +1165,7 @@ function renderConsigliPage(page){
   page.appendChild(footer);
 }
 
-function renderLogin(page){
+export function renderLogin(page){
   const back=document.createElement("button");back.className="back-btn";
   back.textContent="\u2190 Indietro";
   back.addEventListener("click",()=>render("home"));page.appendChild(back);
@@ -1211,7 +1214,7 @@ function renderLogin(page){
     try{
       var _a=_getAuth();if(!_a)throw new Error("Auth non disponibile");
       const cred=await _a.signInWithEmailAndPassword(email,pass);
-      currentRole="operator";newReportCount=0;
+      window.currentRole="operator";window.newReportCount=0;
       _sentrySetTag("role","operator");
       try{localStorage.setItem("omnia_op_auth","1");}catch(e){}
       if(window._requestNotifPermission)_requestNotifPermission();
@@ -1274,7 +1277,7 @@ function renderLogin(page){
 }
 
 // Genera/recupera un identificativo persistente per questo dispositivo (nessun account, nessuna password)
-function _getDeviceId(){
+export function _getDeviceId(){
   try{
     var id=localStorage.getItem("omnia_device_id");
     if(id)return id;
@@ -1286,7 +1289,7 @@ function _getDeviceId(){
   }catch(e){return null;}
 }
 
-function _renderDeviceActivation(wrap,onRef){
+export function _renderDeviceActivation(wrap,onRef){
   wrap.innerHTML="";
   const deviceId=_getDeviceId();
   if(!deviceId){
@@ -1331,7 +1334,7 @@ function _renderDeviceActivation(wrap,onRef){
   });
 }
 
-function renderSubmit(page){
+export function renderSubmit(page){
   let type="pericolo",sub="",zone=ZONES[0],notes="",author="",phone="",photo=null;
   let _submitGpsWarned=false;
 
@@ -1367,7 +1370,7 @@ function renderSubmit(page){
   _gpsBoxText();
   const _gpsPoll=setInterval(function(){_gpsBoxText();if(_userLat!==null)clearInterval(_gpsPoll);},1500);
   const back=document.createElement("button");back.className="back-btn";back.textContent="\u2190 Indietro";
-  back.addEventListener("click",()=>render(currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
+  back.addEventListener("click",()=>render(window.currentRole==="operator"?"dashboard":"home"));wrap.appendChild(back);
   const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:20px";h.textContent="Nuova segnalazione";wrap.appendChild(h);
   wrap.appendChild(gpsBox);
   const lbT=document.createElement("label");lbT.textContent="Tipo segnalazione";wrap.appendChild(lbT);
@@ -1426,10 +1429,10 @@ function renderSubmit(page){
   const lbZ=document.createElement("label");lbZ.textContent="Postazione";wrap.appendChild(lbZ);
   const zoneSel=document.createElement("select");
   ZONES.forEach(z=>{const o=document.createElement("option");o.value=z;o.textContent=z;zoneSel.appendChild(o);});
-  const presel=activeStation||(nearestStation?`P.${nearestStation.num} \u2013 ${nearestStation.name}`:null);
+  const presel=window.activeStation||(nearestStation?`P.${nearestStation.num} \u2013 ${nearestStation.name}`:null);
   if(presel&&ZONES.includes(presel))zoneSel.value=presel;
   zone=zoneSel.value;zoneSel.addEventListener("change",()=>zone=zoneSel.value);wrap.appendChild(zoneSel);
-  if(nearestStation&&!activeStation){
+  if(nearestStation&&!window.activeStation){
     const hint=document.createElement("p");hint.style.cssText="font-size:11px;color:var(--info-text);margin-top:4px";
     hint.textContent=`\uD83D\uDCCD Postazione pi\u00f9 vicina preselezionata (${fmtDist(nearestDist)})`;wrap.appendChild(hint);
   }
@@ -1453,10 +1456,10 @@ function renderSubmit(page){
   wrap.appendChild(fileInp);wrap.appendChild(photoWrap);
   const lbA=document.createElement("label");lbA.textContent="Nome (opzionale)";wrap.appendChild(lbA);
   const authorEl=document.createElement("input");authorEl.type="text";
-  authorEl.placeholder=currentRole==="operator"?"Operatore":(stationMode?"Postazione P."+stationMode:"Nome");
+  authorEl.placeholder=window.currentRole==="operator"?"Operatore":(stationMode?"Postazione P."+stationMode:"Nome");
   authorEl.addEventListener("input",()=>author=authorEl.value);wrap.appendChild(authorEl);
   // Telefono obbligatorio (solo pubblico — non per operatori né per dispositivi di postazione)
-  if(currentRole!=="operator"&&!stationMode){
+  if(window.currentRole!=="operator"&&!stationMode){
     const lbP=document.createElement("label");
     lbP.innerHTML="Telefono <span style=\"color:var(--red)\">*</span> <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(obbligatorio)</span>";
     wrap.appendChild(lbP);
@@ -1493,7 +1496,7 @@ function renderSubmit(page){
     var phoneEl2=document.getElementById("segnalazione-phone");
     if(phoneEl2)phone=phoneEl2.value.trim();
     if(!sub){alert("Seleziona il tipo di segnalazione.");return;}
-    if(currentRole!=="operator"&&!stationMode&&phone.length<9){
+    if(window.currentRole!=="operator"&&!stationMode&&phone.length<9){
       if(phoneEl2){phoneEl2.style.borderColor="var(--red)";phoneEl2.focus();}
       alert("Inserisci un numero di telefono valido per procedere.");return;
     }
@@ -1507,7 +1510,7 @@ function renderSubmit(page){
       return;
     }
     submitBtn.disabled=true;submitBtn.textContent="Invio...";
-    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:stationMode?"station":(currentRole||"public"),ts:new Date().toISOString(),status:"aperta",photo:photo||null,gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null};
+    const r={id:Date.now(),type,sub,zone,notes,author,phone:phone||null,role:stationMode?"station":(window.currentRole||"public"),ts:new Date().toISOString(),status:"aperta",photo:photo||null,gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null};
     addReport(r).then(()=>{if(!stationMode)sendWANotify(r);render("done");})
     .catch(e=>{submitBtn.disabled=false;submitBtn.textContent="Invia segnalazione";alert("Errore: "+e.message);});
   });
@@ -1518,7 +1521,7 @@ function renderSubmit(page){
 }
 
 // DONE
-function renderDone(page){
+export function renderDone(page){
   const w=document.createElement("div");w.className="confirm-wrap";
   const ic=document.createElement("div");ic.className="confirm-icon";ic.textContent="\u2713";w.appendChild(ic);
   const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:600;margin-bottom:8px";h.textContent="Segnalazione inviata";w.appendChild(h);
@@ -1534,9 +1537,9 @@ function renderDone(page){
 // ============================================================
 // MINORE SMARRITO — flusso dedicato (perso / trovato)
 // ============================================================
-const CHILD_PHOTO_TTL_MS=6*60*60*1000;   // foto minore cancellata 6h dopo la chiusura del caso
-const CHILD_ESCALATE_MIN=10;             // oltre N minuti: scheda in escalation, ribadisce 112
-let _lastChildKey=null;                  // chiave dell'ultimo caso inviato (per la schermata done)
+export const CHILD_PHOTO_TTL_MS=6*60*60*1000;   // foto minore cancellata 6h dopo la chiusura del caso
+export const CHILD_ESCALATE_MIN=10;             // oltre N minuti: scheda in escalation, ribadisce 112
+export let _lastChildKey=null;                  // chiave dell'ultimo caso inviato (per la schermata done)
 
 // Banner intestazione 112 riutilizzabile
 function _child112Banner(){
@@ -1547,7 +1550,7 @@ function _child112Banner(){
 }
 
 // Card "postazione di salvataggio più vicina + come arrivarci" (riutilizzabile)
-function _nearestStationNavCard(){
+export function _nearestStationNavCard(){
   const ns=document.createElement("div");
   if(nearestStation){
     ns.style.cssText="border-radius:var(--radius-lg);margin-bottom:8px;background:#f0fdf4;border:1px solid #bbf7d0;overflow:hidden";
@@ -1581,7 +1584,7 @@ function _nearestStationNavCard(){
 }
 
 // Schermata bivio: ho perso / ho trovato
-function renderMinoreBivio(page){
+export function renderMinoreBivio(page){
   if(nearestStation===null)requestGPS();
   const w=document.createElement("div");w.style.cssText="padding:4px 2px";
   w.appendChild(_child112Banner());
@@ -1619,7 +1622,7 @@ function renderMinoreBivio(page){
 }
 
 // Form perso / trovato
-function renderMinoreForm(page,direction){
+export function renderMinoreForm(page,direction){
   const perso=direction==="perso";
   const accent=perso?"#d81b8c":"#1a7f4b";
   const w=document.createElement("div");w.style.cssText="padding:4px 2px";
@@ -1717,7 +1720,7 @@ function renderMinoreForm(page,direction){
       notes:[ageEl.value.trim()&&("Et\u00e0: "+ageEl.value.trim()),cloth&&("Abbigliamento: "+cloth),nameEl.value.trim()&&("Nome bambino: "+nameEl.value.trim())].filter(Boolean).join(" \u00b7 "),
       author:reporterName?(ruolo+": "+reporterName):ruolo,
       phone:reporterPhone||null,
-      role:currentRole||"public",
+      role:window.currentRole||"public",
       ts:new Date().toISOString(),status:"aperta",
       photo:childPhoto||null,
       gps:(_userLat!==null)?{lat:_userLat,lng:_userLng,acc:_userGpsAcc}:null,
@@ -1747,7 +1750,7 @@ function renderMinoreForm(page,direction){
 }
 
 // Conferma invio
-function renderMinoreDone(page){
+export function renderMinoreDone(page){
   const w=document.createElement("div");w.className="confirm-wrap";
   const ic=document.createElement("div");ic.className="confirm-icon";ic.style.background="#d81b8c";ic.textContent="\uD83D\uDEA8";w.appendChild(ic);
   const h=document.createElement("h2");h.style.cssText="font-size:18px;font-weight:700;margin-bottom:8px";h.textContent="Allerta diramata";w.appendChild(h);

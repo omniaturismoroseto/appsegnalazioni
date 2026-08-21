@@ -1,11 +1,13 @@
-function _stationNeighborsClient(num){
+import { FLAG_COLORS, STATIONS, TYPES, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData } from "./core.js";
+
+export function _stationNeighborsClient(num){
   var ordered=STATIONS.slice().sort(function(a,b){return a.lat-b.lat;});
   var idx=ordered.findIndex(function(s){return String(s.num)===String(num);});
   if(idx===-1)return{north:[],south:[]};
   return{south:ordered.slice(Math.max(0,idx-2),idx),north:ordered.slice(idx+1,idx+3)};
 }
 
-function _sendStationEmergency(num,zoneStr){
+export function _sendStationEmergency(num,zoneStr){
   const r={id:Date.now(),type:"emergenza",sub:"Allarme rapido",
     notes:"🚨 Allarme EMERGENZA inviato dal pulsante rapido della postazione",
     zone:zoneStr,author:"Postazione P."+num,phone:null,role:"station",quickAlert:true,
@@ -16,14 +18,14 @@ function _sendStationEmergency(num,zoneStr){
   ]);
 }
 
-function renderStationPanel(page){
+export function renderStationPanel(page){
   const num=stationMode;
   const st=STATIONS.find(s=>String(s.num)===String(num));
   const stName=st?st.name:"";
   const zoneStr="P."+num+" – "+stName;
   const flagColor=flagsData[num]||"verde";
   const note=stationNotesData[String(num)];
-  const openReports=Object.values(reportsData||{}).filter(r=>r&&r.status==="aperta"&&r.zone===zoneStr);
+  const openReports=Object.values(window.reportsData||{}).filter(r=>r&&r.status==="aperta"&&r.zone===zoneStr);
 
   const wrap=document.createElement("div");wrap.style.cssText="padding-bottom:110px";
 
@@ -79,7 +81,7 @@ function renderStationPanel(page){
   const segTile=document.createElement("button");segTile.type="button";
   segTile.style.cssText="background:#D62B1F;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
   segTile.innerHTML='<span style="font-size:16px;font-weight:700">🚨</span><span style="font-size:20px;font-weight:700">SEGNALA</span>';
-  segTile.addEventListener("click",function(){activeStation=zoneStr;render("submit");});
+  segTile.addEventListener("click",function(){window.activeStation=zoneStr;render("submit");});
 
   grid.appendChild(repTile);grid.appendChild(segTile);
   grid.appendChild(repList);

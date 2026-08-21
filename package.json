@@ -4,9 +4,13 @@
   "version": "1.0.0",
   "description": "App PWA segnalazioni spiaggia - Omnia Adriatic Lifeguard Service",
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "eslint": "^9.19.0"
+    "eslint": "^9.19.0",
+    "vite": "^8.2.2"
   }
 }

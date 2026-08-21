@@ -1,4 +1,6 @@
-function renderHeader(){
+import { ALERT_COLORS, BOE_CANTIERE_23_2026, CC_B64, CC_POINT, COMUNE_POINT, DAE_B64, DAE_POINTS, FINANZA_B64, FINANZA_POINT, FLAG_COLORS, GM_B64, GM_POINT, IAT_B64, IAT_POINT, PERMANENT_STATION_NOTES, PL_B64, PL_POINT, PORTOROSE_B64, PORTOROSE_POINT, PORTOROSE_POPUP_B64, ROSETANA_B64, ROSETANA_POINT, STATIONS, STEMMA_B64, VVF_B64, VVF_POINT, ZONE_VIETATE, _escapeHtml, boeCantiereMarkers, flagsData, fmtDist, haversine, nearestDAE, nearestDist, nearestStation, render, stationMode, stationNotesData, userMarker } from "./core.js";
+
+export function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
   if(stationMode){hdr.style.display="none";return;}
   hdr.style.display="";
@@ -14,12 +16,12 @@ function renderHeader(){
   };
   logoWrap.appendChild(logoImg);hdr.appendChild(logoWrap);
   const btns=document.createElement("div");btns.className="header-btns";
-  const sd=document.createElement("span");sd.className="sync-dot"+(fbReady?"":" off");sd.title=fbReady?"Sync Firebase attivo":"Connessione...";
+  const sd=document.createElement("span");sd.className="sync-dot"+(window.fbReady?"":" off");sd.title=window.fbReady?"Sync Firebase attivo":"Connessione...";
   btns.appendChild(sd);
 
   const opWrap=document.createElement("div");opWrap.className="hbtn-wrap";
   const op=document.createElement("button");op.className="hbtn-op";
-  if(currentRole==="operator"){
+  if(window.currentRole==="operator"){
   op.textContent="🔓";
   op.title="Dashboard operatori";
   op.addEventListener("click",()=>render("dashboard"));
@@ -29,21 +31,21 @@ function renderHeader(){
   op.addEventListener("click",()=>render("login"));
 }
   opWrap.appendChild(op);
-  if(currentRole==="operator"&&newReportCount>0){
-    const nb=document.createElement("span");nb.className="notif-badge";nb.textContent=newReportCount;opWrap.appendChild(nb);
+  if(window.currentRole==="operator"&&window.newReportCount>0){
+    const nb=document.createElement("span");nb.className="notif-badge";nb.textContent=window.newReportCount;opWrap.appendChild(nb);
   }
   btns.appendChild(opWrap);
   hdr.appendChild(btns);
 }
 
 // MAPPA
-function initMap(){
+export function initMap(){
   var el=document.getElementById("main-map");
   if(!el)return;
-  if(mapObj){ensureLocamareMarker();refreshMarkers();mapObj.invalidateSize(true);return;}
+  if(window.mapObj){ensureLocamareMarker();refreshMarkers();window.mapObj.invalidateSize(true);return;}
   if(el._leaflet_id){try{if(el._leaflet&&el._leaflet.remove)el._leaflet.remove();}catch(e){}delete el._leaflet_id;delete el._leaflet;}
   el.style.width="100%";
-  mapObj=L.map(el,{zoomControl:true,preferCanvas:true,updateWhenIdle:true,tap:true}).setView([42.686,14.010],13);
+  window.mapObj=L.map(el,{zoomControl:true,preferCanvas:true,updateWhenIdle:true,tap:true}).setView([42.686,14.010],13);
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
@@ -52,7 +54,7 @@ function initMap(){
       updateWhenIdle:true,
       keepBuffer:3
     }
-  ).addTo(mapObj);
+  ).addTo(window.mapObj);
   // Layer etichette strade e nomi vie
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
@@ -62,7 +64,7 @@ function initMap(){
       opacity:1,
       updateWhenIdle:true
     }
-  ).addTo(mapObj);
+  ).addTo(window.mapObj);
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
     {
@@ -71,7 +73,7 @@ function initMap(){
       opacity:1,
       updateWhenIdle:true
     }
-  ).addTo(mapObj);
+  ).addTo(window.mapObj);
   ensureLocamareMarker();
   addCCMarker();
   addPLMarker();
@@ -85,17 +87,17 @@ function initMap(){
   addZoneVietate();
   addDAEMarkers();
   refreshMarkers();
-  mapObj.whenReady(function(){
-    [50,250,700].forEach(function(t){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},t);});
+  window.mapObj.whenReady(function(){
+    [50,250,700].forEach(function(t){setTimeout(function(){if(window.mapObj)window.mapObj.invalidateSize(true);},t);});
   });
   // Quando si chiude un popup, aggiorna i marker se era in coda
-  mapObj.on("popupclose",function(){
-    if(_refreshPending){setTimeout(function(){refreshMarkers();},50);}
+  window.mapObj.on("popupclose",function(){
+    if(window._refreshPending){setTimeout(function(){refreshMarkers();},50);}
   });
-  mapObj.on("load",function(){setTimeout(function(){if(mapObj)mapObj.invalidateSize(true);},150);});
+  window.mapObj.on("load",function(){setTimeout(function(){if(window.mapObj)window.mapObj.invalidateSize(true);},150);});
 }
-function getMarkerColor(s){
-  const open=Object.values(reportsData).filter(r=>r.status==="aperta");
+export function getMarkerColor(s){
+  const open=Object.values(window.reportsData).filter(r=>r.status==="aperta");
   const zl=`P.${s.num} \u2013 ${s.name}`;
   const zr=open.filter(r=>r.zone===zl);
   const flagColor=FLAG_COLORS[flagsData[s.num]||"verde"];
@@ -104,16 +106,16 @@ function getMarkerColor(s){
   if(stationNotesData[String(s.num)])return{bg:flagColor,ring:true,ringColor:"#1a1a1a",note:stationNotesData[String(s.num)]};
   return{bg:flagColor,ring:false,flag:flagsData[s.num]||"verde"};
 }
-function refreshMarkers(){
-  if(!mapObj)return;
+export function refreshMarkers(){
+  if(!window.mapObj)return;
   // Se un popup è aperto non distruggere i marker - aggiornali al momento della chiusura
-  var _anyOpen=mapMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}})
-    ||daeMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}});
-  if(_anyOpen){_refreshPending=true;return;}
-  _refreshPending=false;
-  mapMarkers.forEach(function(m){try{m.remove();}catch(e){}});
-  mapMarkers=[];
-  const open=Object.values(reportsData).filter(r=>r.status==="aperta");
+  var _anyOpen=window.mapMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}})
+    ||window.daeMarkers.some(function(m){try{return m.isPopupOpen();}catch(e){return false;}});
+  if(_anyOpen){window._refreshPending=true;return;}
+  window._refreshPending=false;
+  window.mapMarkers.forEach(function(m){try{m.remove();}catch(e){}});
+  window.mapMarkers=[];
+  const open=Object.values(window.reportsData).filter(r=>r.status==="aperta");
   STATIONS.forEach(s=>{
     const zl=`P.${s.num} \u2013 ${s.name}`;
     const zr=open.filter(r=>r.zone===zl);
@@ -126,7 +128,7 @@ function refreshMarkers(){
       iconSize:[26,26],iconAnchor:[13,13]});
     // Popup con info postazione e distanza
     (function(station, zoneLabel, alerts, markerColor){
-      var m=L.marker([station.lat,station.lng],{icon}).addTo(mapObj);
+      var m=L.marker([station.lat,station.lng],{icon}).addTo(window.mapObj);
       m.on("click",function(){
         // Cerca posizione utente dal userMarker
         var userPos=null;
@@ -169,13 +171,13 @@ function refreshMarkers(){
           );
         m.bindPopup(popup).openPopup();
       });
-      mapMarkers.push(m);
+      window.mapMarkers.push(m);
     })(s, zl, zr, mc.bg);
   });
   // Aggiorna anche i marker DAE (evidenzia il più vicino)
   addDAEMarkers();
 }
-function renderMapLegend(){
+export function renderMapLegend(){
   const leg=document.getElementById("map-legend");leg.style.display="flex";
   leg.innerHTML=
     `<span><span class="ldot" style="background:#27ae60"></span>Verde</span>`+
@@ -187,10 +189,10 @@ function renderMapLegend(){
 }
 
 
-function addDAEMarkers(){
-  if(!mapObj)return;
-  daeMarkers.forEach(function(m){try{m.remove();}catch(e){}});
-  daeMarkers=[];
+export function addDAEMarkers(){
+  if(!window.mapObj)return;
+  window.daeMarkers.forEach(function(m){try{m.remove();}catch(e){}});
+  window.daeMarkers=[];
   DAE_POINTS.forEach(function(d){
     var isNear=nearestDAE&&nearestDAE.name===d.name;
     var nearStyle=isNear?"outline:3px solid #1d4ed8;outline-offset:3px;border-radius:6px;":"";
@@ -200,7 +202,7 @@ function addDAEMarkers(){
           +'<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
       iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-13]
     });
-    var m=L.marker([d.lat,d.lng],{icon:daeIcon}).addTo(mapObj);
+    var m=L.marker([d.lat,d.lng],{icon:daeIcon}).addTo(window.mapObj);
     var availHtml=d.avail?'<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px">'+d.avail+'</div>':'';
     var popHtml=
       '<div style="font-family:sans-serif;min-width:180px">'
@@ -212,16 +214,16 @@ function addDAEMarkers(){
       +' target="_blank" style="display:block;text-align:center;background:#1a6b1a;color:#fff;text-decoration:none;padding:7px 10px;border-radius:7px;font-size:12px;font-weight:700">\ud83e\uddad Indicazioni</a>'
       +'</div>';
     m.bindPopup(popHtml);
-    daeMarkers.push(m);
+    window.daeMarkers.push(m);
   });
   addBoeCantiereMarkers();
   addCorridoiLancio();
   addLimitLine();
 }
 
-var _boePopupOpen=false;
-function addBoeCantiereMarkers(){
-  if(!mapObj)return;
+export var _boePopupOpen=false;
+export function addBoeCantiereMarkers(){
+  if(!window.mapObj)return;
   // Layer statico: se già creato non ricrearlo (la rimozione chiuderebbe popup/tooltip ad ogni refresh)
   if(boeCantiereMarkers.length>0)return;
   if(_boePopupOpen)return;
@@ -233,7 +235,7 @@ function addBoeCantiereMarkers(){
           +'<span style="font-size:9px;font-weight:900;color:#7a5700;line-height:1">✕</span></div>',
       iconSize:[18,18],iconAnchor:[9,9],popupAnchor:[0,-12]
     });
-    var m=L.marker([b.lat,b.lng],{icon:boaIcon}).addTo(mapObj);
+    var m=L.marker([b.lat,b.lng],{icon:boaIcon}).addTo(window.mapObj);
     var popHtml='<div style="font-family:sans-serif;min-width:210px;line-height:1.5">'
       +'<div style="font-size:13px;font-weight:700;color:#b8860b;margin-bottom:4px">⚓ Cantiere Marittimo</div>'
       +'<div style="font-size:11px;font-weight:700;color:#333;margin-bottom:2px">Ordinanza N. 23/2026</div>'
@@ -250,7 +252,7 @@ function addBoeCantiereMarkers(){
   });
 }
 
-var _corridoiMarkers=[];
+export var _corridoiMarkers=[];
 var CORRIDOI_LANCIO=[
   {
     name:"Corridoio di lancio - Circolo Velico Roseto Azzurra",
@@ -273,29 +275,29 @@ var CORRIDOI_LANCIO=[
     edge2:[[42.7198746,13.9903385],[42.7209926,13.9934928]]
   }
 ];
-function addCorridoiLancio(){
-  if(!mapObj)return;
+export function addCorridoiLancio(){
+  if(!window.mapObj)return;
   // Layer statico: se già creato non ricrearlo (la rimozione chiuderebbe il tooltip aperto ad ogni refresh)
   if(_corridoiMarkers.length>0)return;
   var ds={color:"#f97316",weight:7,opacity:0.9,dashArray:"1,12",lineCap:"round",lineJoin:"round",interactive:true};
   CORRIDOI_LANCIO.forEach(function(c){
     [c.edge1,c.edge2].forEach(function(edge){
-      var ln=L.polyline(edge,ds).addTo(mapObj);
+      var ln=L.polyline(edge,ds).addTo(window.mapObj);
       ln.bindTooltip(
         '<div style="font-size:12px;font-weight:700;color:#f97316">⛵ '+c.name+'</div>'
         +'<div style="font-size:11px;color:#333">Divieto balneazione - Riservato natanti (Ord. 29/2026)</div>',
         {sticky:true,opacity:0.95});
       _corridoiMarkers.push(ln);
-      var dot=L.circleMarker(edge[1],{radius:6,color:"#f97316",fillColor:"#f97316",fillOpacity:1,weight:0,interactive:false}).addTo(mapObj);
+      var dot=L.circleMarker(edge[1],{radius:6,color:"#f97316",fillColor:"#f97316",fillOpacity:1,weight:0,interactive:false}).addTo(window.mapObj);
       _corridoiMarkers.push(dot);
     });
   });
 }
 
 
-var _limitLines=[];
-function addLimitLine(){
-  if(!mapObj)return;
+export var _limitLines=[];
+export function addLimitLine(){
+  if(!window.mapObj)return;
   // Layer statico: se già creato non ricrearlo (la rimozione chiuderebbe il tooltip aperto ad ogni refresh)
   if(_limitLines.length>0)return;
 
@@ -330,13 +332,13 @@ function addLimitLine(){
 
   var bearing=coastBearing(allSt);
   var pts=allSt.map(function(s){return offsetPt(s.lat,s.lng,300,bearing);});
-  var line=L.polyline(pts,lineStyle).addTo(mapObj);
+  var line=L.polyline(pts,lineStyle).addTo(window.mapObj);
   line.bindTooltip(ttHtml,{sticky:true,opacity:0.95});
   _limitLines.push(line);
 }
 
-function addGuardiaMedicaMarker(){
-  if(!mapObj||guardiaMedicaMarker)return;
+export function addGuardiaMedicaMarker(){
+  if(!window.mapObj||window.guardiaMedicaMarker)return;
   var gmIcon=L.divIcon({
     className:"",
     html:'<div style="width:25px;height:30px;border-radius:5px;overflow:hidden;'
@@ -345,7 +347,7 @@ function addGuardiaMedicaMarker(){
         +'<img src="data:image/jpeg;base64,'+GM_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>',
     iconSize:[25,30],iconAnchor:[12,15],popupAnchor:[0,-16]
   });
-  guardiaMedicaMarker=L.marker([GM_POINT.lat,GM_POINT.lng],{icon:gmIcon}).addTo(mapObj);
+  window.guardiaMedicaMarker=L.marker([GM_POINT.lat,GM_POINT.lng],{icon:gmIcon}).addTo(window.mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:14px;font-weight:700;color:#c62828;margin-bottom:6px">Guardia Medica - Roseto degli Abruzzi</div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Vicolo Monte Grappa, 1 - 64026 Roseto degli Abruzzi (TE)</div>'
@@ -359,18 +361,18 @@ function addGuardiaMedicaMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6789,14.0128&travelmode=walking" target="_blank" '
     +'style="display:block;text-align:center;background:#c62828;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">\uD83E\uDDED Apri indicazioni</a>'
     +'</div>';
-  guardiaMedicaMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.guardiaMedicaMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function addVVFMarker(){
-  if(!mapObj||vvfMarker)return;
+export function addVVFMarker(){
+  if(!window.mapObj||window.vvfMarker)return;
   var vvfIcon=L.divIcon({
     className:'',
     html:'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #fff;background:#CC0000;">'
         +'<img src="data:image/png;base64,'+VVF_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>',
     iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-20]
   });
-  vvfMarker=L.marker([VVF_POINT.lat,VVF_POINT.lng],{icon:vvfIcon}).addTo(mapObj);
+  window.vvfMarker=L.marker([VVF_POINT.lat,VVF_POINT.lng],{icon:vvfIcon}).addTo(window.mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:13px;font-weight:700;color:#CC0000;margin-bottom:4px">Vigili del Fuoco</div>'
     +'<div style="font-size:11px;color:#555;margin-bottom:6px">Distaccamento e Nucleo Sommozzatori<br>Roseto degli Abruzzi (TE)</div>'
@@ -379,11 +381,11 @@ function addVVFMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.660998759620824,14.026752032971247&travelmode=driving" target="_blank" '
     +'style="display:block;text-align:center;background:#CC0000;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">🧭 Apri indicazioni</a>'
     +'</div>';
-  vvfMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.vvfMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function addFinanzaMarker(){
-  if(!mapObj||finanzaMarker)return;
+export function addFinanzaMarker(){
+  if(!window.mapObj||window.finanzaMarker)return;
   var finanzaIcon=L.divIcon({
     className:"",
     html:'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;'
@@ -391,7 +393,7 @@ function addFinanzaMarker(){
         +'<img src="data:image/png;base64,'+FINANZA_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>',
     iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-20]
   });
-  finanzaMarker=L.marker([FINANZA_POINT.lat,FINANZA_POINT.lng],{icon:finanzaIcon}).addTo(mapObj);
+  window.finanzaMarker=L.marker([FINANZA_POINT.lat,FINANZA_POINT.lng],{icon:finanzaIcon}).addTo(window.mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:14px;font-weight:700;color:#2e7d32;margin-bottom:6px">Guardia di Finanza - Roseto degli Abruzzi</div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Via Fonte Dell\'Olmo, Snc - 64026 Roseto degli Abruzzi (TE)</div>'
@@ -402,11 +404,11 @@ function addFinanzaMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.66237,14.02528&travelmode=walking" target="_blank" '
     +'style="display:block;text-align:center;background:#2e7d32;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">Apri indicazioni</a>'
     +'</div>';
-  finanzaMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.finanzaMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function addCCMarker(){
-  if(!mapObj||ccMarker)return;
+export function addCCMarker(){
+  if(!window.mapObj||window.ccMarker)return;
   var ccIcon=L.divIcon({
     className:"",
     html:'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;'
@@ -414,7 +416,7 @@ function addCCMarker(){
         +'<img src="data:image/png;base64,'+CC_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>',
     iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-18]
   });
-  ccMarker=L.marker([CC_POINT.lat,CC_POINT.lng],{icon:ccIcon,zIndexOffset:100}).addTo(mapObj);
+  window.ccMarker=L.marker([CC_POINT.lat,CC_POINT.lng],{icon:ccIcon,zIndexOffset:100}).addTo(window.mapObj);
   var ccHtml='<div style="font-family:sans-serif;min-width:220px;line-height:1.45">'
     +'<div style="font-size:14px;font-weight:700;color:#1a237e;margin-bottom:6px">Carabinieri - Comando Stazione di Roseto degli Abruzzi</div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Via Gramsci, 34 - 64026 Roseto degli Abruzzi (TE)</div>'
@@ -425,11 +427,11 @@ function addCCMarker(){
     +' target="_blank" style="display:block;text-align:center;background:#1a237e;color:#fff;'
     +'text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">Apri indicazioni</a>'
     +'</div>';
-  ccMarker.bindPopup(ccHtml,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.ccMarker.bindPopup(ccHtml,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function addPLMarker(){
-  if(!mapObj||plMarker)return;
+export function addPLMarker(){
+  if(!window.mapObj||window.plMarker)return;
   var plIcon=L.divIcon({
     className:"",
     html:'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;'
@@ -437,7 +439,7 @@ function addPLMarker(){
         +'<img src="data:image/png;base64,'+PL_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>',
     iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-18]
   });
-  plMarker=L.marker([PL_POINT.lat,PL_POINT.lng],{icon:plIcon,zIndexOffset:-100}).addTo(mapObj);
+  window.plMarker=L.marker([PL_POINT.lat,PL_POINT.lng],{icon:plIcon,zIndexOffset:-100}).addTo(window.mapObj);
   var plHtml='<div style="font-family:sans-serif;min-width:220px;line-height:1.45">'
     +'<div style="font-size:14px;font-weight:700;color:#1a237e;margin-bottom:6px">Polizia Locale - Roseto degli Abruzzi</div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Via Calabria, 17 - 64026 Roseto degli Abruzzi (TE)</div>'
@@ -447,18 +449,18 @@ function addPLMarker(){
     +' target="_blank" style="display:block;text-align:center;background:#1a237e;color:#fff;'
     +'text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700">Apri indicazioni</a>'
     +'</div>';
-  plMarker.bindPopup(plHtml,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.plMarker.bindPopup(plHtml,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function addComuneMarker(){
-  if(!mapObj||comuneMarker)return;
+export function addComuneMarker(){
+  if(!window.mapObj||window.comuneMarker)return;
   var comuneIcon=L.divIcon({
     className:"",
     html:'<div style="width:25px;height:30px;border-radius:5px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1565c0;background:#fff;display:flex;align-items:center;justify-content:center;padding:2px;box-sizing:border-box;">'
         +'<img src="data:image/png;base64,'+STEMMA_B64+'" style="width:25px;height:30px;object-fit:contain;display:block;"/></div>',
     iconSize:[25,30],iconAnchor:[12,15],popupAnchor:[0,-16]
   });
-  comuneMarker=L.marker([COMUNE_POINT.lat,COMUNE_POINT.lng],{icon:comuneIcon}).addTo(mapObj);
+  window.comuneMarker=L.marker([COMUNE_POINT.lat,COMUNE_POINT.lng],{icon:comuneIcon}).addTo(window.mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:13px;font-weight:700;color:#1565c0;margin-bottom:4px">Comune di Roseto degli Abruzzi</div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:1px"><strong>Indirizzo:</strong> Piazza della Repubblica - 64026 Roseto degli Abruzzi (TE)</div>'
@@ -470,18 +472,18 @@ function addComuneMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6796819,14.0110622&travelmode=walking" target="_blank" '
     +'style="display:block;text-align:center;background:#1565c0;color:white;padding:6px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">'
     +'\uD83E\uDDED Apri indicazioni</a></div>';
-  comuneMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.comuneMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function addIATMarker(){
-  if(!mapObj||iatMarker)return;
+export function addIATMarker(){
+  if(!window.mapObj||window.iatMarker)return;
   var iatIcon=L.divIcon({
     className:"",
     html:'<div style="width:22px;height:22px;border-radius:4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #e6b800;background:#f5c800;">'
         +'<img src="data:image/jpeg;base64,'+IAT_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
     iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-13]
   });
-  iatMarker=L.marker([IAT_POINT.lat,IAT_POINT.lng],{icon:iatIcon}).addTo(mapObj);
+  window.iatMarker=L.marker([IAT_POINT.lat,IAT_POINT.lng],{icon:iatIcon}).addTo(window.mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:13px;font-weight:700;color:#b8860b;margin-bottom:4px">IAT Roseto degli Abruzzi</div>'
     +'<div style="font-size:10px;color:#888;margin-bottom:3px">Ufficio Informazioni e Accoglienza Turistica</div>'
@@ -493,13 +495,13 @@ function addIATMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6775099,14.0139231&travelmode=walking" target="_blank" '
     +'style="display:block;text-align:center;background:#e6b800;color:#1a1a1a;padding:6px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">'
     +'\uD83E\uDDED Apri indicazioni</a></div>';
-  iatMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.iatMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function addZoneVietate(){
-  if(!mapObj)return;
-  zoneVietateMarkers.forEach(function(m){if(m&&m.remove)m.remove();});
-  zoneVietateMarkers=[];
+export function addZoneVietate(){
+  if(!window.mapObj)return;
+  window.zoneVietateMarkers.forEach(function(m){if(m&&m.remove)m.remove();});
+  window.zoneVietateMarkers=[];
   ZONE_VIETATE.forEach(function(z){
     var rect=L.polygon(z.latlngs,{
       color:"#cc0000",
@@ -508,7 +510,7 @@ function addZoneVietate(){
       fillColor:"#ff0000",
       fillOpacity:0.18,
       dashArray:"6,4"
-    }).addTo(mapObj);
+    }).addTo(window.mapObj);
     var bounds=rect.getBounds();
     var center=[
       (bounds.getNorth()+bounds.getSouth())/2,
@@ -519,7 +521,7 @@ function addZoneVietate(){
       html:'<div style="background:rgba(180,0,0,0.82);color:#fff;font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.5);">⛔ DIVIETO BALNEAZIONE</div>',
       iconAnchor:[72,10]
     });
-    var labelMarker=L.marker(center,{icon:labelIcon,interactive:true}).addTo(mapObj);
+    var labelMarker=L.marker(center,{icon:labelIcon,interactive:true}).addTo(window.mapObj);
     var popup='<div style="font-family:sans-serif;min-width:230px;line-height:1.5">'
       +'<div style="background:#cc0000;color:#fff;font-weight:700;font-size:12px;padding:6px 10px;border-radius:6px 6px 0 0;margin:-1px -1px 8px -1px">⛔ '+z.name+'</div>'
       +'<div style="font-size:11px;color:#333;margin-bottom:6px">'+z.desc+'</div>'
@@ -527,19 +529,19 @@ function addZoneVietate(){
       +'</div>';
     rect.bindPopup(popup,{maxWidth:270,keepInView:true});
     labelMarker.bindPopup(popup,{maxWidth:270,keepInView:true});
-    zoneVietateMarkers.push(rect,labelMarker);
+    window.zoneVietateMarkers.push(rect,labelMarker);
   });
 }
 
-function addPortoroseMarker(){
-  if(!mapObj||portoroseMarker)return;
+export function addPortoroseMarker(){
+  if(!window.mapObj||window.portoroseMarker)return;
   var portoroseIcon=L.divIcon({
     className:"",
     html:'<div style="height:22px;padding:1px 3px;border-radius:4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1a3b8c;background:#fff;display:flex;align-items:center;justify-content:center;">'
         +'<img src="data:image/jpeg;base64,'+PORTOROSE_B64+'" style="height:16px;width:auto;object-fit:contain;display:block;"/></div>',
     iconSize:[78,26],iconAnchor:[39,13],popupAnchor:[0,-15]
   });
-  portoroseMarker=L.marker([PORTOROSE_POINT.lat,PORTOROSE_POINT.lng],{icon:portoroseIcon}).addTo(mapObj);
+  window.portoroseMarker=L.marker([PORTOROSE_POINT.lat,PORTOROSE_POINT.lng],{icon:portoroseIcon}).addTo(window.mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="text-align:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e0e0e0">'
     +'<img src="data:image/jpeg;base64,'+PORTOROSE_POPUP_B64+'" style="height:30px;width:auto;object-fit:contain;display:inline-block;"/></div>'
@@ -551,17 +553,17 @@ function addPortoroseMarker(){
     +'<a href="https://www.google.com/maps/dir/?api=1&destination=42.6565304172608,14.035017344909056&travelmode=walking" target="_blank" '
     +'style="display:block;text-align:center;background:#1a3b8c;color:white;padding:7px;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none">'
     +'⛵ Apri indicazioni</a></div>';
-  portoroseMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.portoroseMarker.bindPopup(htmlPopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
-function addRosetanaMarker(){
-  if(!mapObj||rosetanaMarker)return;
+export function addRosetanaMarker(){
+  if(!window.mapObj||window.rosetanaMarker)return;
   var rosetanaIcon=L.divIcon({
     className:"",
     html:'<div style="width:30px;height:30px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1a6bb5;background:#fff;">'
         +'<img src="data:image/jpeg;base64,'+ROSETANA_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>',
     iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-17]
   });
-  rosetanaMarker=L.marker([ROSETANA_POINT.lat,ROSETANA_POINT.lng],{icon:rosetanaIcon}).addTo(mapObj);
+  window.rosetanaMarker=L.marker([ROSETANA_POINT.lat,ROSETANA_POINT.lng],{icon:rosetanaIcon}).addTo(window.mapObj);
   var htmlPopup='<div style="font-family:sans-serif;min-width:250px;line-height:1.5">'
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
     +'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid #1a6bb5">'
@@ -577,11 +579,11 @@ function addRosetanaMarker(){
     +'<a href="https://maps.app.goo.gl/Tia4pBeTuoSRmBW2A" target="_blank" '
     +'style="display:block;text-align:center;background:#1a6bb5;color:white;padding:7px;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none">'
     +'🧭 Apri indicazioni</a></div>';
-  rosetanaMarker.bindPopup(htmlPopup,{maxWidth:280,keepInView:true,autoPanPadding:[20,20]});
+  window.rosetanaMarker.bindPopup(htmlPopup,{maxWidth:280,keepInView:true,autoPanPadding:[20,20]});
 }
 
-function ensureLocamareMarker(){
-  if(!mapObj || locamareMarker) return;
+export function ensureLocamareMarker(){
+  if(!window.mapObj || window.locamareMarker) return;
 
   const locamareIcon = L.divIcon({
     className:"",
@@ -591,7 +593,7 @@ function ensureLocamareMarker(){
     popupAnchor:[0,-20]
   })
 
-  locamareMarker = L.marker([42.669431107568684,14.024105577318382], {icon: locamareIcon}).addTo(mapObj);
+  window.locamareMarker = L.marker([42.669431107568684,14.024105577318382], {icon: locamareIcon}).addTo(window.mapObj);
 
   const locamarePopup = `
     <div style="font-family:sans-serif;min-width:220px;line-height:1.45">
@@ -615,7 +617,7 @@ function ensureLocamareMarker(){
     </div>
   `;
 
-  locamareMarker.bindPopup(locamarePopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
+  window.locamareMarker.bindPopup(locamarePopup,{maxWidth:270,keepInView:true,autoPanPadding:[20,20]});
 }
 
 
