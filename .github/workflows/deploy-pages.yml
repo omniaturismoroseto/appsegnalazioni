@@ -39,6 +39,9 @@ jobs:
       - name: Installa dipendenze
         run: npm ci
 
+      - name: Test automatici
+        run: npm test
+
       - name: Build (Vite)
         run: npm run build
 
