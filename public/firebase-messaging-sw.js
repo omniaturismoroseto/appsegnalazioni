@@ -21,12 +21,17 @@ const messaging = firebase.messaging();
 
 // Messaggi ricevuti mentre l'app NON è in primo piano
 messaging.onBackgroundMessage(function (payload) {
+  // I messaggi station_emergency sono "solo dati" (niente campo "notification":
+  // serve per far scattare sempre l'allarme nativo su Android anche con l'app
+  // chiusa, vedi functions/index.js e OmniaMessagingService.java). Titolo e
+  // testo arrivano quindi in payload.data, con payload.notification come
+  // ripiego per gli altri tipi di push che lo usano ancora.
   const n = payload.notification || {};
   const d = payload.data || {};
-  const title = n.title || "🚨 Omnia — Nuova segnalazione";
+  const title = d.title || n.title || "🚨 Omnia — Nuova segnalazione";
   const isStationEmergency = d.type === "station_emergency";
   const options = {
-    body: n.body || "",
+    body: d.body || n.body || "",
     icon: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
     badge: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
     tag: d.reportId ? "report_" + d.reportId : (isStationEmergency ? "station_emergency_" + d.station + "_" + Date.now() : "omnia_report"),

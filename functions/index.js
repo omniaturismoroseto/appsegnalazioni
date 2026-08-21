@@ -353,33 +353,30 @@ exports.sendStationEmergency = onValueCreated(
       return null;
     }
 
+    // Messaggio SOLO DATI (niente campo "notification"): e' l'unico modo per
+    // cui Android richiama sempre il nostro codice (onMessageReceived) anche
+    // con l'app in background o completamente chiusa - necessario per far
+    // suonare l'allarme a schermo intero (vedi OmniaMessagingService.java
+    // nel progetto Android). Con un messaggio "notification+data" Android
+    // mostrerebbe una notifica di sistema senza mai passare dal nostro
+    // codice quando l'app non e' in primo piano.
+    const title = "🚨 EMERGENZA — P." + data.station;
+    const body = "Allarme immediato dalla postazione P." + data.station + ". Intervieni o coordina i soccorsi.";
     const message = {
       tokens,
-      notification: {
-        title: "🚨 EMERGENZA — P." + data.station,
-        body: "Allarme immediato dalla postazione P." + data.station + ". Intervieni o coordina i soccorsi.",
+      data: {
+        type: "station_emergency",
+        station: String(data.station),
+        title,
+        body,
       },
-      data: { type: "station_emergency", station: String(data.station) },
-      android: {
-        priority: "high",
-        notification: {
-          channelId: "omnia_emergenze",
-          sound: "default",
-          color: "#a5140a",
-          defaultVibrateTimings: false,
-          vibrateTimingsMillis: [0, 500, 200, 500, 200, 500],
-          tag: "station_emergency_" + data.station + "_" + Date.now(),
-        },
+      android: { priority: "high" },
+      apns: {
+        headers: { "apns-priority": "10", "apns-push-type": "background" },
+        payload: { aps: { "content-available": 1 } },
       },
-      apns: { headers: { "apns-priority": "10" }, payload: { aps: { sound: "default", badge: 1 } } },
       webpush: {
         headers: { Urgency: "high", TTL: "120" },
-        notification: {
-          icon: "/appsegnalazioni/icon-192-fixed.png",
-          badge: "/appsegnalazioni/icon-192-fixed.png",
-          requireInteraction: true,
-          vibrate: [500, 200, 500, 200, 500],
-        },
         fcmOptions: { link: "https://omniaturismoroseto.github.io/appsegnalazioni/" },
       },
     };
