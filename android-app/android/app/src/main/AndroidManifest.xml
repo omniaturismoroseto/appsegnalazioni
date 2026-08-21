@@ -76,4 +76,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Messaggi vocali in chat (walkie-talkie): registrazione via MediaRecorder
+         nella WebView, Capacitor gestisce da solo il prompt di permesso a runtime
+         quando la pagina chiama getUserMedia({audio:true}). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 </manifest>

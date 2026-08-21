@@ -519,7 +519,8 @@ exports.sendChatNotification = onValueCreated(
   { ref: "/chat/messages/{id}", region: "europe-west1" },
   async (event) => {
     const data = event.data.val();
-    if (!data || !data.text) return null;
+    const isAudio = data && data.type === "audio";
+    if (!data || (!data.text && !isAudio)) return null;
 
     try {
       const tokenPaths = await getAllChatTokens();
@@ -527,7 +528,9 @@ exports.sendChatNotification = onValueCreated(
       if (!tokens.length) return null;
 
       const author = String(data.authorLabel || "Chat interna").slice(0, 40);
-      const body = String(data.text || "").slice(0, 150);
+      const body = isAudio
+        ? "🎙️ Messaggio vocale (" + Math.round(data.audioDuration || 0) + "s)"
+        : String(data.text || "").slice(0, 150);
 
       const message = {
         tokens,

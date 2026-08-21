@@ -25,6 +25,7 @@ module.exports = [
         history: "readonly", XMLHttpRequest: "readonly", FormData: "readonly",
         Notification: "readonly", Image: "readonly", alert: "readonly", confirm: "readonly", prompt: "readonly",
         URL: "readonly", crypto: "readonly", requestAnimationFrame: "readonly", btoa: "readonly",
+        MediaRecorder: "readonly", Blob: "readonly", FileReader: "readonly",
         // librerie esterne + roba definita inline in index.html: non fanno parte
         // del grafo di moduli, restano globali veri caricati via <script> classico.
         L: "readonly", firebase: "readonly", Sentry: "readonly",
