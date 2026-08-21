@@ -1,0 +1,59 @@
+name: Build e pubblica su GitHub Pages
+
+# Ad ogni push su main (tranne quando tocca solo android-app/ o functions/,
+# che hanno pipeline separate) impacchetta il sito con Vite e lo pubblica.
+# Richiede che in Settings -> Pages la sorgente sia impostata su
+# "GitHub Actions" (non piu' "Deploy from a branch").
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "android-app/**"
+      - "functions/**"
+      - "*.md"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Imposta Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Installa dipendenze
+        run: npm ci
+
+      - name: Build (Vite)
+        run: npm run build
+
+      - name: Carica artefatto Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Pubblica su GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
