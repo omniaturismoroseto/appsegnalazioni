@@ -1,4 +1,5 @@
 import { _activateStationMode, render, renderPage, stationDevicesRef } from "./core.js";
+import { _resizeMap } from "./map.js";
 import { fetchMeteoMarine } from "./meteo.js";
 
 
@@ -26,7 +27,7 @@ try{
 
   [250,700,1200].forEach(function(t){
     setTimeout(function(){
-      if(window.mapObj) window.mapObj.invalidateSize(true);
+      _resizeMap();
     }, t);
   });
 }catch(e2){

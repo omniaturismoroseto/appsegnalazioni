@@ -28,7 +28,7 @@ module.exports = [
         MediaRecorder: "readonly", Blob: "readonly", FileReader: "readonly",
         // librerie esterne + roba definita inline in index.html: non fanno parte
         // del grafo di moduli, restano globali veri caricati via <script> classico.
-        L: "readonly", firebase: "readonly", Sentry: "readonly",
+        google: "readonly", firebase: "readonly", Sentry: "readonly",
         firebaseSdk: "readonly", _sentrySetTag: "readonly", _sentryCapture: "readonly",
         SENTRY_RELEASE: "readonly", _requestNotifPermission: "readonly",
         STATIONS_DATA: "readonly", // public/stations-data.js

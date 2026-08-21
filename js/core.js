@@ -1,4 +1,4 @@
-import { initMap, refreshMarkers, renderHeader, renderMapLegend } from "./map.js";
+import { _resizeMap, initMap, refreshMarkers, renderHeader, renderMapLegend } from "./map.js";
 import { CHILD_PHOTO_TTL_MS, _showOnboarding, renderConsigliPage, renderDone, renderForecastPage, renderHome, renderInstallPage, renderLogin, renderMinoreBivio, renderMinoreDone, renderMinoreForm, renderOrdinanzePage, renderPartnerPage, renderSubmit } from "./pages-public.js";
 import { renderDashboard } from "./pages-operator.js";
 import { renderStationPanel } from "./pages-station.js";
@@ -183,6 +183,10 @@ export const stationDevicesRef=_realDb.ref("stationDevices");
 export const stationEmergenciesRef=_realDb.ref("stationEmergencies");
 export const emergencyContactsRef=_realDb.ref("config/emergencyContacts");
 export const chatRef=_realDb.ref("chat/messages");
+// Canale separato per admin/coordinatore/CP/forze dell'ordine: mai
+// raggiungibile da postazioni o operatori normali (vedi database.rules.json,
+// e window.userRole lato client per nascondere anche il tab).
+export const chatEsternaRef=_realDb.ref("chatEsterna/messages");
 export let _fcmApp = null;
 export let _fcmMessaging = null;
 export let _fcmToken = null;
@@ -627,6 +631,22 @@ chatResetAtRef.on("value",function(snap){
   if(chatVisible)renderPage();
 });
 
+// Chat esterna (solo testo): stesso schema della chat con le postazioni,
+// ma reset alle 23:59 invece che alle 19:05 (vedi resetChatEsternaSerale).
+// Per postazioni/operatori normali questi listener falliscono in silenzio
+// (permission_denied, vedi database.rules.json) - non hanno mai accesso.
+export let chatEsternaMessages={};
+chatEsternaRef.limitToLast(200).on("value",function(snap){
+  chatEsternaMessages=snap.val()||{};
+  if(currentScreen==="dashboard"&&window.activeDashTab==="chatEsterna")renderPage();
+});
+export const chatEsternaResetAtRef=_realDb.ref("chatEsterna/resetAt");
+export let chatEsternaResetAt=0;
+chatEsternaResetAtRef.on("value",function(snap){
+  chatEsternaResetAt=snap.val()||0;
+  if(currentScreen==="dashboard"&&window.activeDashTab==="chatEsterna")renderPage();
+});
+
 // Valida sessione Firebase Auth in background al caricamento
 // Se il token è scaduto o il localStorage è stato manipolato, revoca l'accesso
 (function(){
@@ -714,7 +734,7 @@ export function setFlag(num,val){return flagsRef.child(String(num)).set(val);}
 
 // UTILS
 // Escaping HTML completo (& prima di tutti gli altri) per inserire testo utente
-// dentro stringhe HTML costruite a mano (es. popup Leaflet) senza rischio XSS.
+// dentro stringhe HTML costruite a mano (es. popup mappa) senza rischio XSS.
 export function _escapeHtml(s){
   return String(s)
     .replace(/&/g,"&amp;")
@@ -880,6 +900,15 @@ export function sendWANotify(r){
 }
 
 // GPS
+function _createUserMarker(lat,lng){
+  var wrap=document.createElement("div");
+  wrap.innerHTML='<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>';
+  var m=new google.maps.marker.AdvancedMarkerElement({position:{lat,lng},map:window.mapObj,content:wrap.firstElementChild,zIndex:1000});
+  m.addListener("gmp-click",function(){
+    new google.maps.InfoWindow({content:"<b>Sei qui</b>"}).open({map:window.mapObj,anchor:m});
+  });
+  return m;
+}
 export function _onGPSPosition(pos){
   var lat=pos.coords.latitude,lng=pos.coords.longitude;
   _userLat=lat;_userLng=lng;_userGpsAcc=pos.coords.accuracy||null;
@@ -888,16 +917,19 @@ export function _onGPSPosition(pos){
   var daeResult=findNearestDAE(lat,lng);
   nearestDAE=daeResult.dae;nearestDAEDist=daeResult.dist;
   if(window.mapObj){
-    if(userMarker){try{userMarker.setLatLng([lat,lng]);}catch(e){
-      try{userMarker.remove();}catch(e2){}
-      var icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
-      userMarker=L.marker([lat,lng],{icon}).addTo(window.mapObj).bindPopup('<b>Sei qui</b>');
+    if(userMarker){try{userMarker.position={lat,lng};}catch(e){
+      try{userMarker.map=null;}catch(e2){}
+      userMarker=_createUserMarker(lat,lng);
     }} else {
-      var icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50%;background:#1d4ed8;border:3px solid white;box-shadow:0 0 0 4px rgba(29,78,216,.3)"></div>',iconSize:[16,16],iconAnchor:[8,8]});
-      userMarker=L.marker([lat,lng],{icon}).addTo(window.mapObj).bindPopup('<b>Sei qui</b>');
+      userMarker=_createUserMarker(lat,lng);
       // Prima volta: centra la mappa sulla posizione + postazione vicina
-      var bounds=L.latLngBounds([[lat,lng],[nearestStation.lat,nearestStation.lng]]);
-      window.mapObj.fitBounds(bounds,{padding:[50,50],maxZoom:16});
+      var bounds=new google.maps.LatLngBounds();
+      bounds.extend({lat,lng});
+      bounds.extend({lat:nearestStation.lat,lng:nearestStation.lng});
+      window.mapObj.fitBounds(bounds,50);
+      google.maps.event.addListenerOnce(window.mapObj,"bounds_changed",function(){
+        if(window.mapObj.getZoom()>16)window.mapObj.setZoom(16);
+      });
     }
     // Aggiorna marcatore postazione più vicina (anello blu)
     refreshMarkers();
@@ -969,7 +1001,7 @@ export function render(screen){
   document.getElementById("map-legend").style.display=showMap?"flex":"none";
   if(showMap){
     if(!window.mapObj){initMap();}
-    else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){if(window.mapObj)window.mapObj.invalidateSize(true);},t);});}
+    else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){_resizeMap();},t);});}
     renderMapLegend();
     if(!nearestStation)requestGPS();
   } else if(screen==="forecast"){
