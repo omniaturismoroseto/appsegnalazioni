@@ -47,10 +47,10 @@
     },
     "chat": {
       "messages": {
-        ".read": "auth != null",
+        ".read": "auth != null && auth.token.role !== 'cp' && auth.token.role !== 'forze_ordine'",
         ".indexOn": "ts",
         "$msgId": {
-          ".write": "!data.exists() && auth != null",
+          ".write": "!data.exists() && auth != null && auth.token.role !== 'cp' && auth.token.role !== 'forze_ordine'",
           ".validate": "newData.hasChildren(['authorLabel','role','ts']) && newData.child('authorLabel').isString() && newData.child('authorLabel').val().length <= 40 && newData.child('role').val().matches(/^(station|operator)$/) && newData.child('ts').isNumber() && ((newData.child('type').val() === 'audio' && newData.child('audioData').isString() && newData.child('audioData').val().length > 0 && newData.child('audioData').val().length <= 450000 && newData.child('audioDuration').isNumber() && newData.child('audioDuration').val() > 0 && newData.child('audioDuration').val() <= 60) || ((!newData.hasChild('type') || newData.child('type').val() === 'text') && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500))"
         }
       },

@@ -1,8 +1,11 @@
 // Pannello "🛠️ Admin" nella dashboard operatori: gestione account (elenco,
-// crea, promuovi/rimuovi admin, elimina). Visibile solo se window.isAdmin
-// e' vero (claim Firebase role:"admin" - vedi core.js e le Cloud Function
-// promoteToAdmin/demoteAdmin/listOperatorAccounts/createOperatorAccount/
-// deleteOperatorAccount in functions/index.js).
+// crea, cambia ruolo, elimina). Visibile solo se window.isAdmin e' vero
+// (claim Firebase role:"admin" - vedi core.js). Ruoli disponibili oltre al
+// normale "Operatore": admin, coordinator, cp (Capitaneria di Porto),
+// forze_ordine - vedi setAccountRole/listOperatorAccounts/
+// createOperatorAccount/deleteOperatorAccount in functions/index.js.
+// promoteToAdmin resta solo per il bootstrap del primissimo admin (vedi
+// _promoteSelfBootstrap sotto).
 import { _getAuth, renderPage } from "./core.js";
 
 const FN_BASE="https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/";
@@ -45,7 +48,8 @@ export function _refreshAdminClaim(){
   const user=a&&a.currentUser;
   if(!user)return Promise.resolve();
   return user.getIdTokenResult(true).then(function(res){
-    window.isAdmin=res.claims&&res.claims.role==="admin";
+    window.userRole=(res.claims&&res.claims.role)||null;
+    window.isAdmin=window.userRole==="admin";
     renderPage();
   });
 }
@@ -53,6 +57,24 @@ export function _refreshAdminClaim(){
 function _fmtDate(iso){
   if(!iso)return "mai";
   try{return new Date(iso).toLocaleString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});}catch(e){return iso;}
+}
+
+// Tipi di account oltre al normale "Operatore" (nessun ruolo speciale).
+// Le funzioni specifiche per ciascuno restano da definire; per ora l'unica
+// regola gia' attiva e' che CP e forze dell'ordine non vedono mai la chat
+// (ne' testo ne' vocali) - vedi database.rules.json e pages-operator.js.
+const ROLE_LABELS={
+  admin:"Admin",
+  coordinator:"Coordinatore",
+  cp:"Capitaneria di Porto",
+  forze_ordine:"Forze dell'ordine"
+};
+function _roleOptionsHtml(selected){
+  let html='<option value=""'+(!selected?" selected":"")+'>Operatore</option>';
+  Object.keys(ROLE_LABELS).forEach(function(k){
+    html+='<option value="'+k+'"'+(selected===k?" selected":"")+'>'+ROLE_LABELS[k]+'</option>';
+  });
+  return html;
 }
 
 export function renderAdminPanel(page){
@@ -66,12 +88,15 @@ export function renderAdminPanel(page){
   emailInput.style.cssText="margin-bottom:8px";
   const passInput=document.createElement("input");
   passInput.type="password";passInput.placeholder="Password (minimo 6 caratteri)";
-  passInput.style.cssText="margin-bottom:10px";
+  passInput.style.cssText="margin-bottom:8px";
+  const roleSelect=document.createElement("select");
+  roleSelect.innerHTML=_roleOptionsHtml(null);
+  roleSelect.style.cssText="margin-bottom:10px";
   const createBtn=document.createElement("button");createBtn.type="button";
   createBtn.className="btn-primary";createBtn.style.cssText="width:auto;padding:8px 16px;font-size:13px";
   createBtn.textContent="Crea account";
   const createMsg=document.createElement("div");createMsg.style.cssText="font-size:12px;margin-top:8px";
-  newBox.appendChild(emailInput);newBox.appendChild(passInput);newBox.appendChild(createBtn);newBox.appendChild(createMsg);
+  newBox.appendChild(emailInput);newBox.appendChild(passInput);newBox.appendChild(roleSelect);newBox.appendChild(createBtn);newBox.appendChild(createMsg);
   wrap.appendChild(newBox);
 
   const list=document.createElement("div");
@@ -88,27 +113,28 @@ export function renderAdminPanel(page){
       if(!accounts.length){list.innerHTML='<div class="empty">Nessun account trovato.</div>';return;}
       list.innerHTML="";
       accounts.forEach(function(acc){
+        const roleLabel=acc.role?ROLE_LABELS[acc.role]||acc.role:null;
         const card=document.createElement("div");
         card.className="report-card";
         card.innerHTML='<div class="report-top"><div class="report-body">'
           +'<strong style="font-size:13.5px">'+(acc.email||acc.uid)+'</strong>'
-          +(acc.isAdmin?' <span class="badge" style="background:var(--info-bg);color:var(--info-text)">ADMIN</span>':'')
+          +(roleLabel?' <span class="badge" style="background:var(--info-bg);color:var(--info-text)">'+roleLabel.toUpperCase()+'</span>':'')
           +(acc.disabled?' <span class="badge" style="background:var(--danger-bg);color:var(--danger-text)">DISATTIVATO</span>':'')
           +'<div class="report-meta">Creato: '+_fmtDate(acc.createdAt)+' &middot; Ultimo accesso: '+_fmtDate(acc.lastSignIn)+'</div>'
           +'</div></div>';
         const actions=document.createElement("div");
-        actions.style.cssText="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap";
+        actions.style.cssText="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap";
 
-        const toggleBtn=document.createElement("button");toggleBtn.type="button";
-        toggleBtn.className="action-btn";
-        toggleBtn.textContent=acc.isAdmin?"Rimuovi admin":"Rendi admin";
-        toggleBtn.addEventListener("click",function(){
-          toggleBtn.disabled=true;
-          _callAdminFn(acc.isAdmin?"demoteAdmin":"promoteToAdmin",{email:acc.email}).then(function(){
+        const roleSel=document.createElement("select");
+        roleSel.style.cssText="font-size:12px;padding:4px 8px";
+        roleSel.innerHTML=_roleOptionsHtml(acc.role);
+        roleSel.addEventListener("change",function(){
+          roleSel.disabled=true;
+          _callAdminFn("setAccountRole",{uid:acc.uid,role:roleSel.value||null}).then(function(){
             refreshList();
-          }).catch(function(e){alert("Errore: "+e.message);toggleBtn.disabled=false;});
+          }).catch(function(e){alert("Errore: "+e.message);roleSel.disabled=false;refreshList();});
         });
-        actions.appendChild(toggleBtn);
+        actions.appendChild(roleSel);
 
         const delBtn=document.createElement("button");delBtn.type="button";
         delBtn.className="action-btn del";delBtn.textContent="Elimina";
@@ -135,8 +161,8 @@ export function renderAdminPanel(page){
     const password=passInput.value;
     if(!email||!password){createMsg.textContent="Inserisci email e password.";createMsg.style.color="var(--danger-text)";return;}
     createBtn.disabled=true;createMsg.textContent="";
-    _callAdminFn("createOperatorAccount",{email,password}).then(function(){
-      emailInput.value="";passInput.value="";
+    _callAdminFn("createOperatorAccount",{email,password,role:roleSelect.value||null}).then(function(){
+      emailInput.value="";passInput.value="";roleSelect.value="";
       createMsg.textContent="✅ Account creato.";createMsg.style.color="var(--success-text)";
       createBtn.disabled=false;
       refreshList();

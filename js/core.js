@@ -239,6 +239,7 @@ export async function enableOperatorPush(){
     token: token,
     enabled: true,
     role: "operator",
+    uid: (auth&&auth.currentUser)?auth.currentUser.uid:null,
     lastSeen: Date.now()
   });
 
@@ -399,6 +400,7 @@ window.activeStation=null;
 window.activeDashTab="segnalazioni";
 window._stationChatOpen=false;
 window.isAdmin=false;
+window.userRole=null;
 window.mapObj=null;
 window.mapMarkers=[];
 export let userMarker=null;
@@ -648,16 +650,20 @@ chatResetAtRef.on("value",function(snap){
             stationDevicesData=snap.val()||{};
             if(currentScreen==="dashboard"&&window.activeDashTab==="dispositivi")renderPage();
           });
-          // Ruolo admin: vive nel custom claim del token (role:"admin"), non
-          // in una variabile locale - forceRefresh(true) perché dopo una
-          // promozione/rimozione appena fatta il token in cache potrebbe
-          // ancora avere il claim vecchio (dura fino a un'ora altrimenti).
+          // Ruolo vero: vive nel custom claim del token (role:"admin"/
+          // "coordinator"/"cp"/"forze_ordine", assente per un operatore
+          // normale), non in una variabile locale - forceRefresh(true)
+          // perché dopo una promozione/rimozione appena fatta il token in
+          // cache potrebbe ancora avere il claim vecchio (dura fino a
+          // un'ora altrimenti).
           user.getIdTokenResult(true).then(function(res){
-            window.isAdmin=res.claims&&res.claims.role==="admin";
+            window.userRole=(res.claims&&res.claims.role)||null;
+            window.isAdmin=window.userRole==="admin";
             if(currentScreen==="dashboard")renderPage();
-          }).catch(function(){window.isAdmin=false;});
+          }).catch(function(){window.userRole=null;window.isAdmin=false;});
         }else{
           stationDevicesData={};
+          window.userRole=null;
           window.isAdmin=false;
         }
       });

@@ -482,17 +482,30 @@ exports.purgeExpiredChildPhotos = onSchedule(
 //    l'allarme a schermo intero, solo avvisare chi non ha l'app aperta.
 // ============================================================
 async function getAllChatTokens() {
-  const [operatorSnap, deviceSnap, contactSnap] = await Promise.all([
+  const [operatorSnap, deviceSnap, contactSnap, userList] = await Promise.all([
     admin.database().ref("operatorTokens").once("value"),
     admin.database().ref("stationDevices").once("value"),
     admin.database().ref("config/emergencyContacts").once("value"),
+    admin.auth().listUsers(1000),
   ]);
+
+  // CP e forze dell'ordine non vedono MAI la chat (vedi anche database.rules.json):
+  // niente notifiche di nuovi messaggi neanche per loro. operatorTokens non
+  // salva il ruolo Firebase vero (solo la stringa fissa "operator", storica -
+  // vedi enableOperatorPush), serve incrociare per uid con i claim reali.
+  const roleByUid = new Map();
+  userList.users.forEach((u) => {
+    if (u.customClaims && u.customClaims.role) roleByUid.set(u.uid, u.customClaims.role);
+  });
+  const blockedRoles = new Set(["cp", "forze_ordine"]);
 
   const tokenPaths = new Map(); // token -> percorso da azzerare se risulta morto
 
   const operators = operatorSnap.val() || {};
   Object.entries(operators).forEach(([id, row]) => {
-    if (row && row.enabled === true && row.token && !tokenPaths.has(row.token)) {
+    if (!row || row.enabled !== true || !row.token) return;
+    if (row.uid && blockedRoles.has(roleByUid.get(row.uid))) return;
+    if (!tokenPaths.has(row.token)) {
       tokenPaths.set(row.token, "operatorTokens/" + id); // rimuove l'intero nodo, come cleanupInvalidTokens
     }
   });
@@ -668,6 +681,20 @@ function _requireOperatorAuth(request) {
   }
 }
 
+function _requireAdmin(request) {
+  _requireOperatorAuth(request);
+  if (request.auth.token.role !== "admin") {
+    throw new HttpsError("permission-denied", "Solo un admin puo' fare questa operazione");
+  }
+}
+
+// Ruoli account oltre al normale "operatore" (nessun ruolo speciale, valore
+// null/assente). Le funzioni specifiche per ciascuno restano da definire in
+// seguito - per ora l'unica differenza attiva e' che CP e forze dell'ordine
+// non vedono mai la chat interna, ne' testo ne' vocali (vedi
+// database.rules.json e getAllChatTokens qui sotto).
+const VALID_ROLES = ["admin", "coordinator", "cp", "forze_ordine"];
+
 exports.promoteToAdmin = onCall({ region: "europe-west1" }, async (request) => {
   _requireOperatorAuth(request);
   const email = String((request.data && request.data.email) || "").trim();
@@ -710,18 +737,41 @@ exports.demoteAdmin = onCall({ region: "europe-west1" }, async (request) => {
   }
 });
 
-exports.listOperatorAccounts = onCall({ region: "europe-west1" }, async (request) => {
-  _requireOperatorAuth(request);
-  if (request.auth.token.role !== "admin") {
-    throw new HttpsError("permission-denied", "Solo un admin puo' vedere l'elenco account");
+// Cambia il ruolo di un account (o lo riporta a "operatore normale" con
+// role:null). Sostituisce demoteAdmin per l'uso quotidiano dal pannello -
+// demoteAdmin resta comunque disponibile, usata solo internamente se serve.
+exports.setAccountRole = onCall({ region: "europe-west1" }, async (request) => {
+  _requireAdmin(request);
+  const uid = String((request.data && request.data.uid) || "");
+  const role = request.data && request.data.role ? String(request.data.role) : null;
+  if (!uid) throw new HttpsError("invalid-argument", "uid mancante");
+  if (role && !VALID_ROLES.includes(role)) throw new HttpsError("invalid-argument", "Ruolo non valido");
+  if (uid === request.auth.uid && role !== "admin") {
+    throw new HttpsError("failed-precondition", "Non puoi rimuovere il ruolo admin a te stesso");
   }
+
+  try {
+    const user = await admin.auth().getUser(uid);
+    const claims = { ...(user.customClaims || {}) };
+    if (role) claims.role = role;
+    else delete claims.role;
+    await admin.auth().setCustomUserClaims(uid, claims);
+    return { ok: true };
+  } catch (e) {
+    if (!(e instanceof HttpsError)) await reportError(e, "setAccountRole");
+    throw e instanceof HttpsError ? e : new HttpsError("internal", "Errore nel cambio ruolo");
+  }
+});
+
+exports.listOperatorAccounts = onCall({ region: "europe-west1" }, async (request) => {
+  _requireAdmin(request);
   try {
     const list = await admin.auth().listUsers(1000);
     return {
       accounts: list.users.map((u) => ({
         uid: u.uid,
         email: u.email,
-        isAdmin: !!(u.customClaims && u.customClaims.role === "admin"),
+        role: (u.customClaims && u.customClaims.role) || null,
         createdAt: u.metadata.creationTime,
         lastSignIn: u.metadata.lastSignInTime,
         disabled: u.disabled,
@@ -734,17 +784,17 @@ exports.listOperatorAccounts = onCall({ region: "europe-west1" }, async (request
 });
 
 exports.createOperatorAccount = onCall({ region: "europe-west1" }, async (request) => {
-  _requireOperatorAuth(request);
-  if (request.auth.token.role !== "admin") {
-    throw new HttpsError("permission-denied", "Solo un admin puo' creare nuovi account");
-  }
+  _requireAdmin(request);
   const email = String((request.data && request.data.email) || "").trim();
   const password = String((request.data && request.data.password) || "");
+  const role = request.data && request.data.role ? String(request.data.role) : null;
   if (!email || !email.includes("@")) throw new HttpsError("invalid-argument", "Email non valida");
   if (password.length < 6) throw new HttpsError("invalid-argument", "Password troppo corta (minimo 6 caratteri)");
+  if (role && !VALID_ROLES.includes(role)) throw new HttpsError("invalid-argument", "Ruolo non valido");
 
   try {
     const user = await admin.auth().createUser({ email, password });
+    if (role) await admin.auth().setCustomUserClaims(user.uid, { role });
     return { ok: true, uid: user.uid };
   } catch (e) {
     if (e.code === "auth/email-already-exists") throw new HttpsError("already-exists", "Email gia' registrata");

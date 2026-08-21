@@ -51,7 +51,13 @@ export function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  const tabs=[["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"],["chat","\ud83d\udcac Chat"],["dispositivi","\ud83d\udcf1 Dispositivi"]];
+  // CP e forze dell'ordine non vedono mai la chat (ne' testo ne' vocali) -
+  // bloccato anche lato dati in database.rules.json, questo e' solo per non
+  // mostrare un tab che comunque non funzionerebbe.
+  const chatBlocked=window.userRole==="cp"||window.userRole==="forze_ordine";
+  const tabs=[["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"]];
+  if(!chatBlocked)tabs.push(["chat","\ud83d\udcac Chat"]);
+  tabs.push(["dispositivi","\ud83d\udcf1 Dispositivi"]);
   if(window.isAdmin)tabs.push(["admin","\ud83d\udee0\ufe0f Admin"]);
   tabs.forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(window.activeDashTab===k?" active":"");btn.textContent=l;
@@ -60,7 +66,10 @@ export function renderDashboard(page){
   page.appendChild(tabBar);
   if(window.activeDashTab==="bandiere"){renderBandiere(page);return;}
   if(window.activeDashTab==="note"){renderNote(page);return;}
-  if(window.activeDashTab==="chat"){renderChatPanel(page);return;}
+  if(window.activeDashTab==="chat"){
+    if(chatBlocked){window.activeDashTab="segnalazioni";}
+    else{renderChatPanel(page);return;}
+  }
   if(window.activeDashTab==="dispositivi"){renderDispositivi(page);return;}
   if(window.activeDashTab==="admin"){
     if(!window.isAdmin){window.activeDashTab="segnalazioni";}
