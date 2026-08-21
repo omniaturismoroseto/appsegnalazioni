@@ -587,7 +587,7 @@ export function ensureLocamareMarker(){
 
   const locamareIcon = L.divIcon({
     className:"",
-    html:`<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.5);border:2px solid #153E8C;background:#fff;padding:2px;box-sizing:border-box;"><img src="logo.png" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>`,
+    html:`<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.5);border:2px solid #153E8C;background:#fff;padding:2px;box-sizing:border-box;"><img src="cp.png" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>`,
     iconSize:[40,40],
     iconAnchor:[20,20],
     popupAnchor:[0,-20]
