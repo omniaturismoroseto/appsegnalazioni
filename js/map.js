@@ -127,16 +127,16 @@ export async function initMap(){
       mapId:GOOGLE_MAPS_MAP_ID,
       mapTypeId:"hybrid",
       streetViewControl:false,
-      mapTypeControl:true,
-      mapTypeControlOptions:{
-        style:google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-        position:google.maps.ControlPosition.TOP_RIGHT,
-        mapTypeIds:["roadmap","hybrid"]
-      },
+      mapTypeControl:false,
       fullscreenControl:false,
       zoomControl:true,
       clickableIcons:false
     });
+    // Il controllo nativo Mappa/Satellite di Google non viene disegnato sulle
+    // mappe vettoriali (quelle con mapId, necessarie per gli Advanced Markers):
+    // l'opzione mapTypeControl viene accettata ma ignorata silenziosamente,
+    // quindi ricreiamo un pulsante equivalente a mano.
+    addMapTypeToggle();
     ensureLocamareMarker();
     addCCMarker();
     addPLMarker();
@@ -157,6 +157,25 @@ export async function initMap(){
   }finally{
     window._mapInitializing=false;
   }
+}
+function addMapTypeToggle(){
+  if(!window.mapObj||window._mapTypeToggleBtn)return;
+  var el=document.getElementById("main-map");
+  if(!el)return;
+  if(getComputedStyle(el).position==="static")el.style.position="relative";
+  var btn=document.createElement("button");
+  btn.type="button";
+  btn.style.cssText="position:absolute;top:10px;right:10px;z-index:5;padding:8px 14px;"
+    +"background:#fff;border:0;border-radius:3px;box-shadow:0 1px 4px -1px rgba(0,0,0,.5);"
+    +"font-family:Roboto,Arial,sans-serif;font-size:13px;font-weight:600;color:#1a1a1a;cursor:pointer;";
+  function label(){return window.mapObj.getMapTypeId()==="hybrid" ? "🗺️ Mappa" : "🛰️ Satellite";}
+  btn.textContent=label();
+  btn.addEventListener("click",function(){
+    window.mapObj.setMapTypeId(window.mapObj.getMapTypeId()==="hybrid" ? "roadmap" : "hybrid");
+    btn.textContent=label();
+  });
+  el.appendChild(btn);
+  window._mapTypeToggleBtn=btn;
 }
 export function getMarkerColor(s){
   const open=Object.values(window.reportsData).filter(r=>r.status==="aperta");
