@@ -639,3 +639,134 @@ exports.getChatAudio = onRequest({ region: "europe-west1", cors: false }, async 
     res.status(500).send("errore server");
   }
 });
+
+// ============================================================
+// 8) RUOLO ADMIN — gestione account operatori
+//
+//    Fino ad ora "operatore" era un unico livello: chiunque avesse fatto
+//    login (email/password) poteva fare tutto quello che un operatore puo'
+//    fare, senza distinzioni. Qui si introduce un vero claim Firebase
+//    "role: admin" (oltre a "role: station" gia' esistente per i
+//    dispositivi di postazione) e le funzioni per gestirlo.
+//
+//    Bootstrap del primo admin: dato che promoteToAdmin normalmente
+//    richiede di essere gia' admin, se non esiste ANCORA nessun admin nel
+//    progetto la richiesta e' permessa a qualunque operatore autenticato
+//    (si "auto-promuove" il primo che la usa) - funziona una sola volta,
+//    dopo che il primo admin esiste il controllo torna rigido.
+// ============================================================
+
+async function _hasAnyAdmin() {
+  const list = await admin.auth().listUsers(1000);
+  return list.users.some((u) => u.customClaims && u.customClaims.role === "admin");
+}
+
+function _requireOperatorAuth(request) {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Devi essere autenticato");
+  if (request.auth.token.role === "station") {
+    throw new HttpsError("permission-denied", "Non disponibile per i dispositivi di postazione");
+  }
+}
+
+exports.promoteToAdmin = onCall({ region: "europe-west1" }, async (request) => {
+  _requireOperatorAuth(request);
+  const email = String((request.data && request.data.email) || "").trim();
+  if (!email) throw new HttpsError("invalid-argument", "Email mancante");
+
+  try {
+    const isBootstrap = !(await _hasAnyAdmin());
+    if (!isBootstrap && request.auth.token.role !== "admin") {
+      throw new HttpsError("permission-denied", "Solo un admin puo' promuovere altri admin");
+    }
+    const user = await admin.auth().getUserByEmail(email);
+    await admin.auth().setCustomUserClaims(user.uid, { ...(user.customClaims || {}), role: "admin" });
+    return { ok: true, bootstrap: isBootstrap };
+  } catch (e) {
+    if (!(e instanceof HttpsError)) await reportError(e, "promoteToAdmin");
+    throw e instanceof HttpsError ? e : new HttpsError("internal", "Errore durante la promozione");
+  }
+});
+
+exports.demoteAdmin = onCall({ region: "europe-west1" }, async (request) => {
+  _requireOperatorAuth(request);
+  if (request.auth.token.role !== "admin") {
+    throw new HttpsError("permission-denied", "Solo un admin puo' rimuovere altri admin");
+  }
+  const email = String((request.data && request.data.email) || "").trim();
+  if (!email) throw new HttpsError("invalid-argument", "Email mancante");
+  if (email.toLowerCase() === String(request.auth.token.email || "").toLowerCase()) {
+    throw new HttpsError("failed-precondition", "Non puoi rimuovere il ruolo admin a te stesso");
+  }
+
+  try {
+    const user = await admin.auth().getUserByEmail(email);
+    const claims = { ...(user.customClaims || {}) };
+    delete claims.role;
+    await admin.auth().setCustomUserClaims(user.uid, claims);
+    return { ok: true };
+  } catch (e) {
+    if (!(e instanceof HttpsError)) await reportError(e, "demoteAdmin");
+    throw e instanceof HttpsError ? e : new HttpsError("internal", "Errore durante la rimozione");
+  }
+});
+
+exports.listOperatorAccounts = onCall({ region: "europe-west1" }, async (request) => {
+  _requireOperatorAuth(request);
+  if (request.auth.token.role !== "admin") {
+    throw new HttpsError("permission-denied", "Solo un admin puo' vedere l'elenco account");
+  }
+  try {
+    const list = await admin.auth().listUsers(1000);
+    return {
+      accounts: list.users.map((u) => ({
+        uid: u.uid,
+        email: u.email,
+        isAdmin: !!(u.customClaims && u.customClaims.role === "admin"),
+        createdAt: u.metadata.creationTime,
+        lastSignIn: u.metadata.lastSignInTime,
+        disabled: u.disabled,
+      })),
+    };
+  } catch (e) {
+    await reportError(e, "listOperatorAccounts");
+    throw new HttpsError("internal", "Errore nel recupero dell'elenco");
+  }
+});
+
+exports.createOperatorAccount = onCall({ region: "europe-west1" }, async (request) => {
+  _requireOperatorAuth(request);
+  if (request.auth.token.role !== "admin") {
+    throw new HttpsError("permission-denied", "Solo un admin puo' creare nuovi account");
+  }
+  const email = String((request.data && request.data.email) || "").trim();
+  const password = String((request.data && request.data.password) || "");
+  if (!email || !email.includes("@")) throw new HttpsError("invalid-argument", "Email non valida");
+  if (password.length < 6) throw new HttpsError("invalid-argument", "Password troppo corta (minimo 6 caratteri)");
+
+  try {
+    const user = await admin.auth().createUser({ email, password });
+    return { ok: true, uid: user.uid };
+  } catch (e) {
+    if (e.code === "auth/email-already-exists") throw new HttpsError("already-exists", "Email gia' registrata");
+    await reportError(e, "createOperatorAccount");
+    throw new HttpsError("internal", "Errore nella creazione dell'account");
+  }
+});
+
+exports.deleteOperatorAccount = onCall({ region: "europe-west1" }, async (request) => {
+  _requireOperatorAuth(request);
+  if (request.auth.token.role !== "admin") {
+    throw new HttpsError("permission-denied", "Solo un admin puo' eliminare account");
+  }
+  const uid = String((request.data && request.data.uid) || "");
+  if (!uid) throw new HttpsError("invalid-argument", "uid mancante");
+  if (uid === request.auth.uid) throw new HttpsError("failed-precondition", "Non puoi eliminare il tuo stesso account");
+
+  try {
+    await admin.auth().deleteUser(uid);
+    return { ok: true };
+  } catch (e) {
+    await reportError(e, "deleteOperatorAccount");
+    throw new HttpsError("internal", "Errore nell'eliminazione dell'account");
+  }
+});

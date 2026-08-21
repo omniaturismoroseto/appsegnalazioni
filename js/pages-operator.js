@@ -2,6 +2,7 @@ import { FLAG_COLORS, STATIONS, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _reg
 import { refreshMarkers } from "./map.js";
 import { CHILD_ESCALATE_MIN } from "./pages-public.js";
 import { renderChatPanel } from "./chat.js";
+import { renderAdminPanel, _promoteSelfBootstrap } from "./admin.js";
 
 export function renderDashboard(page){
   const reports=getReports(),open=reports.filter(r=>r.status==="aperta");
@@ -23,6 +24,23 @@ export function renderDashboard(page){
     }
   });
   ti.appendChild(logoutBtn);
+  if(!window.isAdmin){
+    // Visibile a chiunque per permettere al primo admin di "auto-promuoversi":
+    // la Cloud Function promoteToAdmin accetta la richiesta solo se non
+    // esiste ancora nessun admin nel progetto, altrimenti la rifiuta.
+    const bootstrapBtn=document.createElement("button");
+    bootstrapBtn.style.cssText="font-size:11px;padding:4px 10px;color:var(--text2);background:var(--bg2);border-color:transparent;margin-left:6px";
+    bootstrapBtn.textContent="\uD83D\uDD11 Diventa admin";
+    bootstrapBtn.addEventListener("click",function(){
+      const a=_getAuth();const email=a&&a.currentUser&&a.currentUser.email;
+      if(!email){alert("Sessione non valida.");return;}
+      if(!confirm("Diventare admin con questo account ("+email+")? Funziona solo se non esiste ancora nessun admin."))return;
+      _promoteSelfBootstrap(email).then(function(){
+        alert("Fatto, ora sei admin.");
+      }).catch(function(e){alert("Errore: "+e.message);});
+    });
+    ti.appendChild(bootstrapBtn);
+  }
   tb.appendChild(ti);
   const ac=document.createElement("div");ac.className="dash-actions";
   const newBtn=document.createElement("button");newBtn.className="btn-primary";newBtn.style.cssText="width:auto;font-size:12px;padding:6px 14px";newBtn.textContent="+ Segnala";
@@ -33,7 +51,9 @@ export function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"],["chat","\ud83d\udcac Chat"],["dispositivi","\ud83d\udcf1 Dispositivi"]].forEach(([k,l])=>{
+  const tabs=[["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"],["chat","\ud83d\udcac Chat"],["dispositivi","\ud83d\udcf1 Dispositivi"]];
+  if(window.isAdmin)tabs.push(["admin","\ud83d\udee0\ufe0f Admin"]);
+  tabs.forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(window.activeDashTab===k?" active":"");btn.textContent=l;
     btn.addEventListener("click",()=>{window.activeDashTab=k;renderPage();});tabBar.appendChild(btn);
   });
@@ -42,6 +62,10 @@ export function renderDashboard(page){
   if(window.activeDashTab==="note"){renderNote(page);return;}
   if(window.activeDashTab==="chat"){renderChatPanel(page);return;}
   if(window.activeDashTab==="dispositivi"){renderDispositivi(page);return;}
+  if(window.activeDashTab==="admin"){
+    if(!window.isAdmin){window.activeDashTab="segnalazioni";}
+    else{renderAdminPanel(page);return;}
+  }
   if(window.activeStation){
     const bar=document.createElement("div");bar.className="zone-filter-bar";
     bar.innerHTML=`<span style="font-size:12px;flex:1;color:var(--text2)">Filtro: ${window.activeStation}</span>`;

@@ -398,6 +398,7 @@ window.activeFilter="aperte";
 window.activeStation=null;
 window.activeDashTab="segnalazioni";
 window._stationChatOpen=false;
+window.isAdmin=false;
 window.mapObj=null;
 window.mapMarkers=[];
 export let userMarker=null;
@@ -647,8 +648,17 @@ chatResetAtRef.on("value",function(snap){
             stationDevicesData=snap.val()||{};
             if(currentScreen==="dashboard"&&window.activeDashTab==="dispositivi")renderPage();
           });
+          // Ruolo admin: vive nel custom claim del token (role:"admin"), non
+          // in una variabile locale - forceRefresh(true) perché dopo una
+          // promozione/rimozione appena fatta il token in cache potrebbe
+          // ancora avere il claim vecchio (dura fino a un'ora altrimenti).
+          user.getIdTokenResult(true).then(function(res){
+            window.isAdmin=res.claims&&res.claims.role==="admin";
+            if(currentScreen==="dashboard")renderPage();
+          }).catch(function(){window.isAdmin=false;});
         }else{
           stationDevicesData={};
+          window.isAdmin=false;
         }
       });
     }

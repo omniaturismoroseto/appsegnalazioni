@@ -150,9 +150,10 @@ export function renderChatPanel(page,opts){
     changeBtn.addEventListener("click",function(){_promptStationSurname();refreshShiftLabel();});
     shiftRow.appendChild(shiftLabel);shiftRow.appendChild(changeBtn);
     header.appendChild(shiftRow);
-  }else{
-    // Dashboard operatori/admin: possono rivedere lo storico completo, non
-    // solo i messaggi di oggi (le postazioni vedono sempre e solo "oggi").
+  }else if(window.isAdmin){
+    // Solo un admin vero (claim Firebase role:"admin", vedi core.js) puo'
+    // rivedere lo storico completo, non solo i messaggi di oggi - un
+    // operatore normale vede sempre e solo "oggi", come le postazioni.
     const histRow=document.createElement("div");
     histRow.style.cssText="display:flex;align-items:center;gap:6px";
     const histBtn=document.createElement("button");histBtn.type="button";
@@ -351,10 +352,8 @@ export function _onIncomingChatAudio(msg,msgId){
 
 // Nota sul reset serale: i messaggi non vengono MAI cancellati dal database
 // (vedi resetChatSerale in functions/index.js, che aggiorna solo un
-// timestamp condiviso). Le postazioni vedono sempre e solo i messaggi da
-// quel momento in poi; dalla dashboard operatori chiunque puo' comunque
-// premere "mostra storico completo" per rivedere tutto. Non e' un vero
-// controllo di accesso per un "ruolo admin" - il sistema di login attuale
-// non distingue un admin da un operatore qualsiasi (stesso claim
-// Firebase per tutti), quindi in pratica "riservato all'admin" qui
-// significa "riservato a chi ha accesso alla dashboard operatori".
+// timestamp condiviso). Postazioni e operatori normali vedono sempre e solo
+// i messaggi da quel momento in poi; solo un admin vero (window.isAdmin,
+// popolato da core.js leggendo il claim Firebase role:"admin" - vedi
+// promoteToAdmin in functions/index.js) puo' premere "mostra storico
+// completo" per rivedere tutto.
