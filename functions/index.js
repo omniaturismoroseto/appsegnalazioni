@@ -1,6 +1,6 @@
 const { onValueCreated } = require("firebase-functions/v2/database");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const Sentry = require("@sentry/google-cloud-serverless");
 
@@ -521,6 +521,7 @@ exports.sendChatNotification = onValueCreated(
     const data = event.data.val();
     const isAudio = data && data.type === "audio";
     if (!data || (!data.text && !isAudio)) return null;
+    const msgId = event.params.id;
 
     try {
       const tokenPaths = await getAllChatTokens();
@@ -528,28 +529,49 @@ exports.sendChatNotification = onValueCreated(
       if (!tokens.length) return null;
 
       const author = String(data.authorLabel || "Chat interna").slice(0, 40);
-      const body = isAudio
-        ? "🎙️ Messaggio vocale (" + Math.round(data.audioDuration || 0) + "s)"
-        : String(data.text || "").slice(0, 150);
 
-      const message = {
-        tokens,
-        notification: { title: "💬 " + author, body },
-        data: { type: "chat_message" },
-        android: {
-          priority: "high",
-          notification: { channelId: "omnia_chat", sound: "default", tag: "omnia_chat" },
-        },
-        webpush: {
-          headers: { Urgency: "normal", TTL: "120" },
-          notification: {
-            icon: "/appsegnalazioni/icon-192-fixed.png",
-            badge: "/appsegnalazioni/icon-192-fixed.png",
-            tag: "omnia_chat",
-          },
-          fcmOptions: { link: "https://omniaturismoroseto.github.io/appsegnalazioni/" },
-        },
-      };
+      // I messaggi vocali (walkie-talkie) vanno "solo dati", MAI come
+      // "notification": e' l'unico modo per cui Android riproduce sempre
+      // l'audio da solo a volume forte (vedi OmniaMessagingService.java),
+      // anche con l'app chiusa. L'audio stesso non entra nel push (troppo
+      // grande per il limite FCM di ~4KB): arriva un link a getChatAudio,
+      // che lo serve intero cosi' com'e' salvato (vedi sotto).
+      const message = isAudio
+        ? {
+            tokens,
+            data: {
+              type: "chat_audio",
+              msgId: String(msgId),
+              authorLabel: author,
+              audioUrl:
+                "https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/getChatAudio?id=" +
+                encodeURIComponent(msgId),
+            },
+            android: { priority: "high" },
+            apns: {
+              headers: { "apns-priority": "10", "apns-push-type": "background" },
+              payload: { aps: { "content-available": 1 } },
+            },
+            webpush: { headers: { Urgency: "high", TTL: "120" } },
+          }
+        : {
+            tokens,
+            notification: { title: "💬 " + author, body: String(data.text || "").slice(0, 150) },
+            data: { type: "chat_message" },
+            android: {
+              priority: "high",
+              notification: { channelId: "omnia_chat", sound: "default", tag: "omnia_chat" },
+            },
+            webpush: {
+              headers: { Urgency: "normal", TTL: "120" },
+              notification: {
+                icon: "/appsegnalazioni/icon-192-fixed.png",
+                badge: "/appsegnalazioni/icon-192-fixed.png",
+                tag: "omnia_chat",
+              },
+              fcmOptions: { link: "https://omniaturismoroseto.github.io/appsegnalazioni/" },
+            },
+          };
 
       const resp = await admin.messaging().sendEachForMulticast(message);
       if (resp.failureCount) {
@@ -574,3 +596,46 @@ exports.sendChatNotification = onValueCreated(
     return null;
   }
 );
+
+// ============================================================
+// 7) AUDIO DEI MESSAGGI VOCALI PER LA RIPRODUZIONE NATIVA (walkie-talkie)
+//    MediaPlayer su Android sa riprodurre direttamente un URL http/https,
+//    ma serve un audio/mp3-o-simile "vero" (con Content-Type), non un
+//    JSON: questo endpoint decodifica il base64 salvato nel messaggio e
+//    restituisce i byte audio cosi' come sono.
+//
+//    Endpoint SENZA autenticazione (a differenza di /chat/messages, che
+//    resta leggibile solo da utenti autenticati): serve un solo messaggio
+//    alla volta, il cui id e' una chiave push Firebase (praticamente
+//    impossibile da indovinare), e il contenuto sono note vocali operative
+//    tra postazioni - non dati sensibili. Scelta deliberata per permettere
+//    a MediaPlayer di riprodurlo nativamente senza dover replicare
+//    l'autenticazione Firebase (che vive solo lato JS/WebView) in Java.
+// ============================================================
+exports.getChatAudio = onRequest({ region: "europe-west1", cors: false }, async (req, res) => {
+  try {
+    const msgId = String(req.query.id || "");
+    if (!msgId || !/^[\w-]+$/.test(msgId)) {
+      res.status(400).send("id mancante o non valido");
+      return;
+    }
+    const snap = await admin.database().ref("chat/messages/" + msgId).once("value");
+    const data = snap.val();
+    if (!data || data.type !== "audio" || !data.audioData) {
+      res.status(404).send("messaggio vocale non trovato");
+      return;
+    }
+    const m = /^data:([^;]+);base64,(.+)$/.exec(data.audioData);
+    if (!m) {
+      res.status(500).send("formato audio non valido");
+      return;
+    }
+    const buffer = Buffer.from(m[2], "base64");
+    res.set("Content-Type", m[1]);
+    res.set("Cache-Control", "private, max-age=86400");
+    res.status(200).send(buffer);
+  } catch (e) {
+    await reportError(e, "getChatAudio");
+    res.status(500).send("errore server");
+  }
+});

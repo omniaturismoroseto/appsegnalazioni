@@ -28,13 +28,19 @@ messaging.onBackgroundMessage(function (payload) {
   // ripiego per gli altri tipi di push che lo usano ancora.
   const n = payload.notification || {};
   const d = payload.data || {};
-  const title = d.title || n.title || "🚨 Omnia — Nuova segnalazione";
   const isStationEmergency = d.type === "station_emergency";
+  const isChatAudio = d.type === "chat_audio";
+  // I messaggi vocali (walkie-talkie) sono anche loro "solo dati" (vedi
+  // sendChatNotification): su web non possiamo forzare altoparlante/autoplay
+  // ad app chiusa (limite del browser, non aggirabile) - qui ci limitiamo ad
+  // avvisare, la riproduzione forte automatica funziona solo nell'app
+  // Android nativa (OmniaMessagingService + ChatAudioService).
+  const title = isChatAudio ? "🎙️ " + (d.authorLabel || "Chat interna") : (d.title || n.title || "🚨 Omnia — Nuova segnalazione");
   const options = {
-    body: d.body || n.body || "",
+    body: isChatAudio ? "Messaggio vocale — tocca per ascoltarlo" : (d.body || n.body || ""),
     icon: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
     badge: "https://omniaturismoroseto.github.io/appsegnalazioni/icon-192.png",
-    tag: d.reportId ? "report_" + d.reportId : (isStationEmergency ? "station_emergency_" + d.station + "_" + Date.now() : "omnia_report"),
+    tag: d.reportId ? "report_" + d.reportId : (isStationEmergency ? "station_emergency_" + d.station + "_" + Date.now() : (isChatAudio ? "omnia_chat" : "omnia_report")),
     requireInteraction: d.type === "emergenza" || isStationEmergency,
     vibrate: isStationEmergency ? [500, 200, 500, 200, 500] : [200, 100, 200, 100, 200],
     data: { url: d.url || "https://omniaturismoroseto.github.io/appsegnalazioni/" },

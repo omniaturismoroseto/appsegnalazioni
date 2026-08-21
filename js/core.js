@@ -2,6 +2,7 @@ import { initMap, refreshMarkers, renderHeader, renderMapLegend } from "./map.js
 import { CHILD_PHOTO_TTL_MS, _showOnboarding, renderConsigliPage, renderDone, renderForecastPage, renderHome, renderInstallPage, renderLogin, renderMinoreBivio, renderMinoreDone, renderMinoreForm, renderOrdinanzePage, renderPartnerPage, renderSubmit } from "./pages-public.js";
 import { renderDashboard } from "./pages-operator.js";
 import { renderStationPanel } from "./pages-station.js";
+import { _chatDeviceId, _onIncomingChatAudio } from "./chat.js";
 
   // Il pacchetto Sentry vero si carica in modo differito (per non rallentare
   // l'avvio): nei primissimi istanti window.Sentry esiste già come "guscio"
@@ -583,8 +584,25 @@ reportsRef.on("value",snap=>{
 });
 
 export let chatMessages={};
+var _seenChatIds=null; // null finche' non arriva il primo snapshot: evita di "riprodurre" tutto lo storico al caricamento
 chatRef.limitToLast(200).on("value",function(snap){
-  chatMessages=snap.val()||{};
+  const val=snap.val()||{};
+  const ids=Object.keys(val);
+  if(_seenChatIds===null){
+    _seenChatIds=new Set(ids);
+  }else{
+    ids.forEach(function(id){
+      if(_seenChatIds.has(id))return;
+      _seenChatIds.add(id);
+      const m=val[id];
+      // Walkie-talkie: un nuovo messaggio vocale non mio si riproduce da
+      // solo (vedi _onIncomingChatAudio in chat.js) - ma solo se non e'
+      // il mio stesso messaggio appena inviato (deviceId, non l'autorLabel,
+      // che due persone potrebbero condividere).
+      if(m&&m.type==="audio"&&m.deviceId!==_chatDeviceId())_onIncomingChatAudio(m,id);
+    });
+  }
+  chatMessages=val;
   // Ridisegna solo se la chat e' davvero la schermata visibile in questo
   // momento (tab "chat" in dashboard, o pannello chat aperto in postazione):
   // stesso schema degli altri listener qui sopra, per non ridisegnare pagine

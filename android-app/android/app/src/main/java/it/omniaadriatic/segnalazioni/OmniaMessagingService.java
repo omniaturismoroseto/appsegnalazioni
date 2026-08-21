@@ -24,10 +24,20 @@ public class OmniaMessagingService extends FirebaseMessagingService {
         super.onMessageReceived(remoteMessage);
 
         Map<String, String> data = remoteMessage.getData();
-        if ("station_emergency".equals(data.get("type"))) {
+        String type = data.get("type");
+        if ("station_emergency".equals(type)) {
             String station = data.get("station");
             Intent i = new Intent(this, AlarmService.class);
             i.putExtra("station", station != null ? station : "");
+            ContextCompat.startForegroundService(this, i);
+        } else if ("chat_audio".equals(type)) {
+            // Walkie-talkie: riproduce subito il messaggio vocale da solo,
+            // a volume forte (vedi ChatAudioService) - stesso schema del
+            // ramo sopra, l'audio vero e proprio non entra nel push (troppo
+            // grande) e arriva in streaming da getChatAudio.
+            Intent i = new Intent(this, ChatAudioService.class);
+            i.putExtra("authorLabel", data.get("authorLabel"));
+            i.putExtra("audioUrl", data.get("audioUrl"));
             ContextCompat.startForegroundService(this, i);
         }
 

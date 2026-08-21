@@ -12,11 +12,28 @@
 // usato per le foto delle segnalazioni (vedi addReport in core.js), invece
 // di introdurre Firebase Storage. Durata massima 60s per restare ben sotto
 // il limite di dimensione (vedi database.rules.json).
-import { _escapeHtml, chatMessages, chatRef, chatResetAt, stationMode } from "./core.js";
+import { _escapeHtml, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
 
 const MAX_RECORDING_S=60;
 
 let _showFullHistory=false; // reimpostato ad ogni apertura del pannello (vedi renderChatPanel)
+
+// Identificativo locale (non l'autorLabel, che due persone potrebbero
+// condividere) per riconoscere "e' un messaggio mio": serve solo per non
+// far ripartire da solo l'audio appena registrato da questo stesso
+// dispositivo (vedi il listener chatRef in core.js).
+export function _chatDeviceId(){
+  try{
+    let id=localStorage.getItem("omnia_chat_device_id");
+    if(!id){
+      id=(crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
+        const r=Math.random()*16|0,v=c==="x"?r:(r&0x3|0x8);return v.toString(16);
+      });
+      localStorage.setItem("omnia_chat_device_id",id);
+    }
+    return id;
+  }catch(e){return "unknown";}
+}
 
 function _stationSurname(){
   try{return localStorage.getItem("omnia_station_surname")||"";}catch(e){return "";}
@@ -85,6 +102,7 @@ function _sendChatEntry(fields,onDone){
   chatRef.push(Object.assign({
     authorLabel: _chatAuthorLabel(),
     role: stationMode ? "station" : "operator",
+    deviceId: _chatDeviceId(),
     ts: Date.now()
   },fields)).then(function(){
     onDone(null);
@@ -269,6 +287,66 @@ export function renderChatPanel(page,opts){
   micBtn.addEventListener("click",function(){startRecording();});
   stopRecBtn.addEventListener("click",function(){stopRecording(false);});
   cancelRecBtn.addEventListener("click",function(){stopRecording(true);});
+}
+
+// ---- Walkie-talkie: arrivo di un messaggio vocale altrui ad app aperta ----
+// Chiamata da core.js (listener chatRef) per ogni nuovo messaggio audio non
+// mandato da questo stesso dispositivo. Lo riproduce subito da solo (come
+// una radio) e mostra un popup con riascolta/rispondi/chiudi, come da
+// richiesta. Su web funziona solo ad app aperta (in primo piano o in una
+// scheda ancora attiva): un browser non puo' forzare altoparlante/autoplay
+// ad app completamente chiusa, quello lo fa solo l'app Android nativa
+// (vedi OmniaMessagingService.java + ChatAudioService.java).
+export function _onIncomingChatAudio(msg,msgId){
+  try{
+    const old=document.getElementById("_chatIncomingPopup");
+    if(old)old.remove();
+
+    const overlay=document.createElement("div");
+    overlay.id="_chatIncomingPopup";
+    overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9997;display:flex;align-items:flex-end;justify-content:center";
+
+    const modal=document.createElement("div");
+    modal.style.cssText="background:var(--bg);border-radius:16px 16px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:480px;box-shadow:0 -4px 24px rgba(0,0,0,.25)";
+    modal.innerHTML='<div style="font-size:15px;font-weight:700;margin-bottom:4px">🎙️ Messaggio vocale</div>'
+      +'<div style="font-size:13px;color:var(--text2);margin-bottom:14px">da '+_escapeHtml(msg.authorLabel||"?")+'</div>';
+
+    const audio=document.createElement("audio");
+    audio.src=msg.audioData||("https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/getChatAudio?id="+encodeURIComponent(msgId));
+    audio.style.display="none";
+    modal.appendChild(audio);
+
+    const btnRow=document.createElement("div");
+    btnRow.style.cssText="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px";
+    const replayBtn=document.createElement("button");replayBtn.type="button";
+    replayBtn.style.cssText="padding:12px 4px;font-size:13px";replayBtn.textContent="🔁 Riascolta";
+    const replyBtn=document.createElement("button");replyBtn.type="button";
+    replyBtn.className="btn-primary";replyBtn.style.cssText="padding:12px 4px;font-size:13px";replyBtn.textContent="💬 Rispondi";
+    const closeBtn=document.createElement("button");closeBtn.type="button";
+    closeBtn.style.cssText="padding:12px 4px;font-size:13px";closeBtn.textContent="✕ Chiudi";
+    btnRow.appendChild(replayBtn);btnRow.appendChild(replyBtn);btnRow.appendChild(closeBtn);
+    modal.appendChild(btnRow);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    function close(){try{audio.pause();}catch(e){}overlay.remove();}
+    replayBtn.addEventListener("click",function(){audio.currentTime=0;audio.play().catch(function(){});});
+    closeBtn.addEventListener("click",close);
+    replyBtn.addEventListener("click",function(){
+      close();
+      if(stationMode){window._stationChatOpen=true;render("station");}
+      else{window.currentRole="operator";window.activeDashTab="chat";render("dashboard");}
+    });
+
+    // Autoplay: il browser lo permette quasi sempre se l'utente ha gia'
+    // interagito con la pagina (praticamente sempre vero qui, si arriva a
+    // questa schermata solo dopo login/attivazione postazione). Se viene
+    // comunque bloccato, il popup resta visibile con "Riascolta" per
+    // avviarlo manualmente.
+    audio.play().catch(function(){});
+  }catch(e){
+    _sentryCapture(e);
+  }
 }
 
 // Nota sul reset serale: i messaggi non vengono MAI cancellati dal database
