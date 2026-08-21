@@ -909,20 +909,23 @@ function _createUserMarker(lat,lng){
   });
   return m;
 }
-export function _onGPSPosition(pos){
-  var lat=pos.coords.latitude,lng=pos.coords.longitude;
-  _userLat=lat;_userLng=lng;_userGpsAcc=pos.coords.accuracy||null;
-  var res=findNearest(lat,lng);
-  nearestStation=res.station;nearestDist=res.dist;
-  var daeResult=findNearestDAE(lat,lng);
-  nearestDAE=daeResult.dae;nearestDAEDist=daeResult.dist;
-  if(window.mapObj){
-    if(userMarker){try{userMarker.position={lat,lng};}catch(e){
+// Crea/aggiorna il marker "sei qui" e centra la mappa la prima volta.
+// Richiamata sia da _onGPSPosition sia da initMap (vedi map.js): la mappa
+// Google carica in modo asincrono, quindi una posizione GPS puo' arrivare
+// prima che window.mapObj esista - senza questo secondo aggancio il pallino
+// blu resterebbe "perso" finche' non arriva un altro fix GPS.
+export function _syncUserMarker(){
+  if(!window.mapObj||_userLat==null||_userLng==null)return;
+  var lat=_userLat,lng=_userLng;
+  if(userMarker){
+    try{userMarker.position={lat,lng};}catch(e){
       try{userMarker.map=null;}catch(e2){}
       userMarker=_createUserMarker(lat,lng);
-    }} else {
-      userMarker=_createUserMarker(lat,lng);
-      // Prima volta: centra la mappa sulla posizione + postazione vicina
+    }
+  } else {
+    userMarker=_createUserMarker(lat,lng);
+    // Prima volta: centra la mappa sulla posizione + postazione vicina
+    if(nearestStation){
       var bounds=new google.maps.LatLngBounds();
       bounds.extend({lat,lng});
       bounds.extend({lat:nearestStation.lat,lng:nearestStation.lng});
@@ -931,9 +934,18 @@ export function _onGPSPosition(pos){
         if(window.mapObj.getZoom()>16)window.mapObj.setZoom(16);
       });
     }
-    // Aggiorna marcatore postazione più vicina (anello blu)
-    refreshMarkers();
   }
+  // Aggiorna marcatore postazione più vicina (anello blu)
+  refreshMarkers();
+}
+export function _onGPSPosition(pos){
+  var lat=pos.coords.latitude,lng=pos.coords.longitude;
+  _userLat=lat;_userLng=lng;_userGpsAcc=pos.coords.accuracy||null;
+  var res=findNearest(lat,lng);
+  nearestStation=res.station;nearestDist=res.dist;
+  var daeResult=findNearestDAE(lat,lng);
+  nearestDAE=daeResult.dae;nearestDAEDist=daeResult.dist;
+  _syncUserMarker();
   if(currentScreen==="home"||currentScreen==="minore")renderPage();
 }
 

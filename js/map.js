@@ -1,4 +1,4 @@
-import { ALERT_COLORS, BOE_CANTIERE_23_2026, CC_B64, CC_POINT, COMUNE_POINT, DAE_B64, DAE_POINTS, FINANZA_B64, FINANZA_POINT, FLAG_COLORS, GM_B64, GM_POINT, IAT_B64, IAT_POINT, PERMANENT_STATION_NOTES, PL_B64, PL_POINT, PORTOROSE_B64, PORTOROSE_POINT, PORTOROSE_POPUP_B64, ROSETANA_B64, ROSETANA_POINT, STATIONS, STEMMA_B64, VVF_B64, VVF_POINT, ZONE_VIETATE, _escapeHtml, boeCantiereMarkers, flagsData, fmtDist, haversine, nearestDAE, nearestDist, nearestStation, render, stationMode, stationNotesData, userMarker } from "./core.js";
+import { ALERT_COLORS, BOE_CANTIERE_23_2026, CC_B64, CC_POINT, COMUNE_POINT, DAE_B64, DAE_POINTS, FINANZA_B64, FINANZA_POINT, FLAG_COLORS, GM_B64, GM_POINT, IAT_B64, IAT_POINT, PERMANENT_STATION_NOTES, PL_B64, PL_POINT, PORTOROSE_B64, PORTOROSE_POINT, PORTOROSE_POPUP_B64, ROSETANA_B64, ROSETANA_POINT, STATIONS, STEMMA_B64, VVF_B64, VVF_POINT, ZONE_VIETATE, _escapeHtml, _syncUserMarker, boeCantiereMarkers, flagsData, fmtDist, haversine, nearestDAE, nearestDist, nearestStation, render, stationMode, stationNotesData, userMarker } from "./core.js";
 
 // PRIMA DI PUBBLICARE: sostituisci con il Map ID creato in Google Cloud Console
 // (Google Maps Platform > Map Management) con le Advanced Markers abilitate.
@@ -127,7 +127,12 @@ export async function initMap(){
       mapId:GOOGLE_MAPS_MAP_ID,
       mapTypeId:"hybrid",
       streetViewControl:false,
-      mapTypeControl:false,
+      mapTypeControl:true,
+      mapTypeControlOptions:{
+        style:google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position:google.maps.ControlPosition.TOP_RIGHT,
+        mapTypeIds:["roadmap","hybrid"]
+      },
       fullscreenControl:false,
       zoomControl:true,
       clickableIcons:false
@@ -145,6 +150,7 @@ export async function initMap(){
     addZoneVietate();
     addDAEMarkers();
     refreshMarkers();
+    _syncUserMarker();
     google.maps.event.addListenerOnce(window.mapObj,"idle",function(){
       [50,250,700].forEach(function(t){setTimeout(function(){_resizeMap();},t);});
     });
