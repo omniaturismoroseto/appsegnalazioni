@@ -23,7 +23,7 @@ module.exports = [
         fetch: "readonly", setTimeout: "readonly", clearTimeout: "readonly",
         setInterval: "readonly", clearInterval: "readonly", location: "readonly",
         history: "readonly", XMLHttpRequest: "readonly", FormData: "readonly",
-        Notification: "readonly", Image: "readonly", alert: "readonly", confirm: "readonly",
+        Notification: "readonly", Image: "readonly", alert: "readonly", confirm: "readonly", prompt: "readonly",
         URL: "readonly", crypto: "readonly", requestAnimationFrame: "readonly", btoa: "readonly",
         // librerie esterne + roba definita inline in index.html: non fanno parte
         // del grafo di moduli, restano globali veri caricati via <script> classico.

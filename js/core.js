@@ -181,6 +181,7 @@ export const stationNotesRef=_realDb.ref("stationNotes");
 export const stationDevicesRef=_realDb.ref("stationDevices");
 export const stationEmergenciesRef=_realDb.ref("stationEmergencies");
 export const emergencyContactsRef=_realDb.ref("config/emergencyContacts");
+export const chatRef=_realDb.ref("chat/messages");
 export let _fcmApp = null;
 export let _fcmMessaging = null;
 export let _fcmToken = null;
@@ -395,6 +396,7 @@ window.onpopstate=function(event){
 window.activeFilter="aperte";
 window.activeStation=null;
 window.activeDashTab="segnalazioni";
+window._stationChatOpen=false;
 window.mapObj=null;
 window.mapMarkers=[];
 export let userMarker=null;
@@ -578,6 +580,18 @@ reportsRef.on("value",snap=>{
   if(currentScreen==="home")renderPage();
   if(currentScreen==="station")renderPage();
   renderHeader();
+});
+
+export let chatMessages={};
+chatRef.limitToLast(100).on("value",function(snap){
+  chatMessages=snap.val()||{};
+  // Ridisegna solo se la chat e' davvero la schermata visibile in questo
+  // momento (tab "chat" in dashboard, o pannello chat aperto in postazione):
+  // stesso schema degli altri listener qui sopra, per non ridisegnare pagine
+  // che non c'entrano ad ogni nuovo messaggio.
+  const chatVisible=(currentScreen==="dashboard"&&window.activeDashTab==="chat")
+    ||(currentScreen==="station"&&window._stationChatOpen);
+  if(chatVisible)renderPage();
 });
 
 // Valida sessione Firebase Auth in background al caricamento

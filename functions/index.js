@@ -453,3 +453,100 @@ exports.purgeExpiredChildPhotos = onSchedule(
     }
   }
 );
+
+// ============================================================
+// 6) PUSH PER LA CHAT INTERNA — canale unico condiviso da postazioni e
+//    operatori/admin/coordinatore. A differenza di sendStationEmergency
+//    e' una notifica normale (non "solo dati"): non deve far scattare
+//    l'allarme a schermo intero, solo avvisare chi non ha l'app aperta.
+// ============================================================
+async function getAllChatTokens() {
+  const [operatorSnap, deviceSnap, contactSnap] = await Promise.all([
+    admin.database().ref("operatorTokens").once("value"),
+    admin.database().ref("stationDevices").once("value"),
+    admin.database().ref("config/emergencyContacts").once("value"),
+  ]);
+
+  const tokenPaths = new Map(); // token -> percorso da azzerare se risulta morto
+
+  const operators = operatorSnap.val() || {};
+  Object.entries(operators).forEach(([id, row]) => {
+    if (row && row.enabled === true && row.token && !tokenPaths.has(row.token)) {
+      tokenPaths.set(row.token, "operatorTokens/" + id); // rimuove l'intero nodo, come cleanupInvalidTokens
+    }
+  });
+
+  const devices = deviceSnap.val() || {};
+  Object.entries(devices).forEach(([id, d]) => {
+    if (d && d.enabled && d.pushToken && !tokenPaths.has(d.pushToken)) {
+      tokenPaths.set(d.pushToken, "stationDevices/" + id + "/pushToken");
+    }
+  });
+
+  const contacts = contactSnap.val() || {};
+  ["admin", "coordinator"].forEach((role) => {
+    const c = contacts[role];
+    if (c && c.pushToken && !tokenPaths.has(c.pushToken)) {
+      tokenPaths.set(c.pushToken, "config/emergencyContacts/" + role + "/pushToken");
+    }
+  });
+
+  return tokenPaths;
+}
+
+exports.sendChatNotification = onValueCreated(
+  { ref: "/chat/messages/{id}", region: "europe-west1" },
+  async (event) => {
+    const data = event.data.val();
+    if (!data || !data.text) return null;
+
+    try {
+      const tokenPaths = await getAllChatTokens();
+      const tokens = [...tokenPaths.keys()];
+      if (!tokens.length) return null;
+
+      const author = String(data.authorLabel || "Chat interna").slice(0, 40);
+      const body = String(data.text || "").slice(0, 150);
+
+      const message = {
+        tokens,
+        notification: { title: "💬 " + author, body },
+        data: { type: "chat_message" },
+        android: {
+          priority: "high",
+          notification: { channelId: "omnia_chat", sound: "default", tag: "omnia_chat" },
+        },
+        webpush: {
+          headers: { Urgency: "normal", TTL: "120" },
+          notification: {
+            icon: "/appsegnalazioni/icon-192-fixed.png",
+            badge: "/appsegnalazioni/icon-192-fixed.png",
+            tag: "omnia_chat",
+          },
+          fcmOptions: { link: "https://omniaturismoroseto.github.io/appsegnalazioni/" },
+        },
+      };
+
+      const resp = await admin.messaging().sendEachForMulticast(message);
+      if (resp.failureCount) {
+        const removals = [];
+        resp.responses.forEach((r, i) => {
+          if (r.success) return;
+          const code = r.error && r.error.code;
+          if (
+            code === "messaging/registration-token-not-registered" ||
+            code === "messaging/invalid-registration-token" ||
+            code === "messaging/invalid-argument"
+          ) {
+            const path = tokenPaths.get(tokens[i]);
+            if (path) removals.push(admin.database().ref(path).remove());
+          }
+        });
+        if (removals.length) await Promise.allSettled(removals);
+      }
+    } catch (e) {
+      await reportError(e, "sendChatNotification");
+    }
+    return null;
+  }
+);

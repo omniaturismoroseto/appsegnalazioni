@@ -17,6 +17,7 @@ function fakeRef() {
     push: () => ({ key: "fake-key", set: () => Promise.resolve() }),
     set: () => Promise.resolve(),
     update: () => Promise.resolve(),
+    limitToLast: () => fakeRef(),
   };
   return ref;
 }

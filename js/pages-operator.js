@@ -1,6 +1,7 @@
 import { FLAG_COLORS, STATIONS, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
 import { refreshMarkers } from "./map.js";
 import { CHILD_ESCALATE_MIN } from "./pages-public.js";
+import { renderChatPanel } from "./chat.js";
 
 export function renderDashboard(page){
   const reports=getReports(),open=reports.filter(r=>r.status==="aperta");
@@ -32,13 +33,14 @@ export function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"],["dispositivi","\ud83d\udcf1 Dispositivi"]].forEach(([k,l])=>{
+  [["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"],["chat","\ud83d\udcac Chat"],["dispositivi","\ud83d\udcf1 Dispositivi"]].forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(window.activeDashTab===k?" active":"");btn.textContent=l;
     btn.addEventListener("click",()=>{window.activeDashTab=k;renderPage();});tabBar.appendChild(btn);
   });
   page.appendChild(tabBar);
   if(window.activeDashTab==="bandiere"){renderBandiere(page);return;}
   if(window.activeDashTab==="note"){renderNote(page);return;}
+  if(window.activeDashTab==="chat"){renderChatPanel(page);return;}
   if(window.activeDashTab==="dispositivi"){renderDispositivi(page);return;}
   if(window.activeStation){
     const bar=document.createElement("div");bar.className="zone-filter-bar";

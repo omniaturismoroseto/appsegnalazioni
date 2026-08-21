@@ -1,4 +1,5 @@
 import { FLAG_COLORS, STATIONS, TYPES, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData } from "./core.js";
+import { renderChatPanel } from "./chat.js";
 
 export function _stationNeighborsClient(num){
   var ordered=STATIONS.slice().sort(function(a,b){return a.lat-b.lat;});
@@ -20,6 +21,17 @@ export function _sendStationEmergency(num,zoneStr){
 
 export function renderStationPanel(page){
   const num=stationMode;
+
+  if(window._stationChatOpen){
+    const chatWrap=document.createElement("div");chatWrap.style.cssText="padding-bottom:110px";
+    const back=document.createElement("button");back.className="back-btn";back.textContent="← Torna alla postazione";
+    back.addEventListener("click",function(){window._stationChatOpen=false;render("station");});
+    chatWrap.appendChild(back);
+    renderChatPanel(chatWrap);
+    page.appendChild(chatWrap);
+    return;
+  }
+
   const st=STATIONS.find(s=>String(s.num)===String(num));
   const stName=st?st.name:"";
   const zoneStr="P."+num+" – "+stName;
@@ -115,10 +127,11 @@ export function renderStationPanel(page){
     +'<span style="font-size:15px;opacity:.85">Dati non ancora collegati</span>';
   grid.appendChild(meteoTile);
 
-  // Tile CHAT + WALKIE-TALKIE (riservate, in arrivo)
-  const chatTile=document.createElement("div");
-  chatTile.style.cssText="background:#4a4a46;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;opacity:.65";
-  chatTile.innerHTML='<span style="font-size:14px;font-weight:700">💬 CHAT</span><span style="font-size:13.5px">presto disponibile</span>';
+  // Tile CHAT (attiva) + WALKIE-TALKIE (riservata, in arrivo)
+  const chatTile=document.createElement("button");chatTile.type="button";
+  chatTile.style.cssText="background:#4a4a46;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  chatTile.innerHTML='<span style="font-size:14px;font-weight:700">💬 CHAT</span><span style="font-size:13.5px">con tutte le postazioni</span>';
+  chatTile.addEventListener("click",function(){window._stationChatOpen=true;render("station");});
   const wtTile=document.createElement("div");
   wtTile.style.cssText="background:#4a4a46;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;opacity:.65";
   wtTile.innerHTML='<span style="font-size:14px;font-weight:700">🎙️ WALKIE-TALKIE</span><span style="font-size:13.5px">presto disponibile</span>';
