@@ -58,6 +58,19 @@
         ".read": "auth != null"
       }
     },
+    "chatEsterna": {
+      "messages": {
+        ".read": "auth != null && (auth.token.role == 'admin' || auth.token.role == 'coordinator' || auth.token.role == 'cp' || auth.token.role == 'forze_ordine')",
+        ".indexOn": "ts",
+        "$msgId": {
+          ".write": "!data.exists() && auth != null && (auth.token.role == 'admin' || auth.token.role == 'coordinator' || auth.token.role == 'cp' || auth.token.role == 'forze_ordine')",
+          ".validate": "newData.hasChildren(['text','authorLabel','role','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('authorLabel').isString() && newData.child('authorLabel').val().length <= 60 && newData.child('role').val().matches(/^(admin|coordinator|cp|forze_ordine)$/) && newData.child('ts').isNumber()"
+        }
+      },
+      "resetAt": {
+        ".read": "auth != null && (auth.token.role == 'admin' || auth.token.role == 'coordinator' || auth.token.role == 'cp' || auth.token.role == 'forze_ordine')"
+      }
+    },
     "config": {
       "emergencyContacts": {
         ".read": "auth != null && auth.token.role !== 'station'",

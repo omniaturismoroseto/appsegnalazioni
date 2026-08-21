@@ -284,6 +284,27 @@ exports.resetChatSerale = onSchedule(
   }
 );
 
+// Chat esterna (admin/coordinatore/CP/forze dell'ordine): reset a fine
+// giornata (23:59), non alle 19:05 come la chat con le postazioni - orari
+// diversi voluti apposta. Per l'admin nessuna delle due si resetta mai
+// (vedi chat.js, _visibleMessages: se window.isAdmin ignora del tutto
+// questo timestamp).
+exports.resetChatEsternaSerale = onSchedule(
+  {
+    schedule: "59 23 * * *",      // 23:59
+    timeZone: "Europe/Rome",
+    region: "europe-west1",
+  },
+  async () => {
+    try {
+      await admin.database().ref("chatEsterna/resetAt").set(Date.now());
+      console.log("Chat esterna: reset visivo serale (23:59 Roma)");
+    } catch (e) {
+      await reportError(e, "resetChatEsternaSerale");
+    }
+  }
+);
+
 // ============================================================
 // 4) DISPOSITIVI DI POSTAZIONE — autenticazione e allarme emergenza mirato
 // ============================================================
@@ -652,6 +673,91 @@ exports.getChatAudio = onRequest({ region: "europe-west1", cors: false }, async 
     res.status(500).send("errore server");
   }
 });
+
+// ============================================================
+// 7bis) PUSH PER LA CHAT ESTERNA — solo admin/coordinatore/CP/forze
+//    dell'ordine, mai postazioni/operatori normali (vedi anche
+//    database.rules.json). operatorTokens non salva il ruolo Firebase vero
+//    (solo la stringa fissa "operator", storica), serve incrociare per uid
+//    con i claim reali - stesso schema di getAllChatTokens ma al contrario:
+//    qui si INCLUDONO solo i 4 ruoli ammessi, invece di escluderne due.
+// ============================================================
+async function getExternalChatTokens() {
+  const [operatorSnap, userList] = await Promise.all([
+    admin.database().ref("operatorTokens").once("value"),
+    admin.auth().listUsers(1000),
+  ]);
+
+  const roleByUid = new Map();
+  userList.users.forEach((u) => {
+    if (u.customClaims && u.customClaims.role) roleByUid.set(u.uid, u.customClaims.role);
+  });
+  const allowedRoles = new Set(["admin", "coordinator", "cp", "forze_ordine"]);
+
+  const tokenPaths = new Map();
+  const operators = operatorSnap.val() || {};
+  Object.entries(operators).forEach(([id, row]) => {
+    if (!row || row.enabled !== true || !row.token || !row.uid) return;
+    if (!allowedRoles.has(roleByUid.get(row.uid))) return;
+    if (!tokenPaths.has(row.token)) tokenPaths.set(row.token, "operatorTokens/" + id);
+  });
+  return tokenPaths;
+}
+
+exports.sendChatEsternaNotification = onValueCreated(
+  { ref: "/chatEsterna/messages/{id}", region: "europe-west1" },
+  async (event) => {
+    const data = event.data.val();
+    if (!data || !data.text) return null;
+
+    try {
+      const tokenPaths = await getExternalChatTokens();
+      const tokens = [...tokenPaths.keys()];
+      if (!tokens.length) return null;
+
+      const author = String(data.authorLabel || "Chat esterna").slice(0, 60);
+      const message = {
+        tokens,
+        notification: { title: "🌐 " + author, body: String(data.text || "").slice(0, 150) },
+        data: { type: "chat_esterna_message" },
+        android: {
+          priority: "high",
+          notification: { channelId: "omnia_chat", sound: "default", tag: "omnia_chat_esterna" },
+        },
+        webpush: {
+          headers: { Urgency: "normal", TTL: "120" },
+          notification: {
+            icon: "/appsegnalazioni/icon-192-fixed.png",
+            badge: "/appsegnalazioni/icon-192-fixed.png",
+            tag: "omnia_chat_esterna",
+          },
+          fcmOptions: { link: "https://omniaturismoroseto.github.io/appsegnalazioni/" },
+        },
+      };
+
+      const resp = await admin.messaging().sendEachForMulticast(message);
+      if (resp.failureCount) {
+        const removals = [];
+        resp.responses.forEach((r, i) => {
+          if (r.success) return;
+          const code = r.error && r.error.code;
+          if (
+            code === "messaging/registration-token-not-registered" ||
+            code === "messaging/invalid-registration-token" ||
+            code === "messaging/invalid-argument"
+          ) {
+            const path = tokenPaths.get(tokens[i]);
+            if (path) removals.push(admin.database().ref(path).remove());
+          }
+        });
+        if (removals.length) await Promise.allSettled(removals);
+      }
+    } catch (e) {
+      await reportError(e, "sendChatEsternaNotification");
+    }
+    return null;
+  }
+);
 
 // ============================================================
 // 8) RUOLO ADMIN — gestione account operatori

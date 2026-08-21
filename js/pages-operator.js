@@ -55,9 +55,14 @@ export function renderDashboard(page){
   // bloccato anche lato dati in database.rules.json, questo e' solo per non
   // mostrare un tab che comunque non funzionerebbe.
   const chatBlocked=window.userRole==="cp"||window.userRole==="forze_ordine";
+  // La chat esterna (admin/coordinatore/CP/forze dell'ordine tra loro) e'
+  // un canale completamente diverso da quello con le postazioni - vedi
+  // chat.js (CHANNELS) e database.rules.json (/chatEsterna).
+  const externalChatAllowed=window.userRole==="admin"||window.userRole==="coordinator"||window.userRole==="cp"||window.userRole==="forze_ordine";
   const tabs=[["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"]];
   if(!chatBlocked)tabs.push(["chat","\ud83d\udcac Chat"]);
   tabs.push(["dispositivi","\ud83d\udcf1 Dispositivi"]);
+  if(externalChatAllowed)tabs.push(["chatEsterna","\ud83c\udf10 Chat esterna"]);
   if(window.isAdmin)tabs.push(["admin","\ud83d\udee0\ufe0f Admin"]);
   tabs.forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(window.activeDashTab===k?" active":"");btn.textContent=l;
@@ -71,6 +76,10 @@ export function renderDashboard(page){
     else{renderChatPanel(page);return;}
   }
   if(window.activeDashTab==="dispositivi"){renderDispositivi(page);return;}
+  if(window.activeDashTab==="chatEsterna"){
+    if(!externalChatAllowed){window.activeDashTab="segnalazioni";}
+    else{renderChatPanel(page,{channel:"external"});return;}
+  }
   if(window.activeDashTab==="admin"){
     if(!window.isAdmin){window.activeDashTab="segnalazioni";}
     else{renderAdminPanel(page);return;}

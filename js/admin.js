@@ -63,7 +63,7 @@ function _fmtDate(iso){
 // Le funzioni specifiche per ciascuno restano da definire; per ora l'unica
 // regola gia' attiva e' che CP e forze dell'ordine non vedono mai la chat
 // (ne' testo ne' vocali) - vedi database.rules.json e pages-operator.js.
-const ROLE_LABELS={
+export const ROLE_LABELS={
   admin:"Admin",
   coordinator:"Coordinatore",
   cp:"Capitaneria di Porto",

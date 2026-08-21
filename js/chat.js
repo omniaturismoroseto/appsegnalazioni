@@ -1,22 +1,57 @@
-// Chat interna condivisa tra tutte le postazioni e gli operatori: un unico
-// canale (come una radio), niente conversazioni private. Lo stato/listener
-// Firebase vive in core.js (chatRef, chatMessages, chatResetAt) insieme agli
-// altri; qui c'e' solo il disegno del pannello, riusato sia da
-// pages-operator.js (tab "Chat" in dashboard) sia da pages-station.js
-// (tile "Chat").
+// Due canali chat separati, stesso componente parametrizzato:
 //
-// Messaggi vocali (walkie-talkie): registrati con MediaRecorder (funziona
-// sia nel PWA da browser sia nella WebView Android di Capacitor, nessun
-// plugin nativo necessario per la registrazione in se') e salvati come
-// audio in base64 direttamente dentro il messaggio - stesso schema gia'
-// usato per le foto delle segnalazioni (vedi addReport in core.js), invece
-// di introdurre Firebase Storage. Durata massima 60s per restare ben sotto
-// il limite di dimensione (vedi database.rules.json).
-import { _escapeHtml, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
+// - "stations" (default): postazioni + operatori + admin, come una radio
+//   (vedi tile "Chat" nel pannello postazione, tab "Chat" in dashboard).
+//   Supporta anche i messaggi vocali (walkie-talkie).
+// - "external": solo admin/coordinatore/CP/forze dell'ordine (tab "Chat
+//   esterna" in dashboard) - mai raggiungibile da postazioni/operatori
+//   normali, ne' lato interfaccia ne' lato dati (vedi database.rules.json).
+//   Solo testo.
+//
+// Lo stato/listener Firebase di entrambi i canali vive in core.js
+// (chatRef/chatMessages/chatResetAt e chatEsternaRef/chatEsternaMessages/
+// chatEsternaResetAt) insieme agli altri; qui c'e' solo il disegno del
+// pannello.
+//
+// Messaggi vocali (solo canale "stations"): registrati con MediaRecorder
+// (funziona sia nel PWA da browser sia nella WebView Android di Capacitor,
+// nessun plugin nativo necessario per la registrazione in se') e salvati
+// come audio in base64 direttamente dentro il messaggio - stesso schema
+// gia' usato per le foto delle segnalazioni (vedi addReport in core.js),
+// invece di introdurre Firebase Storage. Durata massima 60s per restare
+// ben sotto il limite di dimensione (vedi database.rules.json).
+import { _escapeHtml, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
+import { ROLE_LABELS } from "./admin.js";
 
 const MAX_RECORDING_S=60;
 
-let _showFullHistory=false; // reimpostato ad ogni apertura del pannello (vedi renderChatPanel)
+// Configurazione dei due canali: cosa leggere/scrivere e come firmare i
+// messaggi. Tutto qui dentro sono FUNZIONI, non i valori diretti: sia
+// perche' i binding importati vanno riletti ad ogni render per restare
+// aggiornati con l'ultimo valore del listener in core.js, sia perche'
+// core.js e chat.js si importano a vicenda (grafo circolare, come il resto
+// dell'app) - leggere chatRef/chatEsternaRef gia' qui a livello di modulo
+// (invece che dentro una funzione, richiamata solo piu' tardi) e' esattamente
+// il tipo di riferimento "troppo presto" che in passato ha gia' causato un
+// "Cannot access before initialization".
+const CHANNELS={
+  stations:{
+    getRef:()=>chatRef,
+    getMessages:()=>chatMessages,
+    getResetAt:()=>chatResetAt,
+    supportsAudio:true,
+    emptyToday:"Nessun messaggio ancora oggi. Scrivi il primo!",
+    headerLabel:"💬 Chat interna — tutte le postazioni"
+  },
+  external:{
+    getRef:()=>chatEsternaRef,
+    getMessages:()=>chatEsternaMessages,
+    getResetAt:()=>chatEsternaResetAt,
+    supportsAudio:false,
+    emptyToday:"Nessun messaggio ancora oggi.",
+    headerLabel:"🌐 Chat esterna — admin, coordinatore, CP, forze dell'ordine"
+  }
+};
 
 // Identificativo locale (non l'autorLabel, che due persone potrebbero
 // condividere) per riconoscere "e' un messaggio mio": serve solo per non
@@ -46,12 +81,7 @@ function _promptStationSurname(){
   return name;
 }
 
-function _chatAuthorLabel(){
-  if(stationMode){
-    let surname=_stationSurname();
-    if(!surname)surname=_promptStationSurname();
-    return (surname?surname+" ":"")+"P."+stationMode;
-  }
+function _promptOwnName(){
   try{
     const saved=localStorage.getItem("omnia_chat_name");
     if(saved) return saved;
@@ -64,22 +94,38 @@ function _chatAuthorLabel(){
   return name;
 }
 
+// Firma del messaggio + valore del campo "role" salvato (diverso dal ruolo
+// Firebase quando si tratta di postazione/operatore semplice, per
+// compatibilita' con lo schema gia' in uso su /chat/messages).
+function _chatAuthorAndRole(channel){
+  if(channel==="external"){
+    const roleLabel=ROLE_LABELS[window.userRole]||window.userRole||"?";
+    return {authorLabel:_promptOwnName()+" ("+roleLabel+")", role:window.userRole||"operator"};
+  }
+  if(stationMode){
+    let surname=_stationSurname();
+    if(!surname)surname=_promptStationSurname();
+    return {authorLabel:(surname?surname+" ":"")+"P."+stationMode, role:"station"};
+  }
+  return {authorLabel:_promptOwnName(), role:"operator"};
+}
+
 function _fmtChatTime(ts){
   try{return new Date(ts).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});}catch(e){return "";}
 }
 
-function _visibleMessages(){
-  const all=Object.values(chatMessages||{}).sort((a,b)=>a.ts-b.ts);
-  if(_showFullHistory)return all;
-  return all.filter(m=>m.ts>=chatResetAt);
+function _visibleMessages(cfg){
+  const all=Object.values(cfg.getMessages()||{}).sort((a,b)=>a.ts-b.ts);
+  // Per l'admin nessuna delle due chat si resetta mai: vede sempre tutto,
+  // di default, senza bisogno di un pulsante per richiederlo.
+  if(window.isAdmin)return all;
+  return all.filter(m=>m.ts>=cfg.getResetAt());
 }
 
-function _renderMessages(list){
-  const msgs=_visibleMessages();
+function _renderMessages(list,cfg){
+  const msgs=_visibleMessages(cfg);
   if(!msgs.length){
-    list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px">'
-      +(_showFullHistory?"Nessun messaggio nello storico.":"Nessun messaggio ancora oggi. Scrivi il primo!")
-      +'</div>';
+    list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px">'+cfg.emptyToday+'</div>';
     return;
   }
   list.innerHTML=msgs.map(function(m){
@@ -98,10 +144,11 @@ function _renderMessages(list){
   list.scrollTop=list.scrollHeight;
 }
 
-function _sendChatEntry(fields,onDone){
-  chatRef.push(Object.assign({
-    authorLabel: _chatAuthorLabel(),
-    role: stationMode ? "station" : "operator",
+function _sendChatEntry(cfg,channel,fields,onDone){
+  const {authorLabel,role}=_chatAuthorAndRole(channel);
+  cfg.getRef().push(Object.assign({
+    authorLabel,
+    role,
     deviceId: _chatDeviceId(),
     ts: Date.now()
   },fields)).then(function(){
@@ -112,12 +159,12 @@ function _sendChatEntry(fields,onDone){
 }
 
 // opts.isStation: true quando richiamata dal pannello di postazione (mostra
-// il controllo "bagnino in turno" invece del toggle storico completo, che
-// resta riservato alla dashboard operatori/admin - vedi nota in fondo al
-// file sul perche' non e' un controllo di sicurezza vero e proprio).
+// il controllo "bagnino in turno"). opts.channel: "stations" (default) o
+// "external" - vedi CHANNELS sopra.
 export function renderChatPanel(page,opts){
   opts=opts||{};
-  _showFullHistory=false;
+  const channel=opts.channel==="external"?"external":"stations";
+  const cfg=CHANNELS[channel];
 
   const wrap=document.createElement("div");
   wrap.style.cssText="display:flex;flex-direction:column;height:60vh;min-height:360px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--bg)";
@@ -126,7 +173,8 @@ export function renderChatPanel(page,opts){
   header.style.cssText="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px";
   const headerTop=document.createElement("div");
   headerTop.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:8px";
-  headerTop.innerHTML='<span style="font-size:12px;font-weight:700;color:var(--text2)">💬 Chat interna — tutte le postazioni</span>';
+  headerTop.innerHTML='<span style="font-size:12px;font-weight:700;color:var(--text2)">'+cfg.headerLabel+'</span>'
+    +(window.isAdmin?'<span style="font-size:10px;color:var(--text3)">storico completo, mai azzerato</span>':'');
   header.appendChild(headerTop);
   wrap.appendChild(header);
 
@@ -150,37 +198,50 @@ export function renderChatPanel(page,opts){
     changeBtn.addEventListener("click",function(){_promptStationSurname();refreshShiftLabel();});
     shiftRow.appendChild(shiftLabel);shiftRow.appendChild(changeBtn);
     header.appendChild(shiftRow);
-  }else if(window.isAdmin){
-    // Solo un admin vero (claim Firebase role:"admin", vedi core.js) puo'
-    // rivedere lo storico completo, non solo i messaggi di oggi - un
-    // operatore normale vede sempre e solo "oggi", come le postazioni.
-    const histRow=document.createElement("div");
-    histRow.style.cssText="display:flex;align-items:center;gap:6px";
-    const histBtn=document.createElement("button");histBtn.type="button";
-    histBtn.style.cssText="font-size:11px;padding:2px 8px;color:var(--text2);background:var(--bg3);border-color:transparent";
-    function refreshHistBtn(){histBtn.textContent=_showFullHistory?"↩ solo messaggi di oggi":"🕘 mostra storico completo";}
-    refreshHistBtn();
-    histBtn.addEventListener("click",function(){_showFullHistory=!_showFullHistory;refreshHistBtn();_renderMessages(list);});
-    histRow.appendChild(histBtn);
-    header.appendChild(histRow);
   }
 
-  _renderMessages(list);
+  _renderMessages(list,cfg);
 
-  // ---- Riga di digitazione (testo + microfono) ----
+  // ---- Riga di digitazione (testo, + microfono se il canale lo supporta) ----
   const inputRow=document.createElement("div");
   inputRow.style.cssText="display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);background:var(--bg)";
   const input=document.createElement("input");
   input.type="text";input.placeholder="Scrivi un messaggio...";input.maxLength=500;
   input.style.cssText="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);font-size:14px";
-  const micBtn=document.createElement("button");micBtn.type="button";
-  micBtn.title="Registra messaggio vocale";
-  micBtn.style.cssText="width:auto;padding:9px 13px;font-size:16px;background:var(--bg2)";
-  micBtn.textContent="🎙️";
+  inputRow.appendChild(input);
+
+  let micBtn=null;
+  if(cfg.supportsAudio){
+    micBtn=document.createElement("button");micBtn.type="button";
+    micBtn.title="Registra messaggio vocale";
+    micBtn.style.cssText="width:auto;padding:9px 13px;font-size:16px;background:var(--bg2)";
+    micBtn.textContent="🎙️";
+    inputRow.appendChild(micBtn);
+  }
+
   const sendBtn=document.createElement("button");
   sendBtn.className="btn-primary";sendBtn.style.cssText="width:auto;padding:9px 16px";sendBtn.textContent="Invia";
-  inputRow.appendChild(input);inputRow.appendChild(micBtn);inputRow.appendChild(sendBtn);
+  inputRow.appendChild(sendBtn);
   wrap.appendChild(inputRow);
+
+  page.appendChild(wrap);
+  input.focus();
+
+  function send(){
+    const text=input.value.trim();
+    if(!text)return;
+    input.value="";
+    input.disabled=true;sendBtn.disabled=true;
+    _sendChatEntry(cfg,channel,{text:text.slice(0,500)},function(err){
+      input.disabled=false;sendBtn.disabled=false;
+      if(err){alert("Errore invio messaggio: "+err.message);return;}
+      input.focus();
+    });
+  }
+  sendBtn.addEventListener("click",send);
+  input.addEventListener("keydown",function(e){if(e.key==="Enter")send();});
+
+  if(!cfg.supportsAudio)return;
 
   // ---- Riga di registrazione in corso (sostituisce inputRow mentre attiva) ----
   const recRow=document.createElement("div");
@@ -199,28 +260,11 @@ export function renderChatPanel(page,opts){
   recRow.appendChild(recDot);recRow.appendChild(recTimer);recRow.appendChild(cancelRecBtn);recRow.appendChild(stopRecBtn);
   wrap.appendChild(recRow);
 
-  page.appendChild(wrap);
-  input.focus();
-
   if(!(navigator.mediaDevices&&window.MediaRecorder)){
     micBtn.disabled=true;
     micBtn.title="Registrazione audio non supportata su questo browser";
     micBtn.style.opacity=".4";
   }
-
-  function send(){
-    const text=input.value.trim();
-    if(!text)return;
-    input.value="";
-    input.disabled=true;sendBtn.disabled=true;
-    _sendChatEntry({text:text.slice(0,500)},function(err){
-      input.disabled=false;sendBtn.disabled=false;
-      if(err){alert("Errore invio messaggio: "+err.message);return;}
-      input.focus();
-    });
-  }
-  sendBtn.addEventListener("click",send);
-  input.addEventListener("keydown",function(e){if(e.key==="Enter")send();});
 
   // ---- Registrazione vocale ----
   let mediaRecorder=null,recChunks=[],recStream=null,recStartedAt=0,recTimerId=null,recCancelled=false;
@@ -257,7 +301,7 @@ export function renderChatPanel(page,opts){
             alert("Messaggio vocale troppo lungo, riprova con uno più breve.");
             return;
           }
-          _sendChatEntry({type:"audio",audioData:dataUri,audioDuration:durationS},function(err){
+          _sendChatEntry(cfg,channel,{type:"audio",audioData:dataUri,audioDuration:durationS},function(err){
             if(err)alert("Errore invio messaggio vocale: "+err.message);
           });
         };
@@ -291,13 +335,14 @@ export function renderChatPanel(page,opts){
 }
 
 // ---- Walkie-talkie: arrivo di un messaggio vocale altrui ad app aperta ----
-// Chiamata da core.js (listener chatRef) per ogni nuovo messaggio audio non
-// mandato da questo stesso dispositivo. Lo riproduce subito da solo (come
-// una radio) e mostra un popup con riascolta/rispondi/chiudi, come da
-// richiesta. Su web funziona solo ad app aperta (in primo piano o in una
-// scheda ancora attiva): un browser non puo' forzare altoparlante/autoplay
-// ad app completamente chiusa, quello lo fa solo l'app Android nativa
-// (vedi OmniaMessagingService.java + ChatAudioService.java).
+// Solo canale "stations" (l'unico con audio). Chiamata da core.js (listener
+// chatRef) per ogni nuovo messaggio audio non mandato da questo stesso
+// dispositivo. Lo riproduce subito da solo (come una radio) e mostra un
+// popup con riascolta/rispondi/chiudi, come da richiesta. Su web funziona
+// solo ad app aperta (in primo piano o in una scheda ancora attiva): un
+// browser non puo' forzare altoparlante/autoplay ad app completamente
+// chiusa, quello lo fa solo l'app Android nativa (vedi
+// OmniaMessagingService.java + ChatAudioService.java).
 export function _onIncomingChatAudio(msg,msgId){
   try{
     const old=document.getElementById("_chatIncomingPopup");
@@ -351,9 +396,10 @@ export function _onIncomingChatAudio(msg,msgId){
 }
 
 // Nota sul reset serale: i messaggi non vengono MAI cancellati dal database
-// (vedi resetChatSerale in functions/index.js, che aggiorna solo un
-// timestamp condiviso). Postazioni e operatori normali vedono sempre e solo
-// i messaggi da quel momento in poi; solo un admin vero (window.isAdmin,
-// popolato da core.js leggendo il claim Firebase role:"admin" - vedi
-// promoteToAdmin in functions/index.js) puo' premere "mostra storico
-// completo" per rivedere tutto.
+// in nessuno dei due canali (vedi resetChatSerale e resetChatEsternaSerale
+// in functions/index.js, che aggiornano solo un timestamp condiviso a
+// testa). Postazioni/operatori/coordinatore/CP/forze dell'ordine vedono
+// sempre e solo i messaggi da quel momento in poi nei canali a cui hanno
+// accesso; SOLO l'admin (window.isAdmin, claim Firebase role:"admin") vede
+// sempre tutto lo storico di entrambe, senza filtro e senza bisogno di
+// premere nulla.
