@@ -10,4 +10,8 @@ export default defineConfig({
     // una lista precaricata di file: mette in cache qualunque URL richiesto,
     // quindi i nomi con hash di Vite per il cache-busting sono sicuri.
   },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./test/setup.js"],
+  },
 });
