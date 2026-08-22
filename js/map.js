@@ -177,8 +177,17 @@ function addMapTypeToggle(){
   el.appendChild(btn);
   window._mapTypeToggleBtn=btn;
 }
+// Fonte delle segnalazioni per la mappa: un operatore/postazione autenticato
+// vede i dati completi (window.reportsData), un visitatore pubblico la copia
+// ripulita (window.reportsPublicData, solo type/zone/status) — vedi core.js e
+// database.rules.json. Alla mappa servono comunque solo type/zone/status.
+function _mapReportsData(){
+  return (window.currentRole==="operator"||stationMode)
+    ? (window.reportsData||{})
+    : (window.reportsPublicData||{});
+}
 export function getMarkerColor(s){
-  const open=Object.values(window.reportsData).filter(r=>r.status==="aperta");
+  const open=Object.values(_mapReportsData()).filter(r=>r.status==="aperta");
   const zl=`P.${s.num} – ${s.name}`;
   const zr=open.filter(r=>r.zone===zl);
   const flagColor=FLAG_COLORS[flagsData[s.num]||"verde"];
@@ -194,7 +203,7 @@ export function refreshMarkers(){
   window._refreshPending=false;
   window.mapMarkers.forEach(function(m){_removeMarker(m);});
   window.mapMarkers=[];
-  const open=Object.values(window.reportsData).filter(r=>r.status==="aperta");
+  const open=Object.values(_mapReportsData()).filter(r=>r.status==="aperta");
   STATIONS.forEach(s=>{
     const zl=`P.${s.num} – ${s.name}`;
     const zr=open.filter(r=>r.zone===zl);

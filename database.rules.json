@@ -1,10 +1,17 @@
 {
   "rules": {
     "reports": {
-      ".read": true,
+      ".read": "auth != null",
       "$reportId": {
         ".write": "!data.exists() || (auth != null && auth.token.role !== 'station')",
         ".validate": "newData.hasChildren(['type','sub','zone','ts','status']) && newData.child('type').val().matches(/^(emergenza|pericolo)$/) && newData.child('status').val().matches(/^(aperta|risolta)$/) && newData.child('ts').isString() && newData.child('zone').isString() && newData.child('zone').val().length < 100 && newData.child('sub').isString() && newData.child('sub').val().length < 200 && (!newData.hasChild('notes') || (newData.child('notes').isString() && newData.child('notes').val().length < 1000)) && (!newData.hasChild('photo') || (newData.child('photo').isString() && newData.child('photo').val().length < 400000)) && (!newData.hasChild('phone') || (newData.child('phone').isString() && newData.child('phone').val().length < 40)) && (!newData.hasChild('author') || (newData.child('author').isString() && newData.child('author').val().length < 100))"
+      }
+    },
+    "reportsPublic": {
+      ".read": true,
+      ".write": false,
+      "$reportId": {
+        ".validate": "newData.hasChildren(['type','zone','status'])"
       }
     },
     "flags": {
@@ -26,7 +33,7 @@
     "operatorTokens": {
       ".read": false,
       "$tokenId": {
-        ".write": "auth != null",
+        ".write": "auth != null && auth.token.role !== 'station'",
         ".validate": "newData.hasChildren(['token','enabled','role']) && newData.child('role').val() === 'operator'"
       }
     },
@@ -51,7 +58,7 @@
         ".indexOn": "ts",
         "$msgId": {
           ".write": "!data.exists() && auth != null && (auth.token.role == 'station' || auth.token.role == 'admin' || auth.token.role == 'coordinator')",
-          ".validate": "newData.hasChildren(['authorLabel','role','ts']) && newData.child('authorLabel').isString() && newData.child('authorLabel').val().length <= 40 && newData.child('role').val().matches(/^(station|operator)$/) && newData.child('ts').isNumber() && ((newData.child('type').val() === 'audio' && newData.child('audioData').isString() && newData.child('audioData').val().length > 0 && newData.child('audioData').val().length <= 450000 && newData.child('audioDuration').isNumber() && newData.child('audioDuration').val() > 0 && newData.child('audioDuration').val() <= 60) || ((!newData.hasChild('type') || newData.child('type').val() === 'text') && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500))"
+          ".validate": "newData.hasChildren(['authorLabel','role','ts']) && newData.child('authorLabel').isString() && newData.child('authorLabel').val().length <= 40 && newData.child('role').val().matches(/^(station|operator)$/) && newData.child('ts').isNumber() && ((newData.child('type').val() === 'audio' && newData.child('audioData').isString() && newData.child('audioData').val().length > 0 && newData.child('audioData').val().length <= 450000 && newData.child('audioData').val().matches(/^data:audio\\//) && newData.child('audioDuration').isNumber() && newData.child('audioDuration').val() > 0 && newData.child('audioDuration').val() <= 60) || ((!newData.hasChild('type') || newData.child('type').val() === 'text') && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500))"
         }
       },
       "resetAt": {

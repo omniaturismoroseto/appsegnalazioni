@@ -1,4 +1,4 @@
-const { onValueCreated } = require("firebase-functions/v2/database");
+const { onValueCreated, onValueWritten } = require("firebase-functions/v2/database");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
@@ -120,6 +120,38 @@ async function cleanupInvalidTokens(response, tokens) {
   });
   if (removals.length) await Promise.allSettled(removals);
 }
+
+// ============================================================
+// 0) MIRROR PUBBLICO DELLE SEGNALAZIONI (privacy)
+//    /reports contiene dati personali (telefono, nome, note, GPS, foto,
+//    anche di minori) ed e' leggibile SOLO da operatori/postazioni
+//    autenticati (vedi database.rules.json). La mappa dei visitatori
+//    pubblici ha pero' bisogno di sapere DOVE ci sono allarmi aperti:
+//    questa funzione mantiene una copia ripulita in /reportsPublic con
+//    solo type/zone/status — nessun dato personale. E' l'unica cosa che
+//    scrive /reportsPublic (i client non possono, vedi le regole), quindi
+//    non e' falsificabile piu' di quanto lo sia creare una segnalazione.
+// ============================================================
+exports.mirrorReportPublic = onValueWritten(
+  { ref: "/reports/{id}", region: "europe-west1" },
+  async (event) => {
+    const pubRef = admin.database().ref("reportsPublic/" + event.params.id);
+    const after = event.data.after.val();
+    try {
+      if (!after) {
+        await pubRef.remove();
+        return;
+      }
+      await pubRef.set({
+        type: String(after.type || ""),
+        zone: String(after.zone || ""),
+        status: String(after.status || "aperta"),
+      });
+    } catch (e) {
+      await reportError(e, "mirrorReportPublic");
+    }
+  }
+);
 
 // ============================================================
 // 1) PUSH IMMEDIATA alla creazione della segnalazione

@@ -132,8 +132,12 @@ function _renderMessages(list,cfg){
     const isStation=m.role==="station";
     const bubbleColor=isStation?"var(--info-bg)":"var(--bg2)";
     const authorColor=isStation?"var(--info-text)":"var(--text2)";
+    // audioData e' un data-URI: va ESCAPATO come tutto il resto prima di finire
+    // in innerHTML, altrimenti un valore malevolo (le regole del DB ne limitano
+    // lunghezza e prefisso, ma non i caratteri) potrebbe chiudere l'attributo
+    // src e iniettare markup — XSS memorizzato verso gli altri operatori.
     const body=m.type==="audio"
-      ? '<audio controls preload="none" src="'+(m.audioData||"")+'" style="width:220px;max-width:100%;height:32px;display:block;margin-top:2px"></audio>'
+      ? '<audio controls preload="none" src="'+_escapeHtml(m.audioData||"")+'" style="width:220px;max-width:100%;height:32px;display:block;margin-top:2px"></audio>'
       : '<div style="font-size:13.5px;color:var(--text);white-space:pre-wrap;word-break:break-word">'+_escapeHtml(m.text||"")+'</div>';
     return '<div style="align-self:flex-start;max-width:85%;background:'+bubbleColor+';border-radius:10px;padding:8px 11px">'
       +'<div style="font-size:11px;font-weight:700;color:'+authorColor+';margin-bottom:2px">'+_escapeHtml(m.authorLabel||"?")+'</div>'

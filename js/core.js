@@ -177,6 +177,11 @@ export async function _registerContactPush(roleKey,btnEl){
 }
 export const _realDb=_getRealDb();
 export const reportsRef=_realDb.ref("reports");
+// Copia pubblica e ripulita (solo type/zone/status) alimentata dalla Cloud
+// Function mirrorReportPublic: e' l'UNICA fonte di segnalazioni leggibile dai
+// visitatori non autenticati, per la mappa. /reports vero contiene dati
+// personali ed e' ora riservato agli operatori/postazioni autenticati.
+export const reportsPublicRef=_realDb.ref("reportsPublic");
 export const flagsRef=_realDb.ref("flags");
 export const stationNotesRef=_realDb.ref("stationNotes");
 export const stationDevicesRef=_realDb.ref("stationDevices");
@@ -412,7 +417,8 @@ window.locamareMarker=null;
 export let nearestStation=null,nearestDist=null;
 window.fbReady=false;
 window.newReportCount=0;
-window.reportsData={};
+window.reportsData={};        // segnalazioni COMPLETE (solo utenti autenticati)
+window.reportsPublicData={};  // copia ripulita per la mappa dei visitatori pubblici
 export let flagsData={},stationNotesData={},stationDevicesData={};
 window.meteoData=null;
 window.meteoLoading=false;
@@ -517,6 +523,7 @@ export const SPECIAL_POINTS = [
 ];
   
 window.prevReportKeys=new Set();
+window._reportsPrimed=false; // true dopo il primo snapshot del listener /reports (vedi _onReportsSnapshot)
 export var _alertInterval=null;
 export var _alertCtx=null;
 export var _alertBanner=null;
@@ -564,15 +571,25 @@ flagsRef.on("value",snap=>{
   if(currentScreen==="dashboard"&&window.activeDashTab==="bandiere")renderPage();
 });
 
-reportsRef.on("value",snap=>{
+// Segnalazioni COMPLETE (con dati personali): leggibili solo da operatori/
+// postazioni autenticati (vedi database.rules.json). Il listener /reports e'
+// percio' attaccato/staccato in base allo stato di autenticazione, dentro
+// onAuthStateChanged piu' sotto — NON qui a livello globale, altrimenti per un
+// visitatore pubblico fallirebbe con permission_denied.
+function _onReportsSnapshot(snap){
   const snapData=snap.val()||{};
   const newKeys=new Set(Object.keys(snapData));
-  if(window.fbReady&&window.currentRole==="operator"){
+  // Conta i "nuovi" arrivi solo DOPO il primo snapshot di questo listener,
+  // altrimenti al primo caricamento tutte le segnalazioni gia' aperte
+  // verrebbero contate come nuove (la copia pubblica puo' aver gia' messo
+  // window.fbReady a true prima, quindi non ci si puo' basare su quello).
+  if(window._reportsPrimed&&window.currentRole==="operator"){
     let added=0;
     newKeys.forEach(k=>{if(!window.prevReportKeys.has(k)&&snapData[k]&&snapData[k].status==="aperta")added++;});
     if(added>0)window.newReportCount+=added;
   }
   window.prevReportKeys=newKeys;
+  window._reportsPrimed=true;
   window.reportsData=snapData;
   window.fbReady=true;
   if(window.currentRole==="operator"){
@@ -588,6 +605,16 @@ reportsRef.on("value",snap=>{
   if(currentScreen==="home")renderPage();
   if(currentScreen==="station")renderPage();
   renderHeader();
+}
+
+// Copia pubblica ripulita (solo type/zone/status): SEMPRE leggibile, alimenta
+// la mappa dei visitatori non autenticati. Per operatore/postazione la mappa
+// usa invece i dati completi di window.reportsData (vedi map.js).
+reportsPublicRef.on("value",function(snap){
+  window.reportsPublicData=snap.val()||{};
+  window.fbReady=true;
+  refreshMarkers();
+  if(currentScreen==="home")renderPage();
 });
 
 export let chatMessages={};
@@ -662,10 +689,15 @@ chatEsternaResetAtRef.on("value",function(snap){
           if(currentScreen==="dashboard")render("home");
           else renderHeader();
         }
-        // L'elenco dispositivi (stationDevices) è leggibile solo da operatori autenticati:
-        // ci si iscrive solo con sessione valida, mai per i visitatori pubblici.
+        // Le segnalazioni COMPLETE (/reports, con dati personali) e l'elenco
+        // dispositivi (stationDevices) sono leggibili solo con sessione valida:
+        // ci si iscrive qui, mai per i visitatori pubblici (che usano la copia
+        // ripulita /reportsPublic per la sola mappa).
         stationDevicesRef.off();
+        reportsRef.off();
         if(user){
+          window._reportsPrimed=false; // nuova sessione: non contare come "nuove" le segnalazioni gia' aperte
+          reportsRef.on("value",_onReportsSnapshot);
           stationDevicesRef.on("value",function(snap){
             stationDevicesData=snap.val()||{};
             if(currentScreen==="dashboard"&&window.activeDashTab==="dispositivi")renderPage();
@@ -683,8 +715,11 @@ chatEsternaResetAtRef.on("value",function(snap){
           }).catch(function(){window.userRole=null;window.isAdmin=false;});
         }else{
           stationDevicesData={};
+          window.reportsData={};
+          window._reportsPrimed=false;
           window.userRole=null;
           window.isAdmin=false;
+          refreshMarkers(); // la mappa torna a usare la copia pubblica /reportsPublic
         }
       });
     }
