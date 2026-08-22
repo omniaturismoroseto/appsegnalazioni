@@ -497,10 +497,11 @@ exports.purgeExpiredChildPhotos = onSchedule(
 );
 
 // ============================================================
-// 6) PUSH PER LA CHAT INTERNA — canale unico condiviso da postazioni e
-//    operatori/admin/coordinatore. A differenza di sendStationEmergency
-//    e' una notifica normale (non "solo dati"): non deve far scattare
-//    l'allarme a schermo intero, solo avvisare chi non ha l'app aperta.
+// 6) PUSH PER LA CHAT INTERNA — canale condiviso solo da postazioni,
+//    admin e coordinatore (un operatore semplice non la vede piu').
+//    A differenza di sendStationEmergency e' una notifica normale (non
+//    "solo dati"): non deve far scattare l'allarme a schermo intero, solo
+//    avvisare chi non ha l'app aperta.
 // ============================================================
 async function getAllChatTokens() {
   const [operatorSnap, deviceSnap, contactSnap, userList] = await Promise.all([
@@ -510,22 +511,24 @@ async function getAllChatTokens() {
     admin.auth().listUsers(1000),
   ]);
 
-  // CP e forze dell'ordine non vedono MAI la chat (vedi anche database.rules.json):
-  // niente notifiche di nuovi messaggi neanche per loro. operatorTokens non
-  // salva il ruolo Firebase vero (solo la stringa fissa "operator", storica -
-  // vedi enableOperatorPush), serve incrociare per uid con i claim reali.
+  // La chat con le postazioni e' riservata a postazioni + admin +
+  // coordinatore (vedi anche database.rules.json) - un operatore "semplice"
+  // (nessun ruolo speciale) NON la vede piu', ne' CP/forze dell'ordine.
+  // operatorTokens non salva il ruolo Firebase vero (solo la stringa fissa
+  // "operator", storica - vedi enableOperatorPush), serve incrociare per
+  // uid con i claim reali.
   const roleByUid = new Map();
   userList.users.forEach((u) => {
     if (u.customClaims && u.customClaims.role) roleByUid.set(u.uid, u.customClaims.role);
   });
-  const blockedRoles = new Set(["cp", "forze_ordine"]);
+  const allowedOperatorRoles = new Set(["admin", "coordinator"]);
 
   const tokenPaths = new Map(); // token -> percorso da azzerare se risulta morto
 
   const operators = operatorSnap.val() || {};
   Object.entries(operators).forEach(([id, row]) => {
-    if (!row || row.enabled !== true || !row.token) return;
-    if (row.uid && blockedRoles.has(roleByUid.get(row.uid))) return;
+    if (!row || row.enabled !== true || !row.token || !row.uid) return;
+    if (!allowedOperatorRoles.has(roleByUid.get(row.uid))) return;
     if (!tokenPaths.has(row.token)) {
       tokenPaths.set(row.token, "operatorTokens/" + id); // rimuove l'intero nodo, come cleanupInvalidTokens
     }

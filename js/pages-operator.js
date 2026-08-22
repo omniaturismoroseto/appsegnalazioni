@@ -51,16 +51,19 @@ export function renderDashboard(page){
   .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
-  // CP e forze dell'ordine non vedono mai la chat (ne' testo ne' vocali) -
-  // bloccato anche lato dati in database.rules.json, questo e' solo per non
-  // mostrare un tab che comunque non funzionerebbe.
-  const chatBlocked=window.userRole==="cp"||window.userRole==="forze_ordine";
+  // La chat con le postazioni e' riservata a admin e coordinatore (oltre
+  // alle postazioni stesse, che ci accedono dal proprio pannello, non da
+  // qui) - un operatore "semplice" (nessun ruolo speciale) non la vede piu',
+  // ne' CP/forze dell'ordine. Bloccato anche lato dati in
+  // database.rules.json, questo e' solo per non mostrare un tab che
+  // comunque non funzionerebbe.
+  const chatAllowed=window.userRole==="admin"||window.userRole==="coordinator";
   // La chat esterna (admin/coordinatore/CP/forze dell'ordine tra loro) e'
   // un canale completamente diverso da quello con le postazioni - vedi
   // chat.js (CHANNELS) e database.rules.json (/chatEsterna).
   const externalChatAllowed=window.userRole==="admin"||window.userRole==="coordinator"||window.userRole==="cp"||window.userRole==="forze_ordine";
   const tabs=[["segnalazioni","Segnalazioni"],["bandiere","Bandiere"],["note","\u26a0\ufe0f Note"]];
-  if(!chatBlocked)tabs.push(["chat","\ud83d\udcac Chat"]);
+  if(chatAllowed)tabs.push(["chat","\ud83d\udcac Chat"]);
   tabs.push(["dispositivi","\ud83d\udcf1 Dispositivi"]);
   if(externalChatAllowed)tabs.push(["chatEsterna","\ud83c\udf10 Chat esterna"]);
   if(window.isAdmin)tabs.push(["admin","\ud83d\udee0\ufe0f Admin"]);
@@ -72,7 +75,7 @@ export function renderDashboard(page){
   if(window.activeDashTab==="bandiere"){renderBandiere(page);return;}
   if(window.activeDashTab==="note"){renderNote(page);return;}
   if(window.activeDashTab==="chat"){
-    if(chatBlocked){window.activeDashTab="segnalazioni";}
+    if(!chatAllowed){window.activeDashTab="segnalazioni";}
     else{renderChatPanel(page);return;}
   }
   if(window.activeDashTab==="dispositivi"){renderDispositivi(page);return;}
