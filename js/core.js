@@ -41,6 +41,27 @@ export const firebaseConfig={
   appId:"1:699028105579:web:cdc0a432083b7fe18d442e"
 };
 export const FCM_VAPID_KEY = "BHJrW95NpOuHuRHcx9uLFrAxOfL6mhhM8JsuYycCFfY0Y9F8LB9skDgKfZ2nYzSjxs_qsgVziMe9zADuH0kvB_E";
+
+// App Check (reCAPTCHA v3): allega un token di attestazione a ogni richiesta
+// verso Realtime Database e Cloud Functions, così l'infrastruttura può
+// distinguere i client legittimi (questa app) da bot/script. Va attivato UNA
+// volta, subito dopo initializeApp e prima di qualsiasi uso di Auth/DB, quindi
+// lo chiamiamo dentro _getRealDb/_getAuth. Finché non si attiva "Enforce" in
+// Firebase Console il token viene solo raccolto (modalità osservazione): se il
+// caricamento fallisse, l'app continua a funzionare identica.
+const APP_CHECK_SITE_KEY = "6LePypQtAAAAAE8ssXg685Ai7ThaUivjhxfAQLUZ";
+var _appCheckActivated = false;
+function _activateAppCheckOnce(fbSdk){
+  if(_appCheckActivated) return;
+  _appCheckActivated = true;
+  try{
+    if(fbSdk && typeof fbSdk.appCheck === "function"){
+      fbSdk.appCheck().activate(APP_CHECK_SITE_KEY, true); // true = refresh automatico del token
+      console.log("App Check attivato (reCAPTCHA v3)");
+    }
+  }catch(e){ console.warn("App Check non attivato:", e); }
+}
+
 // Firebase Auth - inizializzazione diretta
 export var auth=null;
 export function _getAuth(){
@@ -58,6 +79,7 @@ export function _getAuth(){
   try{
     // Usa app già inizializzata o creane una nuova
     var app=fbSdk.apps&&fbSdk.apps.length>0?fbSdk.apps[0]:fbSdk.initializeApp(firebaseConfig);
+    _activateAppCheckOnce(fbSdk);
     auth=fbSdk.auth(app);
     console.log("Firebase Auth inizializzato OK");
     return auth;
@@ -76,6 +98,7 @@ export function _getRealDb(){
   if(!fbSdk||typeof fbSdk.database!=="function"){console.error("Firebase Database SDK non disponibile");return null;}
   try{
     var app=fbSdk.apps&&fbSdk.apps.length>0?fbSdk.apps[0]:fbSdk.initializeApp(firebaseConfig);
+    _activateAppCheckOnce(fbSdk);
     _realDbInstance=fbSdk.database(app);
     return _realDbInstance;
   }catch(e){console.error("Errore init Firebase Database:",e);return null;}

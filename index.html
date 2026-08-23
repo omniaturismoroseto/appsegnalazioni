@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Omnia Segnalazioni</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdnjs.cloudflare.com https://www.gstatic.com https://maps.gstatic.com https://www.googleapis.com https://maps.googleapis.com https://js-de.sentry-cdn.com https://browser.sentry-cdn.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net https://www.gstatic.com https://maps.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://js-de.sentry-cdn.com https://*.ingest.de.sentry.io; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; frame-src https://embed.windy.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://cdnjs.cloudflare.com https://www.gstatic.com https://maps.gstatic.com https://www.googleapis.com https://maps.googleapis.com https://www.google.com https://www.gstatic.com/recaptcha/ https://js-de.sentry-cdn.com https://browser.sentry-cdn.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://www.google.com https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net https://www.gstatic.com https://maps.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://js-de.sentry-cdn.com https://*.ingest.de.sentry.io; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; frame-src https://embed.windy.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
 <script
   src="https://js-de.sentry-cdn.com/aa986c5b778097da921cc83e2485e79b.min.js"
   crossorigin="anonymous"
@@ -458,6 +458,7 @@ label:first-child{margin-top:0}
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-check-compat.js"></script>
 <script>
 // Accesso al Realtime Database tramite il vero SDK Firebase (autenticazione
 // gestita automaticamente dall'SDK stesso — niente più token da allegare a mano).
