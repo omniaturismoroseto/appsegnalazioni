@@ -1,4 +1,4 @@
-import { DAE_B64, FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stationDevicesRef, stationMode } from "./core.js";
+import { FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stationDevicesRef, stationMode } from "./core.js";
 import { degToCompass, fetchMeteoMarine, knotsFromKmh, renderMeteoCard } from "./meteo.js";
 
 // ===================== ONBOARDING AL PRIMO AVVIO =====================
@@ -301,7 +301,7 @@ export function renderHome(page){
       daeInfoRow.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 14px 10px";
       daeInfoRow.innerHTML=
         '<div style="width:34px;height:34px;border-radius:6px;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.25)">'
-        +'<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>'
+        +'<img src="img/dae.jpg" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>'
         +'<div style="flex:1;min-width:0">'
         +'<p style="font-size:13px;font-weight:700;color:#14532d;margin:0 0 1px">'+nearestDAE.name+'</p>'
         +'<p style="font-size:12px;color:var(--text2);margin:0">Defibrillatore DAE &nbsp;\u00b7&nbsp; A <strong>'+fmtDist(nearestDAEDist)+'</strong> da te</p>'

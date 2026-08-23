@@ -1,4 +1,4 @@
-import { ALERT_COLORS, BOE_CANTIERE_23_2026, CC_B64, CC_POINT, COMUNE_POINT, DAE_B64, DAE_POINTS, FINANZA_B64, FINANZA_POINT, FLAG_COLORS, GM_B64, GM_POINT, IAT_B64, IAT_POINT, PERMANENT_STATION_NOTES, PL_B64, PL_POINT, PORTOROSE_B64, PORTOROSE_POINT, PORTOROSE_POPUP_B64, ROSETANA_B64, ROSETANA_POINT, STATIONS, STEMMA_B64, VVF_B64, VVF_POINT, ZONE_VIETATE, _escapeHtml, _syncUserMarker, boeCantiereMarkers, flagsData, fmtDist, haversine, nearestDAE, nearestDist, nearestStation, render, stationMode, stationNotesData, userMarker } from "./core.js";
+import { ALERT_COLORS, BOE_CANTIERE_23_2026, CC_POINT, COMUNE_POINT, DAE_POINTS, FINANZA_POINT, FLAG_COLORS, GM_POINT, IAT_POINT, PERMANENT_STATION_NOTES, PL_POINT, PORTOROSE_POINT, ROSETANA_POINT, STATIONS, VVF_POINT, ZONE_VIETATE, _escapeHtml, _syncUserMarker, boeCantiereMarkers, flagsData, fmtDist, haversine, nearestDAE, nearestDist, nearestStation, render, stationMode, stationNotesData, userMarker } from "./core.js";
 
 // PRIMA DI PUBBLICARE: sostituisci con il Map ID creato in Google Cloud Console
 // (Google Maps Platform > Map Management) con le Advanced Markers abilitate.
@@ -281,7 +281,7 @@ export function addDAEMarkers(){
     var isNear=nearestDAE&&nearestDAE.name===d.name;
     var nearStyle=isNear?"outline:3px solid #1d4ed8;outline-offset:3px;border-radius:6px;":"";
     var content=_el('<div style="width:22px;height:22px;border-radius:4px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.5);border:1.5px solid #fff;'+nearStyle+'">'
-        +'<img src="data:image/jpeg;base64,'+DAE_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>');
+        +'<img src="img/dae.jpg" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>');
     var m=new google.maps.marker.AdvancedMarkerElement({position:{lat:d.lat,lng:d.lng},map:window.mapObj,content:content});
     var availHtml=d.avail?'<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px">'+d.avail+'</div>':'';
     var popHtml=
@@ -430,7 +430,7 @@ export function addGuardiaMedicaMarker(){
   var content=_el('<div style="width:25px;height:30px;border-radius:5px;overflow:hidden;'
       +'box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #c62828;background:#fff;'
       +'display:flex;align-items:center;justify-content:center;padding:1px;box-sizing:border-box;">'
-      +'<img src="data:image/jpeg;base64,'+GM_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
+      +'<img src="img/gm.jpg" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
   window.guardiaMedicaMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:GM_POINT.lat,lng:GM_POINT.lng},map:window.mapObj,content:content});
   var htmlPopup='<div class="omnia-popup" style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:14px;font-weight:700;color:#c62828;margin-bottom:6px">Guardia Medica - Roseto degli Abruzzi</div>'
@@ -451,7 +451,7 @@ export function addGuardiaMedicaMarker(){
 export function addVVFMarker(){
   if(!window.mapObj||window.vvfMarker)return;
   var content=_el('<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #fff;background:#CC0000;">'
-      +'<img src="data:image/png;base64,'+VVF_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
+      +'<img src="img/vvf.png" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
   window.vvfMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:VVF_POINT.lat,lng:VVF_POINT.lng},map:window.mapObj,content:content});
   var htmlPopup='<div class="omnia-popup" style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:13px;font-weight:700;color:#CC0000;margin-bottom:4px">Vigili del Fuoco</div>'
@@ -468,7 +468,7 @@ export function addFinanzaMarker(){
   if(!window.mapObj||window.finanzaMarker)return;
   var content=_el('<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;'
       +'box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #f5c800;background:#fff;">'
-      +'<img src="data:image/png;base64,'+FINANZA_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
+      +'<img src="img/finanza.png" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
   window.finanzaMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:FINANZA_POINT.lat,lng:FINANZA_POINT.lng},map:window.mapObj,content:content});
   var htmlPopup='<div class="omnia-popup" style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:14px;font-weight:700;color:#2e7d32;margin-bottom:6px">Guardia di Finanza - Roseto degli Abruzzi</div>'
@@ -487,7 +487,7 @@ export function addCCMarker(){
   if(!window.mapObj||window.ccMarker)return;
   var content=_el('<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;'
       +'box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #fff;background:#fff;">'
-      +'<img src="data:image/png;base64,'+CC_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
+      +'<img src="img/cc.png" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
   window.ccMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:CC_POINT.lat,lng:CC_POINT.lng},map:window.mapObj,content:content,zIndex:100});
   var ccHtml='<div class="omnia-popup" style="font-family:sans-serif;min-width:220px;line-height:1.45">'
     +'<div style="font-size:14px;font-weight:700;color:#1a237e;margin-bottom:6px">Carabinieri - Comando Stazione di Roseto degli Abruzzi</div>'
@@ -506,7 +506,7 @@ export function addPLMarker(){
   if(!window.mapObj||window.plMarker)return;
   var content=_el('<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;'
       +'box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #fff;background:#fff;">'
-      +'<img src="data:image/png;base64,'+PL_B64+'" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
+      +'<img src="img/pl.jpg" style="width:100%;height:100%;object-fit:contain;display:block;"/></div>');
   window.plMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:PL_POINT.lat,lng:PL_POINT.lng},map:window.mapObj,content:content,zIndex:-100});
   var plHtml='<div class="omnia-popup" style="font-family:sans-serif;min-width:220px;line-height:1.45">'
     +'<div style="font-size:14px;font-weight:700;color:#1a237e;margin-bottom:6px">Polizia Locale - Roseto degli Abruzzi</div>'
@@ -523,7 +523,7 @@ export function addPLMarker(){
 export function addComuneMarker(){
   if(!window.mapObj||window.comuneMarker)return;
   var content=_el('<div style="width:25px;height:30px;border-radius:5px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1565c0;background:#fff;display:flex;align-items:center;justify-content:center;padding:2px;box-sizing:border-box;">'
-      +'<img src="data:image/png;base64,'+STEMMA_B64+'" style="width:25px;height:30px;object-fit:contain;display:block;"/></div>');
+      +'<img src="img/stemma.jpg" style="width:25px;height:30px;object-fit:contain;display:block;"/></div>');
   window.comuneMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:COMUNE_POINT.lat,lng:COMUNE_POINT.lng},map:window.mapObj,content:content});
   var htmlPopup='<div class="omnia-popup" style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:13px;font-weight:700;color:#1565c0;margin-bottom:4px">Comune di Roseto degli Abruzzi</div>'
@@ -542,7 +542,7 @@ export function addComuneMarker(){
 export function addIATMarker(){
   if(!window.mapObj||window.iatMarker)return;
   var content=_el('<div style="width:22px;height:22px;border-radius:4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #e6b800;background:#f5c800;">'
-      +'<img src="data:image/jpeg;base64,'+IAT_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>');
+      +'<img src="img/iat.jpg" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>');
   window.iatMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:IAT_POINT.lat,lng:IAT_POINT.lng},map:window.mapObj,content:content});
   var htmlPopup='<div class="omnia-popup" style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="font-size:13px;font-weight:700;color:#b8860b;margin-bottom:4px">IAT Roseto degli Abruzzi</div>'
@@ -594,11 +594,11 @@ export function addZoneVietate(){
 export function addPortoroseMarker(){
   if(!window.mapObj||window.portoroseMarker)return;
   var content=_el('<div style="height:22px;padding:1px 3px;border-radius:4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1a3b8c;background:#fff;display:flex;align-items:center;justify-content:center;">'
-      +'<img src="data:image/jpeg;base64,'+PORTOROSE_B64+'" style="height:16px;width:auto;object-fit:contain;display:block;"/></div>');
+      +'<img src="img/portorose.jpg" style="height:16px;width:auto;object-fit:contain;display:block;"/></div>');
   window.portoroseMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:PORTOROSE_POINT.lat,lng:PORTOROSE_POINT.lng},map:window.mapObj,content:content});
   var htmlPopup='<div class="omnia-popup" style="font-family:sans-serif;min-width:240px;line-height:1.5">'
     +'<div style="text-align:center;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #e0e0e0">'
-    +'<img src="data:image/jpeg;base64,'+PORTOROSE_POPUP_B64+'" style="height:30px;width:auto;object-fit:contain;display:inline-block;"/></div>'
+    +'<img src="img/portorose_popup.jpg" style="height:30px;width:auto;object-fit:contain;display:inline-block;"/></div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Via Tamigi, 1 — Roseto degli Abruzzi (TE)</div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Tel.:</strong> <a href="tel:+393298034310" style="color:#1a3b8c;text-decoration:none">329 803 4310</a></div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Sito:</strong> <a href="https://www.portiitaliani.com/porto-rose-roseto-degli-abruzzi/" target="_blank" style="color:#1a3b8c;text-decoration:none">portiitaliani.com</a></div>'
@@ -612,12 +612,12 @@ export function addPortoroseMarker(){
 export function addRosetanaMarker(){
   if(!window.mapObj||window.rosetanaMarker)return;
   var content=_el('<div style="width:30px;height:30px;border-radius:50%;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5);border:2px solid #1a6bb5;background:#fff;">'
-      +'<img src="data:image/jpeg;base64,'+ROSETANA_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>');
+      +'<img src="img/rosetana.jpg" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>');
   window.rosetanaMarker=new google.maps.marker.AdvancedMarkerElement({position:{lat:ROSETANA_POINT.lat,lng:ROSETANA_POINT.lng},map:window.mapObj,content:content});
   var htmlPopup='<div class="omnia-popup" style="font-family:sans-serif;min-width:250px;line-height:1.5">'
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
     +'<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid #1a6bb5">'
-    +'<img src="data:image/jpeg;base64,'+ROSETANA_B64+'" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>'
+    +'<img src="img/rosetana.jpg" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>'
     +'<div><div style="font-size:13px;font-weight:700;color:#1a6bb5">A.S.D. Rosetana Nuoto</div>'
     +'<div style="font-size:10px;color:#888">Piscina Comunale “Giuseppe Celommi”</div></div></div>'
     +'<div style="font-size:11px;color:#333;margin-bottom:2px"><strong>Indirizzo:</strong> Via Fonte dell’Olmo, 10 — Roseto degli Abruzzi (TE)</div>'
