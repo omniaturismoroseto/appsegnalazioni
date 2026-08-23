@@ -529,6 +529,59 @@ exports.purgeExpiredChildPhotos = onSchedule(
 );
 
 // ============================================================
+// 5bis) CANCELLAZIONE AUTOMATICA VECCHIE SEGNALAZIONI (GDPR / minimizzazione)
+//    /reports contiene dati personali (telefono, nome, GPS, foto). L'informativa
+//    privacy promette che sono "conservati per il tempo strettamente necessario":
+//    questa funzione, ogni notte, elimina definitivamente:
+//      • le segnalazioni RISOLTE piu' vecchie di RESOLVED_TTL_DAYS
+//      • QUALSIASI segnalazione (anche ancora "aperta", ormai abbandonata)
+//        piu' vecchia di STALE_TTL_DAYS
+//    L'eliminazione da /reports fa scattare mirrorReportPublic, che rimuove in
+//    automatico anche la copia in /reportsPublic. Le soglie sono modificabili qui.
+// ============================================================
+const RESOLVED_TTL_DAYS = 7;   // segnalazioni gia' chiuse: eliminate dopo 7 giorni
+const STALE_TTL_DAYS = 30;     // qualsiasi segnalazione: eliminata dopo 30 giorni
+
+exports.purgeOldReports = onSchedule(
+  {
+    schedule: "30 3 * * *",       // 03:30 ogni notte (fuori dall'orario di servizio)
+    timeZone: "Europe/Rome",
+    region: "europe-west1",
+  },
+  async () => {
+    try {
+      const snap = await admin.database().ref("reports").once("value");
+      const reports = snap.val() || {};
+      const now = Date.now();
+      const resolvedMs = RESOLVED_TTL_DAYS * 24 * 60 * 60 * 1000;
+      const staleMs = STALE_TTL_DAYS * 24 * 60 * 60 * 1000;
+
+      const updates = {};
+      let removed = 0;
+      for (const [id, r] of Object.entries(reports)) {
+        if (!r) continue;
+        // r.id e' il timestamp di creazione (Date.now() lato app); fallback su r.ts
+        const created = Number(r.id) || (r.ts ? new Date(r.ts).getTime() : 0);
+        if (!created) continue; // senza data affidabile non si cancella
+        const age = now - created;
+        const isResolved = r.status === "risolta";
+        if ((isResolved && age > resolvedMs) || age > staleMs) {
+          updates[id] = null;
+          removed++;
+        }
+      }
+
+      if (removed > 0) {
+        await admin.database().ref("reports").update(updates);
+      }
+      console.log("Pulizia vecchie segnalazioni: " + removed + " rimosse");
+    } catch (e) {
+      await reportError(e, "purgeOldReports");
+    }
+  }
+);
+
+// ============================================================
 // 6) PUSH PER LA CHAT INTERNA — canale condiviso solo da postazioni,
 //    admin e coordinatore (un operatore semplice non la vede piu').
 //    A differenza di sendStationEmergency e' una notifica normale (non
