@@ -459,6 +459,30 @@ label:first-child{margin-top:0}
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-check-compat.js"></script>
+<!-- Twemoji (ospitato da noi, con controllo d'integrità SRI): rende le emoji dei
+     contenuti (🚨 ⚠️ 📞 🔴 🟢 📍 …) come piccole immagini colorate identiche su ogni
+     dispositivo (iPhone/Android/Windows), invece delle emoji di sistema. Stesso
+     approccio dell'app Omnia-Turni. I loghi degli enti e gli SVG inline non
+     contengono caratteri emoji, quindi twemoji non li tocca. -->
+<script src="twemoji.min.js" integrity="sha384-Y5xukbGJwykbHHkTbLJykYLcBPFxrwipTbEh0puxhkz9CZ90raTPGe2Ks4vCxsYU"></script>
+<script>
+(function(){
+  var st=document.createElement('style');
+  st.textContent='img.emoji{width:1.15em;height:1.15em;vertical-align:-0.15em;margin:0 .02em}';
+  document.head.appendChild(st);
+})();
+// Le SVG delle emoji arrivano dal CDN jsDelivr (versione pinnata); il service
+// worker le mette in cache dopo il primo caricamento (offline OK da lì in poi).
+var TWEMOJI_OPT={folder:'svg',ext:'.svg',base:'https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/'};
+function dipingiEmoji(node){try{if(window.twemoji)twemoji.parse(node||document.body,TWEMOJI_OPT);}catch(e){/* mai bloccare il render per un problema estetico */}}
+if(document.readyState!=='loading')dipingiEmoji(document.body);
+else document.addEventListener('DOMContentLoaded',function(){dipingiEmoji(document.body);});
+// L'app riscrive spesso l'HTML (render()/renderPage()): un MutationObserver
+// ridipinge i nodi appena aggiunti. twemoji.parse è idempotente, non ritocca le
+// <img> già create.
+var _twObserver=new MutationObserver(function(muts){for(var i=0;i<muts.length;i++){var a=muts[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1)dipingiEmoji(a[j]);}}});
+_twObserver.observe(document.documentElement,{childList:true,subtree:true});
+</script>
 <script>
 // Accesso al Realtime Database tramite il vero SDK Firebase (autenticazione
 // gestita automaticamente dall'SDK stesso — niente più token da allegare a mano).
