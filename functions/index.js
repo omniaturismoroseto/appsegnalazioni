@@ -588,7 +588,14 @@ exports.purgeOldReports = onSchedule(
 //    "solo dati"): non deve far scattare l'allarme a schermo intero, solo
 //    avvisare chi non ha l'app aperta.
 // ============================================================
-async function getAllChatTokens() {
+// targetStation: null/undefined = messaggio a tutte le postazioni (come e'
+// sempre stato); una stringa col numero = messaggio diretto (campo "to",
+// scrivibile solo da admin/coordinatore - vedi database.rules.json), e
+// allora fra i dispositivi di postazione si prendono SOLO quelli di quella
+// postazione. Admin e coordinatore restano sempre fra i destinatari: sul
+// loro pannello seguono tutto il traffico, compresi i messaggi diretti
+// mandati dall'altro (vedi _chatMsgVisibleToMe in js/chat.js).
+async function getAllChatTokens(targetStation) {
   const [operatorSnap, deviceSnap, contactSnap, userList] = await Promise.all([
     admin.database().ref("operatorTokens").once("value"),
     admin.database().ref("stationDevices").once("value"),
@@ -621,7 +628,9 @@ async function getAllChatTokens() {
 
   const devices = deviceSnap.val() || {};
   Object.entries(devices).forEach(([id, d]) => {
-    if (d && d.enabled && d.pushToken && !tokenPaths.has(d.pushToken)) {
+    if (!d || !d.enabled || !d.pushToken) return;
+    if (targetStation && String(d.station || "") !== targetStation) return;
+    if (!tokenPaths.has(d.pushToken)) {
       tokenPaths.set(d.pushToken, "stationDevices/" + id + "/pushToken");
     }
   });
@@ -646,11 +655,21 @@ exports.sendChatNotification = onValueCreated(
     const msgId = event.params.id;
 
     try {
-      const tokenPaths = await getAllChatTokens();
+      // Messaggio diretto a una sola postazione (solo admin/coordinatore
+      // possono mandarlo): la push va alla sola postazione indirizzata,
+      // niente squilli/vocali a sorpresa sulle altre 20.
+      const target = data.to && String(data.to) !== "all" ? String(data.to) : null;
+      const tokenPaths = await getAllChatTokens(target);
       const tokens = [...tokenPaths.keys()];
       if (!tokens.length) return null;
 
-      const author = String(data.authorLabel || "Chat interna").slice(0, 40);
+      // Chi riceve un messaggio diretto e' la postazione indirizzata (o
+      // admin/coordinatore che supervisionano): l'etichetta lo dice in
+      // chiaro, cosi' vale anche per la riproduzione nativa del vocale
+      // (ChatAudioService.java mostra questa stringa cosi' com'e').
+      const author =
+        String(data.authorLabel || "Chat interna").slice(0, 40) +
+        (target ? " → solo P." + target : "");
 
       // I messaggi vocali (walkie-talkie) vanno "solo dati", MAI come
       // "notification": e' l'unico modo per cui Android riproduce sempre

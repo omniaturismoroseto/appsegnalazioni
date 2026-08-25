@@ -2,7 +2,7 @@ import { _resizeMap, initMap, refreshMarkers, renderHeader, renderMapLegend } fr
 import { CHILD_PHOTO_TTL_MS, _showOnboarding, renderConsigliPage, renderDone, renderForecastPage, renderHome, renderInstallPage, renderLogin, renderMinoreBivio, renderMinoreDone, renderMinoreForm, renderOrdinanzePage, renderPartnerPage, renderSubmit } from "./pages-public.js";
 import { renderDashboard } from "./pages-operator.js";
 import { renderStationPanel } from "./pages-station.js";
-import { _chatDeviceId, _onIncomingChatAudio } from "./chat.js";
+import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio } from "./chat.js";
 
   // Il pacchetto Sentry vero si carica in modo differito (per non rallentare
   // l'avvio): nei primissimi istanti window.Sentry esiste già come "guscio"
@@ -644,8 +644,11 @@ chatRef.limitToLast(200).on("value",function(snap){
       // Walkie-talkie: un nuovo messaggio vocale non mio si riproduce da
       // solo (vedi _onIncomingChatAudio in chat.js) - ma solo se non e'
       // il mio stesso messaggio appena inviato (deviceId, non l'autorLabel,
-      // che due persone potrebbero condividere).
-      if(m&&m.type==="audio"&&m.deviceId!==_chatDeviceId())_onIncomingChatAudio(m,id);
+      // che due persone potrebbero condividere) e solo se e' indirizzato a
+      // me: un vocale mandato da admin/coordinatore a una sola postazione
+      // (campo "to") non deve partire da solo sugli altri dispositivi,
+      // nemmeno su quello di chi lo vede comunque in elenco.
+      if(m&&m.type==="audio"&&m.deviceId!==_chatDeviceId()&&_chatMsgAddressedToMe(m))_onIncomingChatAudio(m,id);
     });
   }
   chatMessages=val;

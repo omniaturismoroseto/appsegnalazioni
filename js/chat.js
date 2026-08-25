@@ -13,6 +13,25 @@
 // chatEsternaResetAt) insieme agli altri; qui c'e' solo il disegno del
 // pannello.
 //
+// Destinatario (solo canale "stations"): admin e coordinatore possono
+// indirizzare un messaggio - testo o vocale - a TUTTE le postazioni (come
+// e' sempre stato: campo "to" assente o "all") oppure a UNA SOLA postazione
+// (campo "to" col numero, es. "14"). Le postazioni non hanno il selettore:
+// per loro la chat resta la radio di sempre, aperta a tutti.
+// Chi riceve: solo la postazione indirizzata, piu' admin/coordinatore che
+// dal proprio pannello continuano a seguire tutto il traffico. Il filtro e'
+// coerente su tre livelli - elenco messaggi (_chatMsgVisibleToMe qui sotto),
+// riproduzione automatica del vocale (_chatMsgAddressedToMe, usata dal
+// listener chatRef in core.js) e push (getAllChatTokens in
+// functions/index.js, che per un messaggio diretto sceglie i soli
+// dispositivi di quella postazione).
+// NB: e' un filtro operativo, non un muro di sicurezza - le regole del DB
+// concedono la lettura sull'intero nodo /chat/messages (la chat e' una
+// query limitToLast, non si puo' filtrare per singolo messaggio lato
+// regole), quindi il contenuto resta tecnicamente leggibile da chi ha gia'
+// accesso al canale. Serve a non disturbare le altre postazioni, non a
+// nascondere segreti.
+//
 // Messaggi vocali (solo canale "stations"): registrati con MediaRecorder
 // (funziona sia nel PWA da browser sia nella WebView Android di Capacitor,
 // nessun plugin nativo necessario per la registrazione in se') e salvati
@@ -20,10 +39,48 @@
 // gia' usato per le foto delle segnalazioni (vedi addReport in core.js),
 // invece di introdurre Firebase Storage. Durata massima 60s per restare
 // ben sotto il limite di dimensione (vedi database.rules.json).
-import { _escapeHtml, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
+import { STATIONS, _escapeHtml, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
 import { ROLE_LABELS } from "./admin.js";
 
 const MAX_RECORDING_S=60;
+
+// Destinatario scelto per il prossimo invio: "all" (tutte le postazioni,
+// comportamento storico) o il numero di una postazione. Vive a livello di
+// modulo e non dentro renderChatPanel perche' il pannello viene ridisegnato
+// da capo ad ogni nuovo messaggio (vedi il listener chatRef in core.js):
+// tenuta solo nel DOM, la scelta si azzererebbe da sola appena qualcuno
+// scrive. Resta invece "appiccicata" finche' non la si cambia - per questo
+// la barra e' ben visibile e ha il pulsante di ritorno a "tutte".
+let _chatTarget="all";
+
+// Solo admin e coordinatore possono indirizzare un messaggio, e solo sulla
+// chat con le postazioni (la chat esterna e' gia' un canale ristretto, non
+// ha postazioni a cui indirizzare). Ricontrollato lato regole del DB.
+function _canTarget(channel){
+  return channel==="stations"&&(window.userRole==="admin"||window.userRole==="coordinator");
+}
+
+// "Questo messaggio e' indirizzato a me?" - senza campo "to" (o con "all")
+// e' per tutti, come ogni messaggio scritto finora. Usata anche da core.js
+// per decidere se far partire da solo un vocale in arrivo: un messaggio
+// diretto a un'altra postazione non deve suonare qui.
+export function _chatMsgAddressedToMe(m){
+  const to=m&&m.to;
+  if(!to||to==="all")return true;
+  return !!stationMode&&String(to)===String(stationMode);
+}
+
+// In elenco, oltre al destinatario, i messaggi diretti restano visibili ad
+// admin e coordinatore: sono loro a mandarli e devono vedere anche quelli
+// mandati dall'altro.
+function _chatMsgVisibleToMe(m){
+  return _chatMsgAddressedToMe(m)||window.isAdmin||window.userRole==="coordinator";
+}
+
+function _stationLabel(num){
+  const st=STATIONS.find(function(s){return String(s.num)===String(num);});
+  return "P."+num+(st?" — "+st.name:"");
+}
 
 // Configurazione dei due canali: cosa leggere/scrivere e come firmare i
 // messaggi. Tutto qui dentro sono FUNZIONI, non i valori diretti: sia
@@ -115,7 +172,9 @@ function _fmtChatTime(ts){
 }
 
 function _visibleMessages(cfg){
-  const all=Object.values(cfg.getMessages()||{}).sort((a,b)=>a.ts-b.ts);
+  // Il filtro sui messaggi diretti vale prima di tutto il resto (sulla chat
+  // esterna non ha effetto: li' nessun messaggio ha il campo "to").
+  const all=Object.values(cfg.getMessages()||{}).filter(_chatMsgVisibleToMe).sort((a,b)=>a.ts-b.ts);
   // Per l'admin nessuna delle due chat si resetta mai: vede sempre tutto,
   // di default, senza bisogno di un pulsante per richiederlo.
   if(window.isAdmin)return all;
@@ -136,11 +195,20 @@ function _renderMessages(list,cfg){
     // in innerHTML, altrimenti un valore malevolo (le regole del DB ne limitano
     // lunghezza e prefisso, ma non i caratteri) potrebbe chiudere l'attributo
     // src e iniettare markup — XSS memorizzato verso gli altri operatori.
+    // Messaggio diretto a una sola postazione: chi lo riceve legge "solo
+    // per te", chi lo supervisiona (admin/coordinatore) vede a quale
+    // postazione era indirizzato.
+    const directTo=(m.to&&m.to!=="all")?String(m.to):"";
+    const directBadge=directTo
+      ? '<span style="font-size:9.5px;font-weight:700;background:var(--warning-bg);color:var(--warning-text);border-radius:5px;padding:1px 5px;margin-left:5px;white-space:nowrap">'
+        +(String(stationMode||"")===directTo?"\uD83D\uDD12 solo per te":"\uD83D\uDD12 solo P."+_escapeHtml(directTo))
+        +'</span>'
+      : "";
     const body=m.type==="audio"
       ? '<audio controls preload="none" src="'+_escapeHtml(m.audioData||"")+'" style="width:220px;max-width:100%;height:32px;display:block;margin-top:2px"></audio>'
       : '<div style="font-size:13.5px;color:var(--text);white-space:pre-wrap;word-break:break-word">'+_escapeHtml(m.text||"")+'</div>';
-    return '<div style="align-self:flex-start;max-width:85%;background:'+bubbleColor+';border-radius:10px;padding:8px 11px">'
-      +'<div style="font-size:11px;font-weight:700;color:'+authorColor+';margin-bottom:2px">'+_escapeHtml(m.authorLabel||"?")+'</div>'
+    return '<div style="align-self:flex-start;max-width:85%;background:'+bubbleColor+';border-radius:10px;padding:8px 11px'+(directTo?';border-left:3px solid var(--warning-text)':'')+'">'
+      +'<div style="font-size:11px;font-weight:700;color:'+authorColor+';margin-bottom:2px">'+_escapeHtml(m.authorLabel||"?")+directBadge+'</div>'
       +body
       +'<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right">'+_fmtChatTime(m.ts)+'</div>'
       +'</div>';
@@ -150,12 +218,17 @@ function _renderMessages(list,cfg){
 
 function _sendChatEntry(cfg,channel,fields,onDone){
   const {authorLabel,role}=_chatAuthorAndRole(channel);
-  cfg.getRef().push(Object.assign({
+  const base={
     authorLabel,
     role,
     deviceId: _chatDeviceId(),
     ts: Date.now()
-  },fields)).then(function(){
+  };
+  // Destinatario: il campo "to" si scrive solo quando serve davvero, cosi'
+  // i messaggi a tutti restano identici a prima. Le regole del DB
+  // ricontrollano il claim di chi scrive.
+  if(_canTarget(channel)&&_chatTarget!=="all")base.to=String(_chatTarget);
+  cfg.getRef().push(Object.assign(base,fields)).then(function(){
     onDone(null);
   }).catch(function(e){
     onDone(e);
@@ -205,6 +278,48 @@ export function renderChatPanel(page,opts){
   }
 
   _renderMessages(list,cfg);
+
+  // ---- Barra destinatario (solo admin/coordinatore, canale postazioni) ----
+  // Resta visibile anche durante la registrazione di un vocale (che nasconde
+  // solo inputRow): vale per il testo e per l'audio allo stesso modo.
+  if(_canTarget(channel)){
+    const targetRow=document.createElement("div");
+    const targetLbl=document.createElement("span");
+    targetLbl.style.cssText="font-size:11px;font-weight:700;flex-shrink:0";
+    const targetSel=document.createElement("select");
+    targetSel.style.cssText="flex:1;min-width:0;font-size:12px;padding:5px 8px";
+    let optsHtml='<option value="all">\uD83D\uDCE2 Tutte le postazioni</option>';
+    STATIONS.slice().sort(function(a,b){return a.num-b.num;}).forEach(function(s){
+      optsHtml+='<option value="'+s.num+'">\uD83C\uDFAF Solo '+_escapeHtml(_stationLabel(s.num))+'</option>';
+    });
+    targetSel.innerHTML=optsHtml;
+    targetSel.value=_chatTarget;
+    // Postazione sparita dall'elenco (STATIONS_DATA modificato): torna a
+    // "tutte" invece di restare su un valore che il <select> non ha piu'.
+    if(targetSel.value!==_chatTarget){_chatTarget="all";targetSel.value="all";}
+    const resetTargetBtn=document.createElement("button");resetTargetBtn.type="button";
+    resetTargetBtn.title="Torna a inviare a tutte le postazioni";
+    resetTargetBtn.style.cssText="flex-shrink:0;width:auto;font-size:11px;padding:4px 9px;color:var(--warning-text);background:var(--bg);border-color:transparent";
+    resetTargetBtn.textContent="✕ tutte";
+    const paintTargetRow=function(){
+      const directed=_chatTarget!=="all";
+      targetRow.style.cssText="display:flex;align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--border);background:"
+        +(directed?"var(--warning-bg)":"var(--bg2)");
+      targetLbl.textContent=directed?"\uD83D\uDD12 Invia solo a:":"Invia a:";
+      targetLbl.style.color=directed?"var(--warning-text)":"var(--text2)";
+      resetTargetBtn.style.display=directed?"inline-block":"none";
+    };
+    targetSel.addEventListener("change",function(){
+      _chatTarget=targetSel.value||"all";
+      paintTargetRow();
+    });
+    resetTargetBtn.addEventListener("click",function(){
+      _chatTarget="all";targetSel.value="all";paintTargetRow();
+    });
+    paintTargetRow();
+    targetRow.appendChild(targetLbl);targetRow.appendChild(targetSel);targetRow.appendChild(resetTargetBtn);
+    wrap.appendChild(targetRow);
+  }
 
   // ---- Riga di digitazione (testo, + microfono se il canale lo supporta) ----
   const inputRow=document.createElement("div");
@@ -358,7 +473,10 @@ export function _onIncomingChatAudio(msg,msgId){
 
     const modal=document.createElement("div");
     modal.style.cssText="background:var(--bg);border-radius:16px 16px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:480px;box-shadow:0 -4px 24px rgba(0,0,0,.25)";
-    modal.innerHTML='<div style="font-size:15px;font-weight:700;margin-bottom:4px">🎙️ Messaggio vocale</div>'
+    const directTo=(msg.to&&msg.to!=="all")?String(msg.to):"";
+    modal.innerHTML='<div style="font-size:15px;font-weight:700;margin-bottom:4px">🎙️ Messaggio vocale'
+      +(directTo?' <span style="font-size:11px;background:var(--warning-bg);color:var(--warning-text);border-radius:5px;padding:2px 6px">\uD83D\uDD12 solo per te</span>':'')
+      +'</div>'
       +'<div style="font-size:13px;color:var(--text2);margin-bottom:14px">da '+_escapeHtml(msg.authorLabel||"?")+'</div>';
 
     const audio=document.createElement("audio");
