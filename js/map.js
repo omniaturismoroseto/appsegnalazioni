@@ -110,6 +110,52 @@ export function _resizeMap(){
   try{google.maps.event.trigger(window.mapObj,"resize");}catch(e){}
 }
 
+// Le librerie Google Maps ("maps", "marker") non arrivano con il primo script:
+// l'API scarica al volo altri moduli da maps.googleapis.com. Su rete mobile
+// ballerina (i bagnini sono in spiaggia) basta una richiesta persa perche'
+// importLibrary fallisca con Error: Could not load "map" — visto in produzione
+// il 2026-08-26. Ritentiamo un paio di volte prima di arrenderci: il modulo
+// mancante di solito arriva al secondo tentativo.
+async function _loadMapsLibraries(){
+  var lastErr;
+  for(var i=0;i<3;i++){
+    try{
+      const lib=await google.maps.importLibrary("maps");
+      await google.maps.importLibrary("marker");
+      return lib.Map;
+    }catch(err){
+      lastErr=err;
+      if(i<2)await new Promise(function(r){setTimeout(r,800*(i+1));});
+    }
+  }
+  throw lastErr;
+}
+// Se anche i tentativi falliscono, meglio un messaggio con un pulsante
+// "Riprova" che un rettangolo grigio muto al posto della mappa.
+function _showMapError(el){
+  if(!el||document.getElementById("map-error"))return;
+  if(getComputedStyle(el).position==="static")el.style.position="relative";
+  var box=document.createElement("div");
+  box.id="map-error";
+  box.style.cssText="position:absolute;inset:0;display:flex;flex-direction:column;"
+    +"align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;"
+    +"background:#e8e8e8;color:#333;font-size:13px;line-height:1.4;z-index:6";
+  var txt=document.createElement("div");
+  txt.innerHTML="<b>Mappa non caricata</b><br>Connessione assente o instabile.";
+  var btn=document.createElement("button");
+  btn.type="button";
+  btn.textContent="Riprova";
+  btn.style.cssText="padding:8px 18px;border:0;border-radius:6px;background:#D62B1F;"
+    +"color:#fff;font-size:13px;font-weight:700;cursor:pointer";
+  btn.addEventListener("click",function(){_hideMapError();initMap();});
+  box.appendChild(txt);box.appendChild(btn);
+  el.appendChild(box);
+}
+function _hideMapError(){
+  var b=document.getElementById("map-error");
+  if(b&&b.parentNode)b.parentNode.removeChild(b);
+}
+
 // MAPPA
 export async function initMap(){
   var el=document.getElementById("main-map");
@@ -117,9 +163,9 @@ export async function initMap(){
   if(window.mapObj){ensureLocamareMarker();refreshMarkers();_resizeMap();return;}
   if(window._mapInitializing)return;
   window._mapInitializing=true;
+  _hideMapError();
   try{
-    const {Map}=await google.maps.importLibrary("maps");
-    await google.maps.importLibrary("marker");
+    const Map=await _loadMapsLibraries();
     el.style.width="100%";
     window.mapObj=new Map(el,{
       center:{lat:42.686,lng:14.010},
@@ -154,6 +200,12 @@ export async function initMap(){
     google.maps.event.addListenerOnce(window.mapObj,"idle",function(){
       [50,250,700].forEach(function(t){setTimeout(function(){_resizeMap();},t);});
     });
+  }catch(err){
+    // initMap viene chiamata senza await (core.js): senza questo catch un
+    // errore diventerebbe solo una promise rejection non gestita, con la
+    // mappa grigia e nessuna spiegazione per chi guarda lo schermo.
+    _sentryCapture(err);
+    _showMapError(el);
   }finally{
     window._mapInitializing=false;
   }

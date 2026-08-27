@@ -10,7 +10,7 @@
  * Per forzare un aggiornamento, basta cambiare il numero di versione qui sotto.
  */
 
-const CACHE_VERSION = "omnia-v2026-08-20a";
+const CACHE_VERSION = "omnia-v2026-08-27a";
 const APP_SHELL = "/appsegnalazioni/index.html";
 
 self.addEventListener("install", function (event) {
@@ -40,6 +40,14 @@ self.addEventListener("fetch", function (event) {
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
+
+  // Passano dal service worker solo le richieste della nostra origine. Quelle
+  // verso Google Maps, Firebase o i CDN non finivano comunque in cache (il
+  // filtro res.type === "basic" piu' sotto scarta le risposte cross-origin):
+  // intercettarle aggiungeva soltanto un punto di rottura in piu' davanti al
+  // caricamento dei moduli della mappa.
+  if (url.origin !== self.location.origin) return;
+
   const isNavigation =
     req.mode === "navigate" ||
     url.pathname.endsWith("/") ||
@@ -76,7 +84,9 @@ self.addEventListener("fetch", function (event) {
           }
           return res;
         })
-        .catch(function () { return cached; });
+        // Senza il fallback finale respondWith() riceverebbe undefined e il
+        // browser mostrerebbe un errore di rete generico al posto della richiesta.
+        .catch(function () { return cached || Response.error(); });
       return cached || network;
     })
   );
