@@ -119,33 +119,45 @@ export function renderAdminPanel(page){
         card.innerHTML='<div class="report-top"><div class="report-body">'
           +'<strong style="font-size:13.5px">'+(acc.email||acc.uid)+'</strong>'
           +(roleLabel?' <span class="badge" style="background:var(--info-bg);color:var(--info-text)">'+roleLabel.toUpperCase()+'</span>':'')
+          +(acc.owner?' <span class="badge" style="background:var(--bg2);color:var(--text2)">🔒 PRINCIPALE</span>':'')
           +(acc.disabled?' <span class="badge" style="background:var(--danger-bg);color:var(--danger-text)">DISATTIVATO</span>':'')
           +'<div class="report-meta">Creato: '+_fmtDate(acc.createdAt)+' &middot; Ultimo accesso: '+_fmtDate(acc.lastSignIn)+'</div>'
           +'</div></div>';
         const actions=document.createElement("div");
         actions.style.cssText="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap";
 
-        const roleSel=document.createElement("select");
-        roleSel.style.cssText="font-size:12px;padding:4px 8px";
-        roleSel.innerHTML=_roleOptionsHtml(acc.role);
-        roleSel.addEventListener("change",function(){
-          roleSel.disabled=true;
-          _callAdminFn("setAccountRole",{uid:acc.uid,role:roleSel.value||null}).then(function(){
-            refreshList();
-          }).catch(function(e){alert("Errore: "+e.message);roleSel.disabled=false;refreshList();});
-        });
-        actions.appendChild(roleSel);
+        // Sull'account principale i controlli non compaiono proprio, invece di
+        // mostrarli e lasciare che la chiamata fallisca. Il divieto vero non e'
+        // qui ma nelle Cloud Function (OWNER_EMAIL in functions/index.js): queste
+        // callable sono raggiungibili anche senza passare da questo pannello.
+        if(acc.owner){
+          const lock=document.createElement("span");
+          lock.style.cssText="font-size:12px;color:var(--text3);line-height:1.4";
+          lock.textContent="🔒 Account principale: non eliminabile, resta sempre admin.";
+          actions.appendChild(lock);
+        }else{
+          const roleSel=document.createElement("select");
+          roleSel.style.cssText="font-size:12px;padding:4px 8px";
+          roleSel.innerHTML=_roleOptionsHtml(acc.role);
+          roleSel.addEventListener("change",function(){
+            roleSel.disabled=true;
+            _callAdminFn("setAccountRole",{uid:acc.uid,role:roleSel.value||null}).then(function(){
+              refreshList();
+            }).catch(function(e){alert("Errore: "+e.message);roleSel.disabled=false;refreshList();});
+          });
+          actions.appendChild(roleSel);
 
-        const delBtn=document.createElement("button");delBtn.type="button";
-        delBtn.className="action-btn del";delBtn.textContent="Elimina";
-        delBtn.addEventListener("click",function(){
-          if(!confirm("Eliminare definitivamente l'account "+(acc.email||acc.uid)+"?"))return;
-          delBtn.disabled=true;
-          _callAdminFn("deleteOperatorAccount",{uid:acc.uid}).then(function(){
-            refreshList();
-          }).catch(function(e){alert("Errore: "+e.message);delBtn.disabled=false;});
-        });
-        actions.appendChild(delBtn);
+          const delBtn=document.createElement("button");delBtn.type="button";
+          delBtn.className="action-btn del";delBtn.textContent="Elimina";
+          delBtn.addEventListener("click",function(){
+            if(!confirm("Eliminare definitivamente l'account "+(acc.email||acc.uid)+"?"))return;
+            delBtn.disabled=true;
+            _callAdminFn("deleteOperatorAccount",{uid:acc.uid}).then(function(){
+              refreshList();
+            }).catch(function(e){alert("Errore: "+e.message);delBtn.disabled=false;});
+          });
+          actions.appendChild(delBtn);
+        }
 
         card.appendChild(actions);
         list.appendChild(card);

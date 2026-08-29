@@ -901,6 +901,17 @@ function _requireAdmin(request) {
   }
 }
 
+// L'account principale e' l'ultima chiave di casa: non deve poter sparire per
+// errore ne' per iniziativa di un secondo admin. Nessuna funzione del pannello
+// puo' eliminarlo o togliergli il ruolo admin - il controllo sta qui e non
+// nell'interfaccia, perche' queste callable sono raggiungibili anche senza
+// passare dal pannello. Per cambiarlo, modificare questa costante.
+const OWNER_EMAIL = "omniaturismoroseto@gmail.com";
+
+function _isOwnerEmail(email) {
+  return String(email || "").trim().toLowerCase() === OWNER_EMAIL;
+}
+
 // Ruoli account oltre al normale "operatore" (nessun ruolo speciale, valore
 // null/assente). Le funzioni specifiche per ciascuno restano da definire in
 // seguito - per ora l'unica differenza attiva e' che CP e forze dell'ordine
@@ -937,6 +948,9 @@ exports.demoteAdmin = onCall({ region: "europe-west1" }, async (request) => {
   if (email.toLowerCase() === String(request.auth.token.email || "").toLowerCase()) {
     throw new HttpsError("failed-precondition", "Non puoi rimuovere il ruolo admin a te stesso");
   }
+  if (_isOwnerEmail(email)) {
+    throw new HttpsError("failed-precondition", "L'account principale non puo' essere declassato");
+  }
 
   try {
     const user = await admin.auth().getUserByEmail(email);
@@ -965,6 +979,9 @@ exports.setAccountRole = onCall({ region: "europe-west1" }, async (request) => {
 
   try {
     const user = await admin.auth().getUser(uid);
+    if (_isOwnerEmail(user.email) && role !== "admin") {
+      throw new HttpsError("failed-precondition", "L'account principale deve restare admin");
+    }
     const claims = { ...(user.customClaims || {}) };
     if (role) claims.role = role;
     else delete claims.role;
@@ -985,6 +1002,7 @@ exports.listOperatorAccounts = onCall({ region: "europe-west1" }, async (request
         uid: u.uid,
         email: u.email,
         role: (u.customClaims && u.customClaims.role) || null,
+        owner: _isOwnerEmail(u.email),
         createdAt: u.metadata.creationTime,
         lastSignIn: u.metadata.lastSignInTime,
         disabled: u.disabled,
@@ -1026,9 +1044,14 @@ exports.deleteOperatorAccount = onCall({ region: "europe-west1" }, async (reques
   if (uid === request.auth.uid) throw new HttpsError("failed-precondition", "Non puoi eliminare il tuo stesso account");
 
   try {
+    const target = await admin.auth().getUser(uid);
+    if (_isOwnerEmail(target.email)) {
+      throw new HttpsError("failed-precondition", "L'account principale non puo' essere eliminato");
+    }
     await admin.auth().deleteUser(uid);
     return { ok: true };
   } catch (e) {
+    if (e instanceof HttpsError) throw e;
     await reportError(e, "deleteOperatorAccount");
     throw new HttpsError("internal", "Errore nell'eliminazione dell'account");
   }
