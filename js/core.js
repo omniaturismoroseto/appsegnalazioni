@@ -148,10 +148,65 @@ export function _ensureStationPushForegroundHandler(){
   _fcmMessaging.onMessage(_handleStationPush);
 }
 
-// ---- Registra il token push del dispositivo di postazione (dopo il sign-in col custom token) ----
-export async function _registerStationPush(deviceId){
-  if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
+// Plugin push nativo, disponibile solo dentro l'app Android (Capacitor lo inietta
+// nella WebView anche quando questa carica il sito remoto). Fuori dall'app - PWA
+// o browser - restituisce null e si usa la via web.
+function _capacitorPush(){
   try{
+    var C=window.Capacitor;
+    if(!C||typeof C.isNativePlatform!=="function"||!C.isNativePlatform())return null;
+    return (C.Plugins&&C.Plugins.PushNotifications)||null;
+  }catch(e){return null;}
+}
+
+// Chiede permesso e token FCM al plugin nativo. Il token non torna dal register():
+// arriva sull'evento "registration", quindi si aspetta quello, con un tetto di
+// tempo per non restare appesi in silenzio se non arriva mai.
+async function _stationPushTokenNative(PN){
+  var perm=await PN.checkPermissions();
+  if(!perm||perm.receive!=="granted")perm=await PN.requestPermissions();
+  if(!perm||perm.receive!=="granted")throw new Error("permesso notifiche negato");
+  var handles=[];
+  try{
+    return await new Promise(function(resolve,reject){
+      var done=false;
+      var timer=setTimeout(function(){
+        if(done)return;done=true;
+        reject(new Error("nessun token FCM entro 20 secondi"));
+      },20000);
+      function finish(fn,arg){if(done)return;done=true;clearTimeout(timer);fn(arg);}
+      Promise.resolve(PN.addListener("registration",function(t){
+        finish(resolve,t&&t.value);
+      })).then(function(h){handles.push(h);}).catch(function(){});
+      Promise.resolve(PN.addListener("registrationError",function(e){
+        finish(reject,new Error((e&&(e.error||e.message))||"registrazione FCM fallita"));
+      })).then(function(h){handles.push(h);}).catch(function(){});
+      Promise.resolve(PN.register()).catch(function(e){finish(reject,e);});
+    });
+  }finally{
+    handles.forEach(function(h){try{if(h&&h.remove)h.remove();}catch(e){}});
+  }
+}
+
+// ---- Registra il token push del dispositivo di postazione (dopo il sign-in col custom token) ----
+// Senza pushToken la postazione e' esclusa dagli allarmi: sendStationEmergency
+// sceglie i destinatari con "enabled && pushToken", quindi un dispositivo senza
+// token viene saltato in silenzio. Dentro l'app il token va chiesto al plugin
+// nativo, perche' la WebView di Android non implementa le Web Push (non esiste
+// PushManager) e getToken() con vapidKey fallisce sempre.
+// pushKind registra da quale strada e' arrivato il token, cosi' si puo' capire
+// dal database cosa e' successo su un dispositivo senza doverci mettere le mani.
+export async function _registerStationPush(deviceId){
+  try{
+    var PN=_capacitorPush();
+    if(PN){
+      var nativeToken=await _stationPushTokenNative(PN);
+      if(!nativeToken)throw new Error("token nativo vuoto");
+      await stationDevicesRef.child(deviceId).update({ pushToken: nativeToken, pushKind: "native", lastSeen: Date.now() });
+      console.log("✅ Push postazione registrata (nativa)");
+      return;
+    }
+    if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
     if (!_fcmApp){
       try{_fcmApp = firebaseSdk.initializeApp(firebaseConfig, "fcmApp");}
       catch(e){_fcmApp = firebaseSdk.app("fcmApp");}
@@ -166,9 +221,12 @@ export async function _registerStationPush(deviceId){
     );
     const token = await _fcmMessaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
     if (!token) return;
-    await stationDevicesRef.child(deviceId).update({ pushToken: token, lastSeen: Date.now() });
-    console.log("✅ Push postazione registrata");
-  }catch(e){console.error("Errore registrazione push postazione:",e);}
+    await stationDevicesRef.child(deviceId).update({ pushToken: token, pushKind: "web", lastSeen: Date.now() });
+    console.log("✅ Push postazione registrata (web)");
+  }catch(e){
+    console.error("Errore registrazione push postazione:",e);
+    _sentryCapture(e);
+  }
 }
 
 // ---- Registra il token push di un contatto emergenza (admin/coordinatore) sul dispositivo corrente ----
