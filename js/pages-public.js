@@ -1269,6 +1269,11 @@ export function renderLogin(page){
       toggleBtn.textContent="📱 Questo è un dispositivo di postazione";
       if(_deviceStatusRef){_deviceStatusRef.off();_deviceStatusRef=null;}
     }else{
+      // Senza questa riga il pannello veniva costruito correttamente ma restava
+      // display:none (il valore iniziale): chi premeva il pulsante vedeva sparire
+      // il form di login e comparire nient'altro. Serve anche al ramo qui sopra,
+      // che riconosce il pannello aperto proprio da display !== "none".
+      deviceWrap.style.display="block";
       loginFormWrap.style.display="none";divider.style.display="none";
       toggleBtn.textContent="← Torna al login operatori";
       _renderDeviceActivation(deviceWrap,function(ref){_deviceStatusRef=ref;});
