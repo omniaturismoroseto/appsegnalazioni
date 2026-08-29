@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+// Firma di release: la keystore NON sta nel repo (che e' pubblico). In CI viene
+// ricostruita dal secret ANDROID_KEYSTORE_BASE64 e il percorso arriva qui via
+// variabile d'ambiente. Senza quelle variabili il build resta possibile ma
+// produce un APK non firmato, che Android non installa: e' il caso di chi
+// compila in locale senza i secret.
+def omniaKeystore = System.getenv("ANDROID_KEYSTORE_PATH")
+
 android {
     namespace = "it.omniaadriatic.segnalazioni"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +14,8 @@ android {
         applicationId "it.omniaadriatic.segnalazioni"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode Integer.parseInt(System.getenv("ANDROID_VERSION_CODE") ?: "1")
+        versionName System.getenv("ANDROID_VERSION_NAME") ?: "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +23,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (omniaKeystore) {
+                storeFile file(omniaKeystore)
+                storeType "pkcs12"
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "omnia"
+                keyPassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (omniaKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
