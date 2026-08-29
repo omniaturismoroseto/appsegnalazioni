@@ -3,8 +3,9 @@
   "appName": "Omnia Postazioni",
   "webDir": "www",
   "server": {
-    "url": "https://omniaturismoroseto.github.io/appsegnalazioni/",
-    "cleartext": false
+    "url": "https://adriaticlifeguardservice.it/appsegnalazioni/",
+    "cleartext": false,
+    "allowNavigation": ["adriaticlifeguardservice.it"]
   },
   "android": {
     "allowMixedContent": false
