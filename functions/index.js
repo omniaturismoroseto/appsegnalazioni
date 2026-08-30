@@ -302,14 +302,14 @@ exports.bandiereRosse = onSchedule(
 // dopo il passaggio a bandiera rossa (fine giornata di servizio).
 exports.resetChatSerale = onSchedule(
   {
-    schedule: "5 19 * * *",       // 19:05
+    schedule: "0 20 * * *",       // 20:00
     timeZone: "Europe/Rome",
     region: "europe-west1",
   },
   async () => {
     try {
       await admin.database().ref("chat/resetAt").set(Date.now());
-      console.log("Chat interna: reset visivo serale (19:05 Roma)");
+      console.log("Chat interna: reset visivo serale (20:00 Roma)");
     } catch (e) {
       await reportError(e, "resetChatSerale");
     }
@@ -317,7 +317,7 @@ exports.resetChatSerale = onSchedule(
 );
 
 // Chat esterna (admin/coordinatore/CP/forze dell'ordine): reset a fine
-// giornata (23:59), non alle 19:05 come la chat con le postazioni - orari
+// giornata (23:59), non alle 20:00 come la chat con le postazioni - orari
 // diversi voluti apposta. Per l'admin nessuna delle due si resetta mai
 // (vedi chat.js, _visibleMessages: se window.isAdmin ignora del tutto
 // questo timestamp).

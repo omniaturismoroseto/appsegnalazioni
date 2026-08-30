@@ -806,7 +806,7 @@ chatResetAtRef.on("value",function(snap){
 });
 
 // Chat esterna (solo testo): stesso schema della chat con le postazioni,
-// ma reset alle 23:59 invece che alle 19:05 (vedi resetChatEsternaSerale).
+// ma reset alle 23:59 invece che alle 20:00 (vedi resetChatEsternaSerale).
 // Per postazioni/operatori normali questi listener falliscono in silenzio
 // (permission_denied, vedi database.rules.json) - non hanno mai accesso.
 export let chatEsternaMessages={};
