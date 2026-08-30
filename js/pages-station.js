@@ -1,5 +1,39 @@
 import { FLAG_COLORS, STATIONS, TYPES, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData } from "./core.js";
 import { renderChatPanel, createRadioRecorder } from "./chat.js";
+
+// Il registratore e il pulsante vivono fuori dalla funzione di disegno: il
+// pannello viene ridisegnato spesso, e un registratore ricreato a ogni giro
+// perderebbe la trasmissione in corso. Qui ne esiste uno solo, e le scritte
+// finiscono sempre sul pulsante attualmente a schermo.
+let _radioTile=null;
+let _radio=null;
+
+function _radioFace(bg,titolo,sotto){
+  if(!_radioTile)return;
+  _radioTile.style.background=bg;
+  _radioTile.innerHTML='<span style="font-size:14px;font-weight:700">'+titolo+'</span><span style="font-size:13.5px">'+sotto+'</span>';
+}
+function _radioIdle(sotto){_radioFace("#4a4a46","🎙️ COMUNICAZIONE RADIO",sotto||"tieni premuto per parlare");}
+function _radioIdleTraUnPo(sotto,ms){
+  _radioIdle(sotto);
+  setTimeout(function(){if(!_radio||!_radio.isRecording())_radioIdle();},ms||2500);
+}
+function _radioRecorder(){
+  if(_radio)return _radio;
+  _radio=createRadioRecorder({
+    onStart:function(){_radioFace("#c0392b","🔴 STO TRASMETTENDO","rilascia per inviare · 0:00");},
+    onTick:function(sec){
+      const m=Math.floor(sec/60),r=sec%60;
+      _radioFace("#c0392b","🔴 STO TRASMETTENDO","rilascia per inviare · "+m+":"+String(r).padStart(2,"0"));
+    },
+    onSending:function(){_radioIdle("invio in corso…");},
+    onSent:function(){_radioIdleTraUnPo("✓ inviato a tutte le postazioni");},
+    onTooShort:function(){_radioIdleTraUnPo("tieni premuto mentre parli");},
+    onError:function(msg){_radioIdleTraUnPo(msg,4000);},
+    onIdle:function(){_radioIdle();}
+  });
+  return _radio;
+}
 import { _renderDeviceActivation } from "./device.js";
 
 // Schermata unica dell'app di postazione finche' il dispositivo non e' stato
@@ -168,38 +202,17 @@ export function renderStationPanel(page){
   // dove resta da riascoltare.
   const wtTile=document.createElement("button");wtTile.type="button";
   wtTile.style.cssText=tileStyle+";touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s;";
-  function radioFace(bg,titolo,sotto){
-    wtTile.style.background=bg;
-    wtTile.innerHTML='<span style="font-size:14px;font-weight:700">'+titolo+'</span><span style="font-size:13.5px">'+sotto+'</span>';
-  }
-  function radioIdle(sotto){radioFace("#4a4a46","🎙️ COMUNICAZIONE RADIO",sotto||"tieni premuto per parlare");}
-  function radioIdleTraUnPo(sotto,ms){
-    radioIdle(sotto);
-    setTimeout(function(){if(!radio.isRecording())radioIdle();},ms||2500);
-  }
-  radioIdle();
-  const radio=createRadioRecorder({
-    onStart:function(){radioFace("#c0392b","🔴 STO TRASMETTENDO","rilascia per inviare · 0:00");},
-    onTick:function(sec){
-      const m=Math.floor(sec/60),r=sec%60;
-      radioFace("#c0392b","🔴 STO TRASMETTENDO","rilascia per inviare · "+m+":"+String(r).padStart(2,"0"));
-    },
-    onSending:function(){radioIdle("invio in corso…");},
-    onSent:function(){radioIdleTraUnPo("✓ inviato a tutte le postazioni");},
-    onTooShort:function(){radioIdleTraUnPo("tieni premuto mentre parli");},
-    onError:function(msg){radioIdleTraUnPo(msg,4000);},
-    onIdle:function(){radioIdle();}
-  });
-  // Il puntatore viene "catturato": se il dito scivola fuori dal pulsante mentre
-  // si parla, il rilascio arriva lo stesso e il messaggio parte invece di
-  // restare in trasmissione all'infinito.
+  _radioTile=wtTile;
+  _radioIdle();
   wtTile.addEventListener("pointerdown",function(e){
     e.preventDefault();
-    try{if(wtTile.setPointerCapture)wtTile.setPointerCapture(e.pointerId);}catch(err){}
-    radio.start();
+    _radioRecorder().start();
   });
-  wtTile.addEventListener("pointerup",function(e){e.preventDefault();radio.stopAndSend();});
-  wtTile.addEventListener("pointercancel",function(){radio.cancel();});
+  // Nessun ascolto del rilascio sul pulsante: se ne occupa il registratore a
+  // livello di finestra, perche' questo pannello si ridisegna da solo quando
+  // cambiano bandiere, note o segnalazioni. Se capitava mentre si teneva
+  // premuto, il pulsante spariva insieme al suo evento di rilascio e la
+  // trasmissione restava aperta senza partire mai.
   wtTile.addEventListener("contextmenu",function(e){e.preventDefault();});
   grid.appendChild(chatTile);grid.appendChild(wtTile);
 

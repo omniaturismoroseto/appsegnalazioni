@@ -205,8 +205,19 @@ function _renderMessages(list,cfg){
         +(String(stationMode||"")===directTo?"\uD83D\uDD12 solo per te":"\uD83D\uDD12 solo P."+_escapeHtml(directTo))
         +'</span>'
       : "";
+    // La durata la scriviamo noi: un file registrato dal browser non la porta
+    // nell'intestazione, quindi il lettore mostra 0:00 finche' non lo si
+    // riproduce - e chi guarda non sa se sono due secondi o un minuto.
+    const durata=(function(){
+      const sec=Math.max(0,Math.round(Number(m.audioDuration)||0));
+      if(!sec)return "";
+      return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");
+    })();
     const body=m.type==="audio"
-      ? '<audio controls preload="none" src="'+_escapeHtml(m.audioData||"")+'" style="width:220px;max-width:100%;height:32px;display:block;margin-top:2px"></audio>'
+      ? '<div style="display:flex;align-items:center;gap:8px;margin-top:2px">'
+        +'<audio controls preload="metadata" src="'+_escapeHtml(m.audioData||"")+'" style="width:200px;max-width:100%;height:32px"></audio>'
+        +(durata?'<span style="font-size:11px;color:var(--text3);white-space:nowrap">'+durata+'</span>':'')
+        +'</div>'
       : m.type==="photo"
       ? '<img src="'+_escapeHtml(m.photoData||"")+'" alt="Foto" style="max-width:220px;width:100%;border-radius:8px;display:block;margin-top:2px"/>'
       : '<div style="font-size:13.5px;color:var(--text);white-space:pre-wrap;word-break:break-word">'+_escapeHtml(m.text||"")+'</div>';
@@ -248,8 +259,29 @@ export function createRadioRecorder(handlers){
   handlers=handlers||{};
   const cfg=CHANNELS.stations;
   var rec=null,chunks=[],stream=null,startedAt=0,timerId=null,discard=false,busy=false;
+  var rilascioArmato=false;
 
   function fire(name,arg){try{if(handlers[name])handlers[name](arg);}catch(e){}}
+
+  // Il dito si alza dove capita: fuori dal pulsante, o su un pulsante che nel
+  // frattempo e' stato ridisegnato (il pannello di postazione si ridisegna da
+  // solo quando cambiano bandiere, note o segnalazioni). Ascoltando solo
+  // sull'elemento, in quei casi il rilascio non arrivava mai e la trasmissione
+  // restava aperta senza partire.
+  function suRilascio(){ if(rec) api.stopAndSend(); }
+  function suAnnulla(){ if(rec) api.cancel(); }
+  function armaRilascio(){
+    if(rilascioArmato)return;
+    rilascioArmato=true;
+    window.addEventListener("pointerup",suRilascio);
+    window.addEventListener("pointercancel",suAnnulla);
+  }
+  function disarmaRilascio(){
+    if(!rilascioArmato)return;
+    rilascioArmato=false;
+    window.removeEventListener("pointerup",suRilascio);
+    window.removeEventListener("pointercancel",suAnnulla);
+  }
   function supported(){return !!(navigator.mediaDevices&&window.MediaRecorder);}
   function cleanup(){
     if(timerId){clearInterval(timerId);timerId=null;}
@@ -257,7 +289,7 @@ export function createRadioRecorder(handlers){
     rec=null;
   }
 
-  return {
+  const api={
     supported:supported,
     isRecording:function(){return !!rec;},
     start:function(){
@@ -278,6 +310,7 @@ export function createRadioRecorder(handlers){
           const mimeType=(rec&&rec.mimeType)||"audio/webm";
           const elapsed=Date.now()-startedAt;
           window._radioTransmitting=false;
+          disarmaRilascio();
           cleanup();
           const parts=chunks;chunks=[];
           if(discard){busy=false;fire("onIdle");return;}
@@ -303,6 +336,7 @@ export function createRadioRecorder(handlers){
         rec.start();
         startedAt=Date.now();
         window._radioTransmitting=true;
+        armaRilascio();
         fire("onStart");
         timerId=setInterval(function(){
           const el=Math.floor((Date.now()-startedAt)/1000);
@@ -326,9 +360,10 @@ export function createRadioRecorder(handlers){
     cancel:function(){
       discard=true;
       if(rec){try{rec.stop();}catch(e){cleanup();busy=false;fire("onIdle");}}
-      else{cleanup();busy=false;fire("onIdle");}
+      else{disarmaRilascio();cleanup();busy=false;fire("onIdle");}
     }
   };
+  return api;
 }
 
 // opts.isStation: true quando richiamata dal pannello di postazione (mostra
@@ -508,8 +543,9 @@ export function renderChatPanel(page,opts){
       try{if(pttBtn.setPointerCapture)pttBtn.setPointerCapture(e.pointerId);}catch(err){}
       ptt.start();
     });
-    pttBtn.addEventListener("pointerup",function(e){e.preventDefault();ptt.stopAndSend();});
-    pttBtn.addEventListener("pointercancel",function(){ptt.cancel();});
+    // Il rilascio lo ascolta il registratore sulla finestra: il pannello si
+    // ridisegna a ogni messaggio in arrivo, e un ascolto legato al pulsante
+    // sparirebbe insieme a lui a meta' trasmissione.
     pttBtn.addEventListener("contextmenu",function(e){e.preventDefault();});
     wrap.appendChild(pttBtn);
   }
