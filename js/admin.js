@@ -16,7 +16,7 @@ const FN_BASE="https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions
 // corpo {data:...}, header Authorization col token dell'utente per le
 // funzioni che controllano request.auth (qui serve sempre, sono tutte
 // riservate agli admin).
-async function _callAdminFn(name,data){
+export async function _callAdminFn(name,data){
   const a=_getAuth();
   const user=a&&a.currentUser;
   if(!user)throw new Error("Sessione non valida, rifai il login");

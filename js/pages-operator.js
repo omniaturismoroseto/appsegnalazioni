@@ -2,7 +2,7 @@ import { FLAG_COLORS, STATIONS, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _reg
 import { refreshMarkers } from "./map.js";
 import { CHILD_ESCALATE_MIN } from "./pages-public.js";
 import { renderChatPanel } from "./chat.js";
-import { renderAdminPanel, _promoteSelfBootstrap } from "./admin.js";
+import { renderAdminPanel, _promoteSelfBootstrap, _callAdminFn } from "./admin.js";
 
 export function renderDashboard(page){
   const reports=getReports(),open=reports.filter(r=>r.status==="aperta");
@@ -362,8 +362,30 @@ export function renderDispositivi(page){
     var row=document.createElement("div");
     row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
     var info=document.createElement("div");info.style.cssText="flex:1;min-width:0";
-    info.innerHTML='<span style="font-size:13px;font-weight:600">P.'+d.station+(st?" – "+st.name:"")+'</span><br><span style="font-size:10.5px;color:var(--text3)">'+String(d.userAgent||"").substring(0,60)+'</span>';
+    var pushOk=!!d.pushToken;
+    info.innerHTML='<span style="font-size:13px;font-weight:600">P.'+d.station+(st?" – "+st.name:"")+'</span>'
+      +'<br><span style="font-size:10.5px;font-weight:'+(pushOk?"400":"700")+';color:'+(pushOk?"var(--text3)":"var(--danger-text)")+'">'
+      +(pushOk?"🔔 allarmi attivi":"⚠️ nessun token push: NON riceve gli allarmi")+'</span>'
+      +'<br><span style="font-size:10.5px;color:var(--text3)">'+String(d.userAgent||"").substring(0,60)+'</span>';
     row.appendChild(info);
+    if(pushOk){
+      var testBtn=document.createElement("button");
+      testBtn.style.cssText="width:auto;font-size:12px;padding:6px 10px;background:var(--bg2);border-color:var(--border2);color:var(--text)";
+      testBtn.textContent="🔔 Prova";
+      testBtn.title="Fa scattare l'allarme su questo dispositivo, per verificare che arrivi davvero";
+      testBtn.addEventListener("click",function(){
+        if(!confirm("Far scattare l'allarme di prova sul dispositivo della postazione P."+d.station+"? Suonerà a tutto volume su quel dispositivo, e su nessun altro."))return;
+        testBtn.disabled=true;testBtn.textContent="Invio…";
+        _callAdminFn("sendStationTestAlert",{deviceId:deviceId}).then(function(){
+          testBtn.textContent="✓ Inviato";
+          setTimeout(function(){testBtn.disabled=false;testBtn.textContent="🔔 Prova";},4000);
+        }).catch(function(e){
+          testBtn.disabled=false;testBtn.textContent="🔔 Prova";
+          alert("Errore: "+e.message);
+        });
+      });
+      row.appendChild(testBtn);
+    }
     var offBtn=document.createElement("button");offBtn.style.cssText="width:auto;font-size:12px;padding:6px 10px;background:var(--bg2);border-color:var(--border2);color:var(--text)";
     offBtn.textContent="Disattiva";
     offBtn.addEventListener("click",function(){

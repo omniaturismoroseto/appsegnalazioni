@@ -993,6 +993,50 @@ exports.setAccountRole = onCall({ region: "europe-west1" }, async (request) => {
   }
 });
 
+// Fa scattare l'allarme su UN solo dispositivo di postazione, per verificare
+// l'ultimo tratto della catena: invio FCM, OmniaMessagingService, allarme a
+// schermo intero. Con l'allarme vero non si puo' provare senza coinvolgere
+// nessuno - sendStationEmergency raggiunge le 2 postazioni piu' vicine e i
+// contatti di emergenza, e mai la postazione da cui parte.
+exports.sendStationTestAlert = onCall({ region: "europe-west1" }, async (request) => {
+  _requireAdmin(request);
+  const deviceId = String((request.data && request.data.deviceId) || "");
+  if (!deviceId) throw new HttpsError("invalid-argument", "deviceId mancante");
+
+  try {
+    const snap = await admin.database().ref("stationDevices/" + deviceId).once("value");
+    const d = snap.val();
+    if (!d) throw new HttpsError("not-found", "Dispositivo non trovato");
+    if (!d.enabled) throw new HttpsError("failed-precondition", "Dispositivo non ancora attivato");
+    if (!d.pushToken) {
+      throw new HttpsError("failed-precondition", "Questo dispositivo non ha un token push: non puo' ricevere allarmi");
+    }
+    const station = String(d.station || "?");
+    // Stessa forma dell'allarme vero (solo dati, type station_emergency): e'
+    // quella che OmniaMessagingService riconosce per svegliare AlarmService.
+    // Titolo e testo dicono che e' una prova, per chi ha il tablet in mano.
+    const messageId = await admin.messaging().send({
+      token: d.pushToken,
+      data: {
+        type: "station_emergency",
+        station,
+        title: "PROVA ALLARME - P." + station,
+        body: "Prova richiesta dal centro operativo. Nessuna emergenza in corso.",
+      },
+      android: { priority: "high" },
+    });
+    console.log("Prova allarme inviata a P." + station + " (" + deviceId + "), messageId " + messageId);
+    return { ok: true, station, pushKind: d.pushKind || null };
+  } catch (e) {
+    if (e instanceof HttpsError) throw e;
+    // Il codice FCM e' la parte utile: dice se il token e' scaduto, non
+    // registrato o rifiutato, invece di un generico "errore interno".
+    const code = (e && e.code) ? String(e.code) : "";
+    await reportError(e, "sendStationTestAlert");
+    throw new HttpsError("internal", code ? ("Invio fallito (" + code + ")") : "Errore nell'invio della prova");
+  }
+});
+
 exports.listOperatorAccounts = onCall({ region: "europe-west1" }, async (request) => {
   _requireAdmin(request);
   try {
