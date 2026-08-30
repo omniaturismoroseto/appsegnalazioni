@@ -772,12 +772,46 @@ export function _onIncomingChatAudio(msg,msgId){
     audio.style.display="none";
     modal.appendChild(audio);
 
+    // Risposta a voce senza uscire dal popup. Prima l'unico modo di rispondere
+    // era "Rispondi", che chiude e riporta al pannello: chi ha appena sentito
+    // una chiamata radio deve poter rispondere subito, non navigare.
+    const radioBtn=document.createElement("button");radioBtn.type="button";
+    radioBtn.style.cssText="width:100%;padding:16px 12px;font-size:14px;font-weight:700;border:none;"
+      +"border-radius:12px;background:#4a4a46;color:#fff;margin-bottom:10px;cursor:pointer;"
+      +"touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s";
+    function facciaRadio(bg,testo){radioBtn.style.background=bg;radioBtn.textContent=testo;}
+    function radioPronta(testo){facciaRadio("#4a4a46",testo||"🎙️ RISPONDI VIA RADIO — tieni premuto");}
+    function radioProntaTraUnPo(testo,ms){
+      radioPronta(testo);
+      setTimeout(function(){if(!rispostaRadio.isRecording())radioPronta();},ms||2500);
+    }
+    radioPronta();
+    const rispostaRadio=createRadioRecorder({
+      onStart:function(){facciaRadio("#c0392b","🔴 STAI RISPONDENDO — rilascia per inviare · 0:00");},
+      onTick:function(sec){
+        const mm=Math.floor(sec/60),ss=sec%60;
+        facciaRadio("#c0392b","🔴 STAI RISPONDENDO — rilascia per inviare · "+mm+":"+String(ss).padStart(2,"0"));
+      },
+      onSending:function(){radioPronta("invio in corso…");},
+      onSent:function(){
+        radioPronta("✓ risposta inviata");
+        // Chi ha risposto ha finito: il popup si toglie di mezzo da solo.
+        setTimeout(close,1200);
+      },
+      onTooShort:function(){radioProntaTraUnPo("tieni premuto mentre parli");},
+      onError:function(msg){radioProntaTraUnPo(msg,4000);},
+      onIdle:function(){radioPronta();}
+    });
+    radioBtn.addEventListener("pointerdown",function(e){e.preventDefault();rispostaRadio.start();});
+    radioBtn.addEventListener("contextmenu",function(e){e.preventDefault();});
+    modal.appendChild(radioBtn);
+
     const btnRow=document.createElement("div");
     btnRow.style.cssText="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px";
     const replayBtn=document.createElement("button");replayBtn.type="button";
     replayBtn.style.cssText="padding:12px 4px;font-size:13px";replayBtn.textContent="🔁 Riascolta";
     const replyBtn=document.createElement("button");replyBtn.type="button";
-    replyBtn.className="btn-primary";replyBtn.style.cssText="padding:12px 4px;font-size:13px";replyBtn.textContent="💬 Rispondi";
+    replyBtn.style.cssText="padding:12px 4px;font-size:13px";replyBtn.textContent="💬 Chat";
     const closeBtn=document.createElement("button");closeBtn.type="button";
     closeBtn.style.cssText="padding:12px 4px;font-size:13px";closeBtn.textContent="✕ Chiudi";
     btnRow.appendChild(replayBtn);btnRow.appendChild(replyBtn);btnRow.appendChild(closeBtn);

@@ -10,7 +10,7 @@
 // arrivati altri. E' una condizione che leggendo il codice sembra sempre vera
 // e che si rompe con una riga distratta.
 import { describe, it, expect, beforeEach } from "vitest";
-import { _renderMessages } from "../js/chat.js";
+import { _onIncomingChatAudio, _renderMessages } from "../js/chat.js";
 
 function messaggio(id, extra) {
   return Object.assign({ authorLabel: "P.10", role: "station", ts: 1000 + id, text: "messaggio " + id }, extra || {});
@@ -80,5 +80,24 @@ describe("lista della chat", () => {
     _renderMessages(lista, finto({ a: messaggio(1) }));
     expect(lista.querySelector("[data-vuoto]")).toBeNull();
     expect(lista.querySelectorAll("[data-mid]").length).toBe(1);
+  });
+});
+
+describe("popup del vocale in arrivo", () => {
+  beforeEach(() => {
+    const vecchio = document.getElementById("_chatIncomingPopup");
+    if (vecchio) vecchio.remove();
+  });
+
+  it("offre di rispondere via radio senza uscire dal popup", () => {
+    // Prima l'unica risposta possibile era un pulsante che chiudeva il popup e
+    // riportava al pannello: chi ha appena sentito una chiamata deve poter
+    // rispondere subito, tenendo premuto.
+    _onIncomingChatAudio({ authorLabel: "P.10", audioData: "data:audio/webm;base64,AAAA" }, "abc");
+    const popup = document.getElementById("_chatIncomingPopup");
+    expect(popup).not.toBeNull();
+    const testi = Array.from(popup.querySelectorAll("button")).map((b) => b.textContent);
+    expect(testi.some((t) => /RISPONDI VIA RADIO/.test(t))).toBe(true);
+    expect(testi.some((t) => /Riascolta/.test(t))).toBe(true);
   });
 });
