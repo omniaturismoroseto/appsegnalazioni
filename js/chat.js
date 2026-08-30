@@ -776,7 +776,7 @@ export function _onIncomingChatAudio(msg,msgId){
     // era "Rispondi", che chiude e riporta al pannello: chi ha appena sentito
     // una chiamata radio deve poter rispondere subito, non navigare.
     const radioBtn=document.createElement("button");radioBtn.type="button";
-    radioBtn.style.cssText="width:100%;padding:16px 12px;font-size:14px;font-weight:700;border:none;"
+    radioBtn.style.cssText="width:100%;min-height:92px;padding:16px 12px;font-size:15px;font-weight:700;border:none;"
       +"border-radius:12px;background:#4a4a46;color:#fff;margin-bottom:10px;cursor:pointer;"
       +"touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s";
     function facciaRadio(bg,testo){radioBtn.style.background=bg;radioBtn.textContent=testo;}
@@ -806,14 +806,18 @@ export function _onIncomingChatAudio(msg,msgId){
     radioBtn.addEventListener("contextmenu",function(e){e.preventDefault();});
     modal.appendChild(radioBtn);
 
+    // Bersagli grandi, non pulsantini in fila: si usa in piedi, spesso con le
+    // mani bagnate. Icona sopra e parola sotto, come i riquadri del pannello.
     const btnRow=document.createElement("div");
-    btnRow.style.cssText="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px";
-    const replayBtn=document.createElement("button");replayBtn.type="button";
-    replayBtn.style.cssText="padding:12px 4px;font-size:13px";replayBtn.textContent="🔁 Riascolta";
-    const replyBtn=document.createElement("button");replyBtn.type="button";
-    replyBtn.style.cssText="padding:12px 4px;font-size:13px";replyBtn.textContent="💬 Chat";
-    const closeBtn=document.createElement("button");closeBtn.type="button";
-    closeBtn.style.cssText="padding:12px 4px;font-size:13px";closeBtn.textContent="✕ Chiudi";
+    btnRow.className="popup-azioni";
+    function azione(icona,parola){
+      const b=document.createElement("button");b.type="button";
+      b.innerHTML='<span style="font-size:22px;line-height:1">'+icona+'</span><span>'+parola+'</span>';
+      return b;
+    }
+    const replayBtn=azione("🔁","Riascolta");
+    const replyBtn=azione("💬","Chat");
+    const closeBtn=azione("✕","Chiudi");
     btnRow.appendChild(replayBtn);btnRow.appendChild(replyBtn);btnRow.appendChild(closeBtn);
     modal.appendChild(btnRow);
     overlay.appendChild(modal);

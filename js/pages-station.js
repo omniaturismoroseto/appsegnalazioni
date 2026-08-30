@@ -100,7 +100,7 @@ export function renderStationPanel(page){
   const note=stationNotesData[String(num)];
   const openReports=Object.values(window.reportsData||{}).filter(r=>r&&r.status==="aperta"&&r.zone===zoneStr);
 
-  const wrap=document.createElement("div");wrap.style.cssText="padding-bottom:110px";
+  const wrap=document.createElement("div");wrap.className="st-wrap";wrap.style.cssText="padding-bottom:110px";
 
   // Header
   const hdr=document.createElement("div");
@@ -112,18 +112,18 @@ export function renderStationPanel(page){
   hdr.appendChild(hdrTitle);hdr.appendChild(hdrClock);wrap.appendChild(hdr);
 
   const grid=document.createElement("div");
-  grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:6px";
+  grid.className="st-grid";
 
   // Tile BANDIERA
   const flagLabels={verde:"VERDE",gialla:"GIALLA",rossa:"ROSSA"};
   const flagTile=document.createElement("button");
   flagTile.type="button";
-  flagTile.style.cssText="grid-column:span 2;background:"+FLAG_COLORS[flagColor]+";color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  flagTile.className="st-wide";flagTile.style.cssText="background:"+FLAG_COLORS[flagColor]+";color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:56px;cursor:pointer";
   flagTile.innerHTML='<span style="font-size:14px;font-weight:700;opacity:.9">BANDIERA</span>'
     +'<span><span style="font-size:28px;font-weight:700;display:block">'+flagLabels[flagColor]+'</span>'
     +'<span style="font-size:13px;opacity:.9">tocca per cambiare</span></span>';
   const flagChooser=document.createElement("div");
-  flagChooser.style.cssText="grid-column:span 2;display:none;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:-2px";
+  flagChooser.className="st-wide";flagChooser.style.cssText="display:none;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:-2px";
   [["verde","VERDE"],["gialla","GIALLA"],["rossa","ROSSA"]].forEach(function([v,l]){
     const b=document.createElement("button");b.type="button";
     b.style.cssText="background:"+FLAG_COLORS[v]+";color:#fff;border:none;border-radius:4px;padding:14px 4px;font-weight:700;font-size:13px;cursor:pointer"+(v===flagColor?";outline:3px solid #0b0b0b;outline-offset:-3px":"");
@@ -141,18 +141,18 @@ export function renderStationPanel(page){
 
   // Tile SEGNALAZIONI + SEGNALA
   const repTile=document.createElement("button");repTile.type="button";
-  repTile.style.cssText="background:#1A3B8C;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  repTile.style.cssText="background:#1A3B8C;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:56px;cursor:pointer";
   repTile.innerHTML='<span style="font-size:14px;font-weight:700;opacity:.9">SEGNALAZIONI</span>'
     +'<span><span style="font-size:26px;font-weight:700;display:block">'+openReports.length+'</span>'
     +'<span style="font-size:13px;opacity:.9">apert'+(openReports.length===1?"a":"e")+'</span></span>';
   const repList=document.createElement("div");
-  repList.style.cssText="grid-column:span 2;display:none;flex-direction:column;gap:6px";
+  repList.className="st-wide";repList.style.cssText="display:none;flex-direction:column;gap:6px";
   repTile.addEventListener("click",function(){
     repList.style.display=repList.style.display==="none"?"flex":"none";
   });
 
   const segTile=document.createElement("button");segTile.type="button";
-  segTile.style.cssText="background:#D62B1F;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  segTile.style.cssText="background:#D62B1F;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:56px;cursor:pointer";
   segTile.innerHTML='<span style="font-size:16px;font-weight:700">🚨</span><span style="font-size:20px;font-weight:700">SEGNALA</span>';
   segTile.addEventListener("click",function(){window.activeStation=zoneStr;render("submit");});
 
@@ -173,7 +173,7 @@ export function renderStationPanel(page){
 
   // Fascia NOTA POSTAZIONE
   const noteBar=document.createElement("button");noteBar.type="button";
-  noteBar.style.cssText="grid-column:span 2;background:#333;color:#fff;border:none;border-radius:4px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left";
+  noteBar.className="st-wide";noteBar.style.cssText="background:#333;color:#fff;border:none;border-radius:4px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left";
   const noteBarLbl=document.createElement("span");noteBarLbl.style.cssText="font-size:12px;font-weight:700;opacity:.9";noteBarLbl.textContent="NOTA POSTAZIONE";
   const noteBarVal=document.createElement("span");noteBarVal.style.cssText="font-size:12px;opacity:.85";
   noteBarVal.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"nessuna nota · tocca per aggiungere";
@@ -183,7 +183,7 @@ export function renderStationPanel(page){
 
   // Tile METEO E DIARIO (placeholder in attesa dell'integrazione dati reale)
   const meteoTile=document.createElement("div");
-  meteoTile.style.cssText="grid-column:span 2;background:#0ea5e9;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:96px";
+  meteoTile.className="st-wide";meteoTile.style.cssText="background:#0ea5e9;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:56px";
   meteoTile.innerHTML='<span style="font-size:14px;font-weight:700;opacity:.9">METEO E DIARIO</span>'
     +'<span style="font-size:15px;opacity:.85">Dati non ancora collegati</span>';
   grid.appendChild(meteoTile);
@@ -192,7 +192,7 @@ export function renderStationPanel(page){
   // convivono i messaggi scritti e quelli vocali. La radio non e' un canale a
   // parte - i vocali viaggiano nella stessa chat e vengono riprodotti da soli
   // sui dispositivi di postazione (vedi ChatAudioService nel progetto Android).
-  const tileStyle="background:#4a4a46;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  const tileStyle="background:#4a4a46;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:56px;cursor:pointer";
   const chatTile=document.createElement("button");chatTile.type="button";
   chatTile.style.cssText=tileStyle;
   chatTile.innerHTML='<span style="font-size:14px;font-weight:700">💬 CHAT</span><span style="font-size:13.5px">con tutte le postazioni</span>';

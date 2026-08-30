@@ -373,3 +373,54 @@ label:first-child{margin-top:0}
 .alert-banner.pericolo .alert-banner-btn{color:#92400e}
 @keyframes alertPulse{from{opacity:1}to{opacity:.75}}
 
+
+/* ---- Pannello di postazione ----
+   E' pensato per un tablet in dotazione, usato in piedi e spesso con le mani
+   bagnate: occupa tutto lo schermo invece della colonna stretta prevista per i
+   telefoni, e i riquadri crescono con lo spazio disponibile invece di avere
+   un'altezza fissa. Su schermi larghi passa a tre colonne da solo. */
+body.postazione .page-inner{max-width:none}
+body.postazione #content{padding:12px}
+
+.st-wrap{display:flex;flex-direction:column;min-height:calc(100dvh - 24px)}
+.st-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;flex:1;grid-auto-rows:minmax(92px,1fr)}
+/* Riquadri a tutta larghezza: 1/-1 li fa arrivare in fondo qualunque sia il
+   numero di colonne, cosi' non vanno ritoccati a ogni cambio di formato. */
+.st-grid .st-wide{grid-column:1/-1}
+/* Il minimo resta basso di proposito: e la ripartizione (1fr) a dare ai
+   riquadri laltezza giusta per riempire lo schermo. Un minimo alto sembra
+   generoso ma fa traboccare la griglia e ricompare lo scorrimento, che e
+   esattamente cio che non si vuole su un pannello da tablet. */
+@media(min-width:820px){
+  .st-grid{grid-template-columns:repeat(3,1fr);gap:10px}
+}
+/* I riquadri hanno testo piu' grande quando lo schermo lo consente: da un metro
+   di distanza, con il sole, la dimensione da telefono non si legge. */
+@media(min-width:820px){
+  .st-grid button, .st-grid > div{font-size:16px}
+}
+
+/* Pulsanti del popup del vocale: stessa filosofia dei riquadri, bersagli
+   grandi invece di pulsantini in fila. */
+.popup-azioni{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.popup-azioni button{min-height:76px;font-size:14px;font-weight:700;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 6px}
+
+/* Sul pannello di postazione il pie di pagina con linformativa privacy non ha
+   destinatario - e un apparato di servizio, non una pagina per il pubblico - e
+   i suoi 88px bastavano a far comparire lo scorrimento su uno schermo che
+   dovrebbe essere riempito esattamente. */
+body.postazione #pie-pagina{display:none}
+
+/* Schermi bassi (tablet in orizzontale da 600px): con sette righe di riquadri
+   lo spazio verticale e poco, quindi si stringono i margini interni invece di
+   far ricomparire lo scorrimento. */
+@media(max-height:700px){
+  .st-grid{gap:6px}
+  .st-grid > button, .st-grid > div{padding-top:8px!important;padding-bottom:8px!important}
+  .st-grid > button span, .st-grid > div span{font-size:13px!important}
+  /* La riserva in fondo serve alla barra EMERGENZA, che misura 90px: 110
+     erano piu del necessario e su uno schermo basso quei venti pixel sono
+     una riga di riquadri in meno. */
+  .st-wrap{padding-bottom:96px!important}
+}

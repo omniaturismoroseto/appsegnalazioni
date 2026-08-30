@@ -535,6 +535,14 @@ export const STATION_APP=(function(){
     return sessionStorage.getItem("omnia_station_app")==="1";
   }catch(e){return false;}
 })();
+
+// Il foglio di stile si aggancia a questa classe per dare al pannello tutta la
+// larghezza dello schermo e togliere il pie di pagina, che su un apparato di
+// servizio non ha destinatario. Va messa QUI e non piu' in alto: STATION_APP
+// non esiste ancora prima di questo punto, e un riferimento anticipato
+// falliva in silenzio dentro un try/catch, lasciando il pannello incolonnato
+// come su un telefono.
+if(STATION_APP&&document.body)document.body.classList.add("postazione");
 export var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
 window.currentRole=_savedAuth?"operator":null;
 if(_savedAuth)_sentrySetTag("role","operator");
