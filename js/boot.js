@@ -3,6 +3,8 @@ import { _resizeMap, initMap, refreshMarkers, renderHeader, renderMapLegend } fr
 import { _showOnboarding, renderConsigliPage, renderDone, renderForecastPage, renderHome, renderInstallPage, renderLogin, renderMinoreBivio, renderMinoreDone, renderMinoreForm, renderOrdinanzePage, renderPartnerPage, renderSubmit } from "./pages-public.js";
 import { renderDashboard } from "./pages-operator.js";
 import { fetchMeteoMarine } from "./meteo.js";
+import { STATION_APP } from "./core.js";
+import { avviaAutoAggiornamento } from "./autoupdate.js";
 
 // Questa e' l'app segnalazioni completa: mappa, pagine pubbliche, dashboard
 // operatori. Le dichiara qui, non dentro core.js, cosi' l'app di postazione
@@ -29,6 +31,11 @@ registerScreens({
 // Il GPS serve alla mappa e alla postazione piu' vicina: roba dell'app
 // pubblica. Un tablet di postazione ha una posizione fissa e nota, e non deve
 // vedersi chiedere un permesso che non gli serve.
+// Un dispositivo arrivato qui con ?app=postazione sta girando su un APK
+// precedente, che carica ancora questa pagina invece di postazione.html: anche
+// lui deve poter ricevere gli aggiornamenti senza che qualcuno lo riavvii.
+if(STATION_APP)avviaAutoAggiornamento();
+
 setTimeout(function(){try{requestGPS();}catch(e){}},0);
 setTimeout(function(){try{_showOnboarding();}catch(e){}},800);
 
