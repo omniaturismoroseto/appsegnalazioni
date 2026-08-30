@@ -429,6 +429,46 @@ export function renderChatPanel(page,opts){
   inputRow.appendChild(sendBtn);
   wrap.appendChild(inputRow);
 
+  // ---- Radio premi-e-parla, sopra la riga di scrittura ----
+  // Serve anche da qui, non solo dalle postazioni: per una risposta rapida
+  // scrivere e' piu' lento che parlare, ed e' proprio il caso in cui la radio
+  // ha senso. Il vocale resta comunque un messaggio della chat, quindi
+  // riascoltabile piu' tardi da chiunque.
+  if(cfg.supportsAudio){
+    const pttBtn=document.createElement("button");pttBtn.type="button";
+    pttBtn.style.cssText="width:100%;padding:12px 14px;border:none;border-top:1px solid var(--border);"
+      +"background:#4a4a46;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;"
+      +"touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s;";
+    function pttFace(bg,testo){pttBtn.style.background=bg;pttBtn.textContent=testo;}
+    function pttIdle(){pttFace("#4a4a46","🎙️ RADIO — tieni premuto per parlare");}
+    function pttIdleTraUnPo(testo,ms){
+      pttFace("#4a4a46",testo);
+      setTimeout(function(){if(!ptt.isRecording())pttIdle();},ms||2500);
+    }
+    pttIdle();
+    const ptt=createRadioRecorder({
+      onStart:function(){pttFace("#c0392b","🔴 STAI TRASMETTENDO — rilascia per inviare · 0:00");},
+      onTick:function(sec){
+        const m=Math.floor(sec/60),r=sec%60;
+        pttFace("#c0392b","🔴 STAI TRASMETTENDO — rilascia per inviare · "+m+":"+String(r).padStart(2,"0"));
+      },
+      onSending:function(){pttFace("#4a4a46","invio in corso…");},
+      onSent:function(){pttIdleTraUnPo("✓ inviato");},
+      onTooShort:function(){pttIdleTraUnPo("tieni premuto mentre parli");},
+      onError:function(msg){pttIdleTraUnPo(msg,4000);},
+      onIdle:function(){pttIdle();}
+    });
+    pttBtn.addEventListener("pointerdown",function(e){
+      e.preventDefault();
+      try{if(pttBtn.setPointerCapture)pttBtn.setPointerCapture(e.pointerId);}catch(err){}
+      ptt.start();
+    });
+    pttBtn.addEventListener("pointerup",function(e){e.preventDefault();ptt.stopAndSend();});
+    pttBtn.addEventListener("pointercancel",function(){ptt.cancel();});
+    pttBtn.addEventListener("contextmenu",function(e){e.preventDefault();});
+    wrap.appendChild(pttBtn);
+  }
+
   page.appendChild(wrap);
   input.focus();
 

@@ -167,7 +167,7 @@ export function renderStationPanel(page){
   // parla, come una ricetrasmittente. Il messaggio finisce comunque nella chat,
   // dove resta da riascoltare.
   const wtTile=document.createElement("button");wtTile.type="button";
-  wtTile.style.cssText=tileStyle+"touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s;";
+  wtTile.style.cssText=tileStyle+";touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s;";
   function radioFace(bg,titolo,sotto){
     wtTile.style.background=bg;
     wtTile.innerHTML='<span style="font-size:14px;font-weight:700">'+titolo+'</span><span style="font-size:13.5px">'+sotto+'</span>';
