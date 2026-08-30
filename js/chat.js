@@ -306,9 +306,14 @@ export function createRadioRecorder(handlers){
           fire("onTick",el);
           if(el>=MAX_RECORDING_S){try{rec.stop();}catch(e){}}
         },250);
-      }).catch(function(){
+      }).catch(function(e){
         busy=false;
-        fire("onError","Permesso microfono negato");
+        // Distinguere il rifiuto dal guasto: sono due problemi diversi e
+        // mandano a cercare in due posti diversi.
+        var nome=(e&&e.name)||"";
+        fire("onError",nome==="NotAllowedError"
+          ? "Permesso microfono negato"
+          : "Microfono non disponibile"+(nome?" ("+nome+")":""));
       });
     },
     stopAndSend:function(){

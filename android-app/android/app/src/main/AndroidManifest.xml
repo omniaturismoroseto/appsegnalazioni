@@ -94,4 +94,11 @@
          nella WebView, Capacitor gestisce da solo il prompt di permesso a runtime
          quando la pagina chiama getUserMedia({audio:true}). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Serve alla WebView, non a noi: per un getUserMedia audio Capacitor
+         chiede insieme RECORD_AUDIO e MODIFY_AUDIO_SETTINGS e concede solo se
+         ottiene entrambi (BridgeWebChromeClient.onPermissionRequest). Non
+         dichiarandolo, Android lo negava d'ufficio e il microfono restava
+         inaccessibile anche col permesso di sistema concesso a mano. E' un
+         permesso normale: si ottiene all'installazione, senza chiedere nulla. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 </manifest>
