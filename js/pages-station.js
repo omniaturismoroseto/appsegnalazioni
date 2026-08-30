@@ -127,14 +127,19 @@ export function renderStationPanel(page){
     +'<span style="font-size:15px;opacity:.85">Dati non ancora collegati</span>';
   grid.appendChild(meteoTile);
 
-  // Tile CHAT (attiva) + WALKIE-TALKIE (riservata, in arrivo)
+  // Tile CHAT e COMUNICAZIONE RADIO: due porte sulla stessa schermata, dove
+  // convivono i messaggi scritti e quelli vocali. La radio non e' un canale a
+  // parte - i vocali viaggiano nella stessa chat e vengono riprodotti da soli
+  // sui dispositivi di postazione (vedi ChatAudioService nel progetto Android).
+  const tileStyle="background:#4a4a46;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
   const chatTile=document.createElement("button");chatTile.type="button";
-  chatTile.style.cssText="background:#4a4a46;color:#fff;border:none;border-radius:4px;padding:14px 16px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;cursor:pointer";
+  chatTile.style.cssText=tileStyle;
   chatTile.innerHTML='<span style="font-size:14px;font-weight:700">💬 CHAT</span><span style="font-size:13.5px">con tutte le postazioni</span>';
   chatTile.addEventListener("click",function(){window._stationChatOpen=true;render("station");});
-  const wtTile=document.createElement("div");
-  wtTile.style.cssText="background:#4a4a46;color:#fff;border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-height:96px;opacity:.65";
-  wtTile.innerHTML='<span style="font-size:14px;font-weight:700">🎙️ WALKIE-TALKIE</span><span style="font-size:13.5px">presto disponibile</span>';
+  const wtTile=document.createElement("button");wtTile.type="button";
+  wtTile.style.cssText=tileStyle;
+  wtTile.innerHTML='<span style="font-size:14px;font-weight:700">🎙️ COMUNICAZIONE RADIO</span><span style="font-size:13.5px">messaggi vocali</span>';
+  wtTile.addEventListener("click",function(){window._stationChatOpen=true;render("station");});
   grid.appendChild(chatTile);grid.appendChild(wtTile);
 
   wrap.appendChild(grid);
