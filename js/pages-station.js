@@ -150,7 +150,7 @@ export function renderStationPanel(page){
     +'<span><span class="st-tile__big">'+openReports.length+'</span>'
     +'<span class="st-tile__sub">apert'+(openReports.length===1?"a":"e")+'</span></span>';
   const repList=document.createElement("div");
-  repList.className="st-replist st-wide";
+  repList.className="st-replist";
   repTile.addEventListener("click",function(){
     repList.classList.toggle("is-aperto");
   });
@@ -162,7 +162,6 @@ export function renderStationPanel(page){
   segTile.addEventListener("click",function(){window.activeStation=zoneStr;render("submit");});
 
   grid.appendChild(repTile);grid.appendChild(segTile);
-  grid.appendChild(repList);
   openReports.forEach(function(r){
     const card=document.createElement("div");card.className="st-repcard";
     const topRow=document.createElement("div");topRow.className="st-repcard__top";
@@ -221,6 +220,10 @@ export function renderStationPanel(page){
   grid.appendChild(chatTile);grid.appendChild(wtTile);
 
   wrap.appendChild(grid);
+  // L elenco delle segnalazioni aperte sta SOTTO la griglia, non dentro: come
+  // riquadro prendeva l altezza piena di una riga e, aperto, mostrava una
+  // fascia vuota chiara sotto le poche schede. Qui cresce quanto gli serve.
+  wrap.appendChild(repList);
   page.appendChild(wrap);
 
   // Barra EMERGENZA fissa in basso, tieni-premuto per confermare l'invio
