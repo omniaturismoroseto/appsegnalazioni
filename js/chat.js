@@ -454,7 +454,7 @@ export function renderChatPanel(page,opts){
   const cfg=CHANNELS[channel];
 
   const wrap=document.createElement("div");
-  wrap.style.cssText="display:flex;flex-direction:column;height:60vh;min-height:360px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--bg)";
+  wrap.className="chat-wrap";
 
   const header=document.createElement("div");
   header.style.cssText="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px";

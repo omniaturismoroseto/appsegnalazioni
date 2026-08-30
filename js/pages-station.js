@@ -84,7 +84,7 @@ export function renderStationPanel(page){
   const num=stationMode;
 
   if(window._stationChatOpen){
-    const chatWrap=document.createElement("div");chatWrap.style.cssText="padding-bottom:110px";
+    const chatWrap=document.createElement("div");chatWrap.className="st-chat";
     const back=document.createElement("button");back.className="back-btn";back.textContent="← Torna alla postazione";
     back.addEventListener("click",function(){window._stationChatOpen=false;render("station");});
     chatWrap.appendChild(back);

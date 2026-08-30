@@ -494,3 +494,21 @@ body.postazione #pie-pagina{display:none}
 .popup-azioni{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .popup-azioni button{min-height:76px;font-size:14px;font-weight:700;border-radius:12px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 6px}
+
+/* ---- Chat ----
+   Era alta il 60% dello schermo, punto: su un tablet restava una finestrella
+   con spazio sprecato sotto. Ora si adatta - flex:1 la fa crescere quando il
+   contenitore ha un altezza definita (il pannello di postazione), mentre
+   height resta come ripiego dove il contenitore non e un flex (la dashboard).
+   min-height:0 e indispensabile: senza, un elemento flex non scende mai sotto
+   l altezza del proprio contenuto e l elenco dei messaggi non scorre piu. */
+.chat-wrap{display:flex;flex-direction:column;flex:1;min-height:0;height:70vh;
+  border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--bg)}
+
+/* La chat aperta dal pannello di postazione occupa tutto, meno la riserva per
+   la barra EMERGENZA che resta visibile anche qui. */
+.st-chat{display:flex;flex-direction:column;min-height:calc(100dvh - 24px);padding-bottom:126px}
+.st-chat .back-btn{flex:0 0 auto}
+@media(max-height:700px){
+  .st-chat{padding-bottom:104px}
+}
