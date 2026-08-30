@@ -13,7 +13,24 @@
 // un bagnino vede in servizio. Cio' che resta in comune e' solo il modo di
 // mandare il dato al server (addReport), che e' il punto in cui le due app si
 // parlano davvero.
-import { STATIONS, TYPES, addReport, render, resizeImg, stationMode } from "./core.js";
+import { STATIONS, addReport, emergencyContactsRef, render, resizeImg, stationMode } from "./core.js";
+
+// Sulle emergenze che richiedono il soccorso della postazione vicina la prima
+// cosa da fare e' parlare col coordinatore: il tocco apre il telefono, la
+// segnalazione si completa e si invia dopo. Il numero e' quello impostato nel
+// centro operativo, non uno scritto qui dentro.
+function _chiamaCoordinatore() {
+  emergencyContactsRef.child("coordinator").child("phone").once("value").then(function (snap) {
+    const tel = String(snap.val() || "").replace(/[^+0-9]/g, "");
+    if (!tel) {
+      alert("Il numero del coordinatore non è impostato nel centro operativo.");
+      return;
+    }
+    window.location.href = "tel:" + tel;
+  }).catch(function () {
+    alert("Non riesco a leggere il numero del coordinatore.");
+  });
+}
 
 function _etichettaPostazione() {
   const num = String(stationMode || "");
@@ -63,21 +80,38 @@ export function renderSegnalaPostazione(page) {
   griglia.className = "seg-griglia";
   wrap.appendChild(griglia);
 
-  const voci = [];
-  Object.keys(TYPES).forEach(function (k) {
-    TYPES[k].sub.forEach(function (testo) { voci.push({ tipo: k, testo: testo }); });
-  });
+  // Le voci come le dicono i bagnini, non come le legge un bagnante: l'app
+  // pubblica ha le sue (vedi TYPES in core.js) e resta com'e'. "Soccorso del
+  // Vicino" e "Minore" sono termini di servizio, che a chi segnala dalla
+  // spiaggia direbbero poco.
+  //
+  // La gravita' invece resta quella del sistema - emergenza o pericolo - perche'
+  // e' cio' su cui si basano le regole del database, il colore sulla mappa e la
+  // scelta di chi viene avvisato.
+  const voci = [
+    { tipo: "emergenza", testo: "Annegamento / Soccorso del Vicino", chiamaCoordinatore: true },
+    { tipo: "emergenza", testo: "Persona / Minore disperso" },
+    { tipo: "emergenza", testo: "Infortunio" },
+    { tipo: "emergenza", testo: "Malore in spiaggia" },
+    { tipo: "pericolo", testo: "Vento Forte" },
+    { tipo: "pericolo", testo: "Correnti pericolose" },
+    { tipo: "pericolo", testo: "Mare molto mosso" },
+    { tipo: "pericolo", testo: "Cane libero senza padrone" },
+    { tipo: "pericolo", testo: "Oggetti pericolosi in acqua o spiaggia" },
+  ];
 
   const riquadri = voci.map(function (v) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "seg-voce seg-voce--" + v.tipo;
     b.setAttribute("aria-pressed", "false");
-    b.innerHTML = '<span class="seg-voce__gravita">' + TYPES[v.tipo].label + '</span>'
+    b.innerHTML = '<span class="seg-voce__gravita">' + (v.tipo === "emergenza" ? "Emergenza" : "Pericolo")
+      + (v.chiamaCoordinatore ? ' · chiama il coordinatore' : '') + '</span>'
       + '<span class="seg-voce__testo">' + v.testo + '</span>';
     b.addEventListener("click", function () {
       tipo = v.tipo;
       sotto = v.testo;
+      if (v.chiamaCoordinatore) _chiamaCoordinatore();
       riquadri.forEach(function (altro) {
         const scelto = altro === b;
         altro.classList.toggle("is-scelta", scelto);

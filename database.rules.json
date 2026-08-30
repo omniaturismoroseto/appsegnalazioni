@@ -82,10 +82,14 @@
       "emergencyContacts": {
         ".read": "auth != null && auth.token.role !== 'station'",
         "admin": {
+          "name": { ".read": "auth != null" },
+          "phone": { ".read": "auth != null" },
           ".write": "auth != null && auth.token.role !== 'station'",
           ".validate": "(!newData.hasChild('name') || (newData.child('name').isString() && newData.child('name').val().length < 60)) && (!newData.hasChild('phone') || (newData.child('phone').isString() && newData.child('phone').val().length < 30)) && (!newData.hasChild('pushToken') || (newData.child('pushToken').isString() && newData.child('pushToken').val().length < 300))"
         },
         "coordinator": {
+          "name": { ".read": "auth != null" },
+          "phone": { ".read": "auth != null" },
           ".write": "auth != null && auth.token.role !== 'station'",
           ".validate": "(!newData.hasChild('name') || (newData.child('name').isString() && newData.child('name').val().length < 60)) && (!newData.hasChild('phone') || (newData.child('phone').isString() && newData.child('phone').val().length < 30)) && (!newData.hasChild('pushToken') || (newData.child('pushToken').isString() && newData.child('pushToken').val().length < 300))"
         }

@@ -78,6 +78,23 @@ describe("schermate dell'app di postazione", () => {
     page.remove();
   });
 
+  it("usa il vocabolario dei bagnini, non quello dell app pubblica", () => {
+    // Queste voci sono di servizio e non devono seguire TYPES, che e delle
+    // pagine pubbliche: "Soccorso del Vicino" a un bagnante non direbbe nulla.
+    const page = document.createElement("div");
+    document.body.appendChild(page);
+    renderSegnalaPostazione(page);
+    const testi = Array.from(page.querySelectorAll(".seg-voce__testo")).map((n) => n.textContent);
+    expect(testi).toContain("Annegamento / Soccorso del Vicino");
+    expect(testi).toContain("Persona / Minore disperso");
+    // La voce che apre il telefono lo dichiara, cosi chi tocca sa cosa aspettarsi.
+    const chiamante = Array.from(page.querySelectorAll(".seg-voce")).find((b) =>
+      /Soccorso del Vicino/.test(b.textContent)
+    );
+    expect(chiamante.textContent).toMatch(/chiama il coordinatore/);
+    page.remove();
+  });
+
   it("la segnalazione della postazione non chiede telefono ne consenso privacy", () => {
     // Chi segnala qui e' un bagnino gia' identificato dalla postazione: se un
     // giorno ricomparissero quei campi vorrebbe dire che e' tornata la
