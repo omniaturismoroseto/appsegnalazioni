@@ -39,8 +39,8 @@
 // gia' usato per le foto delle segnalazioni (vedi addReport in core.js),
 // invece di introdurre Firebase Storage. Durata massima 60s per restare
 // ben sotto il limite di dimensione (vedi database.rules.json).
-import { IS_NATIVE_APP, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
-import { ROLE_LABELS } from "./admin.js";
+import { IS_NATIVE_APP, ROLE_LABELS, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
+
 
 const MAX_RECORDING_S=60;
 

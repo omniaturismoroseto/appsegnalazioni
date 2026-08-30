@@ -4,6 +4,15 @@ import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio } from "./ch
 // Quanto resta disponibile la foto di un minore prima della cancellazione
 // automatica. Vive qui e non tra le pagine pubbliche perche' e' una regola di
 // conservazione dei dati, non un dettaglio di una schermata.
+// Nomi leggibili dei ruoli. Stanno nelle fondamenta perche' li usano sia il
+// pannello admin sia la chat, e non sono un pezzo di nessuna delle due.
+export const ROLE_LABELS={
+  admin:"Admin",
+  coordinator:"Coordinatore",
+  cp:"Capitaneria di Porto",
+  forze_ordine:"Forze dell'ordine"
+};
+
 export const CHILD_PHOTO_TTL_MS=6*60*60*1000;   // foto minore cancellata 6h dopo la chiusura del caso
 
 // ---- Cornice e schermate: le mette chi avvia l'app, non core.js ----

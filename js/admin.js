@@ -6,7 +6,7 @@
 // createOperatorAccount/deleteOperatorAccount in functions/index.js.
 // promoteToAdmin resta solo per il bootstrap del primissimo admin (vedi
 // _promoteSelfBootstrap sotto).
-import { _getAuth, renderPage } from "./core.js";
+import { ROLE_LABELS, _getAuth, renderPage } from "./core.js";
 
 const FN_BASE="https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/";
 
@@ -63,12 +63,8 @@ function _fmtDate(iso){
 // Le funzioni specifiche per ciascuno restano da definire; per ora l'unica
 // regola gia' attiva e' che CP e forze dell'ordine non vedono mai la chat
 // (ne' testo ne' vocali) - vedi database.rules.json e pages-operator.js.
-export const ROLE_LABELS={
-  admin:"Admin",
-  coordinator:"Coordinatore",
-  cp:"Capitaneria di Porto",
-  forze_ordine:"Forze dell'ordine"
-};
+// ROLE_LABELS vive ora in core.js: la usa anche la chat, e tenerla qui
+// obbligava l'app di postazione a caricarsi il pannello di gestione account.
 function _roleOptionsHtml(selected){
   let html='<option value=""'+(!selected?" selected":"")+'>Operatore</option>';
   Object.keys(ROLE_LABELS).forEach(function(k){

@@ -10,14 +10,14 @@
 // Niente mappa significa anche niente GPS e niente intestazione: la cornice
 // registrata resta quella vuota di core.js, che non fa nulla.
 import { _activateStationMode, registerScreens, render, stationDevicesRef } from "./core.js";
-import { renderDone, renderSubmit } from "./pages-public.js";
+import { renderSegnalaFatto, renderSegnalaPostazione } from "./station-segnala.js";
 import { avviaAutoAggiornamento } from "./autoupdate.js";
 
-// Una postazione deve poter segnalare: la tile "Segnala" del pannello apre
-// questa schermata, e senza registrarla resterebbe una pagina bianca. Sono le
-// uniche due pagine pubbliche che servono qui - il resto (home, meteo,
-// consigli, ordinanze, minori) non e importato e quindi nemmeno scaricato.
-registerScreens({ submit: renderSubmit, done: renderDone });
+// La segnalazione della postazione e' una schermata sua, non quella pubblica:
+// chi la usa e' un bagnino in servizio, non un bagnante. Da qui in poi questa
+// app non importa piu' nulla dalle pagine pubbliche, quindi modificarle non
+// puo' romperla.
+registerScreens({ submit: renderSegnalaPostazione, "segnala-fatto": renderSegnalaFatto });
 
 window._appReady = true;
 
