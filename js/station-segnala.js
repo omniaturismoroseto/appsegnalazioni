@@ -22,16 +22,17 @@ function _etichettaPostazione() {
 }
 
 export function renderSegnalaPostazione(page) {
-  let tipo = "pericolo";
+  let tipo = "";
   let sotto = "";
   let note = "";
   let foto = null;
 
   const wrap = document.createElement("div");
+  wrap.className = "seg-wrap";
 
   const indietro = document.createElement("button");
   indietro.type = "button";
-  indietro.style.cssText = "width:auto;background:none;border:none;color:var(--text2);font-size:13px;padding:0;margin-bottom:14px;cursor:pointer";
+  indietro.className = "seg-indietro";
   indietro.textContent = "← Torna al pannello";
   indietro.addEventListener("click", function () { render("station"); });
   wrap.appendChild(indietro);
@@ -46,67 +47,68 @@ export function renderSegnalaPostazione(page) {
   da.textContent = "Da " + _etichettaPostazione();
   wrap.appendChild(da);
 
-  // ---- Tipo: emergenza o pericolo ----
-  const tipoRiga = document.createElement("div");
-  tipoRiga.style.cssText = "display:flex;gap:8px;margin-bottom:14px";
-  const bottoniTipo = {};
-  Object.keys(TYPES).forEach(function (k) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = TYPES[k].label;
-    b.style.cssText = "flex:1;padding:12px;font-size:14px;font-weight:700;border-radius:var(--radius);border:2px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer";
-    b.addEventListener("click", function () { tipo = k; sotto = ""; aggiorna(); });
-    bottoniTipo[k] = b;
-    tipoRiga.appendChild(b);
-  });
-  wrap.appendChild(tipoRiga);
-
-  // ---- Cosa e' successo ----
+  // ---- Cosa e' successo: un elenco solo ----
+  // Chi segnala sceglie il fatto, non la categoria. Emergenza e pericolo
+  // restano attaccati alla voce - servono alle regole del database, al colore
+  // sulla mappa e a chi viene avvisato - ma non sono piu' una domanda da fare a
+  // un bagnino che ha fretta: erano due tocchi per dire una cosa sola. La
+  // gravita' si legge dal colore del riquadro, che e' piu' immediato di
+  // un'etichetta da scegliere.
   const sottoTitolo = document.createElement("label");
+  sottoTitolo.className = "seg-titolo";
   sottoTitolo.textContent = "Cosa è successo";
   wrap.appendChild(sottoTitolo);
-  const sottoRiga = document.createElement("div");
-  sottoRiga.style.cssText = "display:flex;flex-direction:column;gap:6px;margin-bottom:14px";
-  wrap.appendChild(sottoRiga);
 
-  function aggiorna() {
-    Object.keys(bottoniTipo).forEach(function (k) {
-      const attivo = k === tipo;
-      bottoniTipo[k].style.borderColor = attivo ? (k === "emergenza" ? "var(--danger-text)" : "#d97706") : "var(--border2)";
-      bottoniTipo[k].style.background = attivo ? (k === "emergenza" ? "var(--danger-bg)" : "var(--warning-bg)") : "var(--bg2)";
+  const griglia = document.createElement("div");
+  griglia.className = "seg-griglia";
+  wrap.appendChild(griglia);
+
+  const voci = [];
+  Object.keys(TYPES).forEach(function (k) {
+    TYPES[k].sub.forEach(function (testo) { voci.push({ tipo: k, testo: testo }); });
+  });
+
+  const riquadri = voci.map(function (v) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "seg-voce seg-voce--" + v.tipo;
+    b.setAttribute("aria-pressed", "false");
+    b.innerHTML = '<span class="seg-voce__gravita">' + TYPES[v.tipo].label + '</span>'
+      + '<span class="seg-voce__testo">' + v.testo + '</span>';
+    b.addEventListener("click", function () {
+      tipo = v.tipo;
+      sotto = v.testo;
+      riquadri.forEach(function (altro) {
+        const scelto = altro === b;
+        altro.classList.toggle("is-scelta", scelto);
+        altro.setAttribute("aria-pressed", scelto ? "true" : "false");
+      });
     });
-    sottoRiga.innerHTML = "";
-    TYPES[tipo].sub.forEach(function (s) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = s;
-      b.style.cssText = "width:100%;text-align:left;padding:11px 13px;font-size:13.5px;border-radius:var(--radius);cursor:pointer;"
-        + "border:2px solid " + (sotto === s ? "var(--accent,#2563eb)" : "var(--border2)") + ";"
-        + "background:" + (sotto === s ? "var(--info-bg,var(--bg2))" : "var(--bg2)") + ";color:var(--text)";
-      b.addEventListener("click", function () { sotto = s; aggiorna(); });
-      sottoRiga.appendChild(b);
-    });
-  }
-  aggiorna();
+    griglia.appendChild(b);
+    return b;
+  });
 
   // ---- Dettagli ----
   const lblNote = document.createElement("label");
-  lblNote.innerHTML = "Descrizione <span style=\"font-size:11px;color:var(--text3);font-weight:400\">(opzionale)</span>";
+  lblNote.className = "seg-titolo";
+  lblNote.textContent = "Descrizione (opzionale)";
   wrap.appendChild(lblNote);
   const noteEl = document.createElement("textarea");
+  noteEl.className = "seg-note";
   noteEl.rows = 3;
   noteEl.placeholder = "Aggiungi dettagli utili a chi interviene...";
   wrap.appendChild(noteEl);
 
   // ---- Foto: sempre scatto diretto ----
   const lblFoto = document.createElement("label");
+  lblFoto.className = "seg-titolo";
   lblFoto.textContent = "Foto (opzionale)";
   wrap.appendChild(lblFoto);
   const fotoInput = document.createElement("input");
   fotoInput.type = "file";
   fotoInput.accept = "image/*";
   fotoInput.setAttribute("capture", "environment");
-  fotoInput.style.cssText = "font-size:12px;color:var(--text2);width:100%";
+  fotoInput.className = "seg-foto";
   const anteprima = document.createElement("img");
   anteprima.style.cssText = "display:none;max-width:100%;max-height:180px;border-radius:10px;margin-top:8px";
   fotoInput.addEventListener("change", function () {
@@ -123,12 +125,14 @@ export function renderSegnalaPostazione(page) {
   wrap.appendChild(anteprima);
 
   const invia = document.createElement("button");
-  invia.className = "btn-primary";
-  invia.style.marginTop = "18px";
+  invia.className = "btn-primary seg-invia";
   invia.textContent = "Invia segnalazione";
   invia.addEventListener("click", function () {
     note = noteEl.value;
-    if (!sotto) { alert("Seleziona cosa è successo."); return; }
+    // tipo e sotto vengono impostati insieme dal riquadro scelto: controllarli
+    // entrambi evita di inviare una segnalazione senza gravita, che le regole
+    // del database rifiuterebbero con un errore incomprensibile.
+    if (!sotto || !tipo) { alert("Tocca cosa è successo."); return; }
     invia.disabled = true;
     invia.textContent = "Invio...";
     const etichetta = _etichettaPostazione();

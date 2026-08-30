@@ -55,6 +55,29 @@ describe("schermate dell'app di postazione", () => {
     });
   });
 
+  it("offre tutte le voci in un elenco solo, senza scegliere prima la gravita", () => {
+    // Prima serviva scegliere emergenza o pericolo e poi la voce: due tocchi
+    // per dire una cosa sola. Ora le voci ci sono tutte subito, e la gravita
+    // resta attaccata a ciascuna.
+    const page = document.createElement("div");
+    document.body.appendChild(page);
+    renderSegnalaPostazione(page);
+    const voci = page.querySelectorAll(".seg-voce");
+    // Tutte le voci di entrambe le categorie, presenti fin dal primo sguardo.
+    expect(voci.length).toBe(9);
+    expect(page.querySelectorAll(".seg-voce--emergenza").length).toBe(4);
+    expect(page.querySelectorAll(".seg-voce--pericolo").length).toBe(5);
+    // Nessuna voce e scelta finche non la si tocca.
+    expect(page.querySelectorAll(".seg-voce.is-scelta").length).toBe(0);
+    voci[0].click();
+    expect(voci[0].classList.contains("is-scelta")).toBe(true);
+    expect(voci[0].getAttribute("aria-pressed")).toBe("true");
+    // Sceglierne unaltra sposta la scelta, non la aggiunge.
+    voci[5].click();
+    expect(page.querySelectorAll(".seg-voce.is-scelta").length).toBe(1);
+    page.remove();
+  });
+
   it("la segnalazione della postazione non chiede telefono ne consenso privacy", () => {
     // Chi segnala qui e' un bagnino gia' identificato dalla postazione: se un
     // giorno ricomparissero quei campi vorrebbe dire che e' tornata la
