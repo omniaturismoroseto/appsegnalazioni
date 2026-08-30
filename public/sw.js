@@ -48,10 +48,13 @@ self.addEventListener("fetch", function (event) {
   // caricamento dei moduli della mappa.
   if (url.origin !== self.location.origin) return;
 
+  // Anche una pagina .html richiesta via fetch (non solo una navigazione vera)
+  // va presa dalla rete: e' cosi' che l'app di postazione si accorge di essere
+  // rimasta indietro, e da una copia in cache non lo scoprirebbe mai.
   const isNavigation =
     req.mode === "navigate" ||
     url.pathname.endsWith("/") ||
-    url.pathname.endsWith("/index.html");
+    url.pathname.endsWith(".html");
 
   if (isNavigation) {
     // NETWORK-FIRST: prova la rete forzando il bypass della cache HTTP del

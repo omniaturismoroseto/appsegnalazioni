@@ -274,6 +274,7 @@ export function createRadioRecorder(handlers){
         rec.addEventListener("stop",function(){
           const mimeType=(rec&&rec.mimeType)||"audio/webm";
           const elapsed=Date.now()-startedAt;
+          window._radioTransmitting=false;
           cleanup();
           const parts=chunks;chunks=[];
           if(discard){busy=false;fire("onIdle");return;}
@@ -298,6 +299,7 @@ export function createRadioRecorder(handlers){
         });
         rec.start();
         startedAt=Date.now();
+        window._radioTransmitting=true;
         fire("onStart");
         timerId=setInterval(function(){
           const el=Math.floor((Date.now()-startedAt)/1000);

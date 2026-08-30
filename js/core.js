@@ -1013,6 +1013,19 @@ export function _playAlertTone(type){
   }catch(e){}
 }
 
+// Vero quando sul dispositivo sta succedendo qualcosa che non va interrotta:
+// un allarme che suona, una trasmissione radio in corso, un vocale in ascolto.
+// La usa l'aggiornamento automatico per scegliere quando ricaricare.
+export function _appOccupata(){
+  try{
+    if(_alertReportKey)return true;
+    if(window._radioTransmitting)return true;
+    if(document.getElementById("_chatIncomingPopup"))return true;
+    if(window._anyPopupOpen)return true;
+  }catch(e){}
+  return false;
+}
+
 export function _stopAlertSound(){
   if(_alertInterval){clearInterval(_alertInterval);_alertInterval=null;}
   if(_alertBanner&&_alertBanner.parentNode){_alertBanner.parentNode.removeChild(_alertBanner);}

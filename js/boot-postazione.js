@@ -10,8 +10,13 @@
 // Niente mappa significa anche niente GPS e niente intestazione: la cornice
 // registrata resta quella vuota di core.js, che non fa nulla.
 import { _activateStationMode, render, stationDevicesRef } from "./core.js";
+import { avviaAutoAggiornamento } from "./autoupdate.js";
 
 window._appReady = true;
+
+// Un tablet di postazione resta acceso tutto il giorno: senza questo
+// continuerebbe a far girare la versione con cui e' partito la mattina.
+avviaAutoAggiornamento();
 
 try {
   // Il dispositivo si riconosce dall'identificativo salvato in locale. Se il
