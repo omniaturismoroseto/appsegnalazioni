@@ -557,3 +557,19 @@ body.postazione #pie-pagina{display:none}
   .chat-azioni__icona{font-size:19px}
   .chat-input{padding:11px 12px;font-size:16px}
 }
+
+/* ---- Registrazione di un vocale in corso ----
+   Annulla e Invia erano due pulsantini da sei pixel di margine: si sbagliavano
+   con il dito, e sbagliare qui significa perdere il messaggio appena detto o
+   mandarne uno che si voleva buttare. Stessa dimensione degli altri comandi. */
+.chat-rec{align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--border);background:var(--danger-bg)}
+.chat-rec__punto{width:14px;height:14px;border-radius:50%;background:var(--danger-text);flex-shrink:0;animation:alertPulse 1s infinite alternate}
+.chat-rec__timer{font-size:20px;font-weight:800;color:var(--danger-text);flex:1}
+.chat-rec button{width:auto;min-height:64px;padding:8px 18px;border-radius:12px;font-size:15px;font-weight:700;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.chat-rec__annulla{background:var(--bg);color:var(--text)}
+.chat-rec__invia{background:var(--danger-text);border-color:var(--danger-text)}
+@media(max-height:700px){
+  .chat-rec button{min-height:54px}
+  .chat-rec__timer{font-size:18px}
+}

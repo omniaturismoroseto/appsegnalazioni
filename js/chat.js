@@ -622,18 +622,16 @@ export function renderChatPanel(page,opts){
 
   // ---- Riga di registrazione in corso (sostituisce inputRow mentre attiva) ----
   const recRow=document.createElement("div");
-  recRow.style.cssText="display:none;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--border);background:var(--danger-bg)";
-  const recDot=document.createElement("span");
-  recDot.style.cssText="width:10px;height:10px;border-radius:50%;background:var(--danger-text);flex-shrink:0;animation:alertPulse 1s infinite alternate";
-  const recTimer=document.createElement("span");
-  recTimer.style.cssText="font-size:13px;font-weight:700;color:var(--danger-text);flex:1";
+  recRow.className="chat-rec";recRow.style.display="none";
+  const recDot=document.createElement("span");recDot.className="chat-rec__punto";
+  const recTimer=document.createElement("span");recTimer.className="chat-rec__timer";
   recTimer.textContent="0:00";
   const cancelRecBtn=document.createElement("button");cancelRecBtn.type="button";
-  cancelRecBtn.style.cssText="font-size:12px;padding:6px 10px;color:var(--text2);background:var(--bg)";
-  cancelRecBtn.textContent="✕ Annulla";
+  cancelRecBtn.className="chat-rec__annulla";
+  cancelRecBtn.innerHTML='<span class="chat-azioni__icona">✕</span><span>Annulla</span>';
   const stopRecBtn=document.createElement("button");stopRecBtn.type="button";
-  stopRecBtn.className="btn-primary";stopRecBtn.style.cssText="width:auto;padding:6px 14px;background:var(--danger-text);border-color:var(--danger-text)";
-  stopRecBtn.textContent="⏹ Invia";
+  stopRecBtn.className="btn-primary chat-rec__invia";
+  stopRecBtn.innerHTML='<span class="chat-azioni__icona">⏹</span><span>Invia</span>';
   recRow.appendChild(recDot);recRow.appendChild(recTimer);recRow.appendChild(cancelRecBtn);recRow.appendChild(stopRecBtn);
   wrap.appendChild(recRow);
 
@@ -686,7 +684,7 @@ export function renderChatPanel(page,opts){
       });
       mediaRecorder.start();
       recStartedAt=Date.now();
-      inputRow.style.display="none";recRow.style.display="flex";
+      inputRow.style.display="none";azioniRow.style.display="none";recRow.style.display="flex";
       recTimer.textContent=_fmtRecTime(0);
       recTimerId=setInterval(function(){
         const elapsed=Math.floor((Date.now()-recStartedAt)/1000);
@@ -703,7 +701,7 @@ export function renderChatPanel(page,opts){
     if(recTimerId){clearInterval(recTimerId);recTimerId=null;}
     if(mediaRecorder&&mediaRecorder.state!=="inactive")mediaRecorder.stop();
     else _stopStream();
-    inputRow.style.display="flex";recRow.style.display="none";
+    inputRow.style.display="flex";azioniRow.style.display="grid";recRow.style.display="none";
   }
 
   micBtn.addEventListener("click",function(){startRecording();});

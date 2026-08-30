@@ -241,7 +241,7 @@ export async function _registerStationPush(deviceId){
     if(PN){
       var nativeToken=await _stationPushTokenNative(PN);
       if(!nativeToken)throw new Error("token nativo vuoto");
-      await stationDevicesRef.child(deviceId).update({ pushToken: nativeToken, pushKind: "native", lastSeen: Date.now() });
+      await stationDevicesRef.child(deviceId).update({ pushToken: nativeToken, pushKind: "native", chatDeviceId: _chatDeviceId(), lastSeen: Date.now() });
       console.log("✅ Push postazione registrata (nativa)");
       return;
     }
@@ -260,7 +260,7 @@ export async function _registerStationPush(deviceId){
     );
     const token = await _fcmMessaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
     if (!token) return;
-    await stationDevicesRef.child(deviceId).update({ pushToken: token, pushKind: "web", lastSeen: Date.now() });
+    await stationDevicesRef.child(deviceId).update({ pushToken: token, pushKind: "web", chatDeviceId: _chatDeviceId(), lastSeen: Date.now() });
     console.log("✅ Push postazione registrata (web)");
   }catch(e){
     console.error("Errore registrazione push postazione:",e);
@@ -369,6 +369,9 @@ export async function enableOperatorPush(){
     enabled: true,
     role: "operator",
     uid: (auth&&auth.currentUser)?auth.currentUser.uid:null,
+    // Identita' con cui questo dispositivo firma i messaggi in chat: serve al
+    // server per non rimandargli la push di un vocale che ha mandato lui.
+    chatDeviceId: _chatDeviceId(),
     lastSeen: Date.now()
   });
 

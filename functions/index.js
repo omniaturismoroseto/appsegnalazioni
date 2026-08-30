@@ -595,7 +595,11 @@ exports.purgeOldReports = onSchedule(
 // postazione. Admin e coordinatore restano sempre fra i destinatari: sul
 // loro pannello seguono tutto il traffico, compresi i messaggi diretti
 // mandati dall'altro (vedi _chatMsgVisibleToMe in js/chat.js).
-async function getAllChatTokens(targetStation) {
+// mittenteChatDeviceId: chi ha scritto il messaggio non deve ricevere la
+// propria push. Sui dispositivi di postazione i vocali si riproducono da soli
+// e a volume pieno, quindi senza questo filtro chi parla alla radio si sente
+// tornare indietro la propria voce.
+async function getAllChatTokens(targetStation, mittenteChatDeviceId) {
   const [operatorSnap, deviceSnap, contactSnap, userList] = await Promise.all([
     admin.database().ref("operatorTokens").once("value"),
     admin.database().ref("stationDevices").once("value"),
@@ -621,6 +625,7 @@ async function getAllChatTokens(targetStation) {
   Object.entries(operators).forEach(([id, row]) => {
     if (!row || row.enabled !== true || !row.token || !row.uid) return;
     if (!allowedOperatorRoles.has(roleByUid.get(row.uid))) return;
+    if (mittenteChatDeviceId && row.chatDeviceId === mittenteChatDeviceId) return;
     if (!tokenPaths.has(row.token)) {
       tokenPaths.set(row.token, "operatorTokens/" + id); // rimuove l'intero nodo, come cleanupInvalidTokens
     }
@@ -630,6 +635,7 @@ async function getAllChatTokens(targetStation) {
   Object.entries(devices).forEach(([id, d]) => {
     if (!d || !d.enabled || !d.pushToken) return;
     if (targetStation && String(d.station || "") !== targetStation) return;
+    if (mittenteChatDeviceId && d.chatDeviceId === mittenteChatDeviceId) return;
     if (!tokenPaths.has(d.pushToken)) {
       tokenPaths.set(d.pushToken, "stationDevices/" + id + "/pushToken");
     }
@@ -662,7 +668,7 @@ exports.sendChatNotification = onValueCreated(
       // possono mandarlo): la push va alla sola postazione indirizzata,
       // niente squilli/vocali a sorpresa sulle altre 20.
       const target = data.to && String(data.to) !== "all" ? String(data.to) : null;
-      const tokenPaths = await getAllChatTokens(target);
+      const tokenPaths = await getAllChatTokens(target, data.deviceId || null);
       const tokens = [...tokenPaths.keys()];
       if (!tokens.length) return null;
 
