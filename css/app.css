@@ -508,8 +508,15 @@ body.postazione #pie-pagina{display:none}
 
 /* La chat aperta dal pannello di postazione occupa tutto, meno la riserva per
    la barra EMERGENZA che resta visibile anche qui. */
-.st-chat{display:flex;flex-direction:column;min-height:calc(100dvh - 24px);padding-bottom:170px}
-.st-chat .back-btn{flex:0 0 auto}
+/* Altezza esatta, non minima: cosi la pagina non scorre e i comandi in fondo
+   restano sempre a schermo. A scorrere e solo l elenco dei messaggi. */
+.st-chat{display:flex;flex-direction:column;height:calc(100dvh - 24px);padding-bottom:170px;overflow:hidden}
+.st-chat .chat-wrap{flex:1 1 0;height:auto;min-height:0}
+/* Il ritorno al pannello era un testo grigio tenue: su un tablet al sole non
+   si vedeva. Diventa un pulsante vero, scuro e alto quanto un bersaglio. */
+.st-chat .back-btn{flex:0 0 auto;background:#333;color:#fff;border-radius:10px;
+  padding:12px 16px;font-size:16px;font-weight:700;margin-bottom:10px;text-align:left;width:100%}
+.st-chat .back-btn:hover{background:#444;color:#fff}
 @media(max-height:700px){
   .st-chat{padding-bottom:150px}
 }
@@ -539,7 +546,11 @@ body.postazione #pie-pagina{display:none}
 .chat-input{flex:1;padding:14px;border:1px solid var(--border2);border-radius:10px;font-size:17px;font-family:inherit}
 .chat-azioni{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 12px 12px;background:var(--bg)}
 .chat-azioni button{width:auto;min-height:64px;padding:8px 6px;border-radius:12px;font-size:15px;font-weight:700;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--bg2)}
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+/* Lo sfondo chiaro vale per vocale e foto, NON per Invia: quella regola era piu
+   forte di .btn-primary e gli sbiancava lo sfondo, lasciando scritta bianca su
+   fondo chiaro - il pulsante spariva. */
+.chat-azioni button:not(.btn-primary){background:var(--bg2)}
 .chat-azioni__icona{font-size:22px;line-height:1}
 @media(max-height:700px){
   .chat-azioni button{min-height:54px;font-size:14px}
