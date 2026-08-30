@@ -1,5 +1,32 @@
 import { FLAG_COLORS, STATIONS, TYPES, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData } from "./core.js";
 import { renderChatPanel } from "./chat.js";
+import { _renderDeviceActivation } from "./pages-public.js";
+
+// Schermata unica dell'app di postazione finche' il dispositivo non e' stato
+// abilitato: nessuna via verso l'app pubblica, solo lo stato della richiesta.
+// Il corpo e' lo stesso pannello usato nella pagina di login dell'app web, cosi'
+// la logica di richiesta e attesa vive in un posto solo.
+export function renderAttivazione(page){
+  const wrap=document.createElement("div");
+  wrap.style.cssText="max-width:520px;margin:0 auto;padding:18px 4px";
+
+  const title=document.createElement("h2");
+  title.style.cssText="font-size:19px;margin:0 0 6px";
+  title.textContent="Dispositivo di postazione";
+  wrap.appendChild(title);
+
+  const sub=document.createElement("p");
+  sub.style.cssText="font-size:13px;color:var(--text2);line-height:1.5;margin:0 0 16px";
+  sub.textContent="Questo apparato non è ancora assegnato a una postazione. Invia la richiesta: il centro operativo la approva e il pannello si apre da solo, senza riavviare l'app.";
+  wrap.appendChild(sub);
+
+  // Contenitore dedicato: _renderDeviceActivation comincia svuotando cio che
+  // riceve, quindi passargli il wrap cancellerebbe titolo e spiegazione.
+  const box=document.createElement("div");
+  wrap.appendChild(box);
+  _renderDeviceActivation(box);
+  page.appendChild(wrap);
+}
 
 export function _stationNeighborsClient(num){
   var ordered=STATIONS.slice().sort(function(a,b){return a.lat-b.lat;});

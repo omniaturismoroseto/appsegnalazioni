@@ -1,4 +1,4 @@
-import { ALERT_COLORS, BOE_CANTIERE_23_2026, CC_POINT, COMUNE_POINT, DAE_POINTS, FINANZA_POINT, FLAG_COLORS, GM_POINT, IAT_POINT, PERMANENT_STATION_NOTES, PL_POINT, PORTOROSE_POINT, ROSETANA_POINT, STATIONS, VVF_POINT, ZONE_VIETATE, _escapeHtml, _syncUserMarker, boeCantiereMarkers, flagsData, fmtDist, haversine, nearestDAE, nearestDist, nearestStation, render, stationMode, stationNotesData, userMarker } from "./core.js";
+import { STATION_APP, ALERT_COLORS, BOE_CANTIERE_23_2026, CC_POINT, COMUNE_POINT, DAE_POINTS, FINANZA_POINT, FLAG_COLORS, GM_POINT, IAT_POINT, PERMANENT_STATION_NOTES, PL_POINT, PORTOROSE_POINT, ROSETANA_POINT, STATIONS, VVF_POINT, ZONE_VIETATE, _escapeHtml, _syncUserMarker, boeCantiereMarkers, flagsData, fmtDist, haversine, nearestDAE, nearestDist, nearestStation, render, stationMode, stationNotesData, userMarker } from "./core.js";
 
 // PRIMA DI PUBBLICARE: sostituisci con il Map ID creato in Google Cloud Console
 // (Google Maps Platform > Map Management) con le Advanced Markers abilitate.
@@ -38,7 +38,7 @@ export function renderHeader(){
   if(window.currentRole==="operator"&&window.newReportCount>0){
     const nb=document.createElement("span");nb.className="notif-badge";nb.textContent=window.newReportCount;opWrap.appendChild(nb);
   }
-  btns.appendChild(opWrap);
+  if(!STATION_APP)btns.appendChild(opWrap);
   hdr.appendChild(btns);
 }
 

@@ -24,7 +24,7 @@ module.exports = [
         setInterval: "readonly", clearInterval: "readonly", location: "readonly",
         history: "readonly", XMLHttpRequest: "readonly", FormData: "readonly",
         Notification: "readonly", Image: "readonly", alert: "readonly", confirm: "readonly", prompt: "readonly",
-        URL: "readonly", crypto: "readonly", requestAnimationFrame: "readonly", btoa: "readonly",
+        URL: "readonly", URLSearchParams: "readonly", crypto: "readonly", requestAnimationFrame: "readonly", btoa: "readonly",
         MediaRecorder: "readonly", Blob: "readonly", FileReader: "readonly", getComputedStyle: "readonly",
         // librerie esterne + roba definita inline in index.html: non fanno parte
         // del grafo di moduli, restano globali veri caricati via <script> classico.

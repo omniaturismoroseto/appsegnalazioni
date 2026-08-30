@@ -3,9 +3,11 @@
   "appName": "Omnia Postazioni",
   "webDir": "www",
   "server": {
-    "url": "https://adriaticlifeguardservice.it/appsegnalazioni/",
+    "url": "https://adriaticlifeguardservice.it/appsegnalazioni/?app=postazione",
     "cleartext": false,
-    "allowNavigation": ["adriaticlifeguardservice.it"]
+    "allowNavigation": [
+      "adriaticlifeguardservice.it"
+    ]
   },
   "android": {
     "allowMixedContent": false

@@ -1,7 +1,7 @@
 import { _resizeMap, initMap, refreshMarkers, renderHeader, renderMapLegend } from "./map.js";
 import { CHILD_PHOTO_TTL_MS, _showOnboarding, renderConsigliPage, renderDone, renderForecastPage, renderHome, renderInstallPage, renderLogin, renderMinoreBivio, renderMinoreDone, renderMinoreForm, renderOrdinanzePage, renderPartnerPage, renderSubmit } from "./pages-public.js";
 import { renderDashboard } from "./pages-operator.js";
-import { renderStationPanel } from "./pages-station.js";
+import { renderStationPanel, renderAttivazione } from "./pages-station.js";
 import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio } from "./chat.js";
 
   // Il pacchetto Sentry vero si carica in modo differito (per non rallentare
@@ -472,6 +472,22 @@ export function _refreshNotePanel(){
 
 export let currentScreen="home";
 export let stationMode=null;
+
+// L'APK di postazione carica il sito con ?app=postazione. Un tablet in
+// dotazione a una postazione non e' un telefono qualunque: non deve mai
+// mostrare l'app pubblica - niente mappa, niente segnalazioni del bagnante,
+// niente login operatori. Prima dell'attivazione mostra solo la richiesta di
+// abilitazione, dopo soltanto il pannello di postazione. Il flag vale per la
+// sessione anche se un giro di navigazione perdesse il parametro dall'URL.
+export const STATION_APP=(function(){
+  try{
+    if(new URLSearchParams(location.search).get("app")==="postazione"){
+      try{sessionStorage.setItem("omnia_station_app","1");}catch(e){}
+      return true;
+    }
+    return sessionStorage.getItem("omnia_station_app")==="1";
+  }catch(e){return false;}
+})();
 export var _savedAuth=false;try{_savedAuth=localStorage.getItem("omnia_op_auth")==="1";}catch(e){}
 window.currentRole=_savedAuth?"operator":null;
 if(_savedAuth)_sentrySetTag("role","operator");
@@ -1106,6 +1122,12 @@ export function render(screen){
   // ma non può mai raggiungere l'home pubblica, il login operatori o la dashboard
   // generale: quelle vengono sempre rimandate al pannello di postazione.
   if(stationMode&&(screen==="home"||screen==="login"||screen==="dashboard"))screen="station";
+  // Nell'app di postazione non ancora abilitata ogni strada porta alla
+  // schermata di attivazione: e' l'unica cosa che quel dispositivo puo' fare
+  // finche' il centro operativo non gli assegna una postazione. Vale anche per
+  // i rientri di ripiego (boot.js, o un'attivazione fallita), che altrimenti
+  // scaricherebbero l'utente sull'home pubblica.
+  if(STATION_APP&&!stationMode)screen="attivazione";
   currentScreen=screen;
   if(!suppressHistory){
     try{
@@ -1150,6 +1172,7 @@ export function renderPage(){
   else if(currentScreen==="minore-done")renderMinoreDone(page);
   else if(currentScreen==="dashboard"){if(window.currentRole!=="operator"){render("login");return;}renderDashboard(page);}
   else if(currentScreen==="station")renderStationPanel(page);
+  else if(currentScreen==="attivazione")renderAttivazione(page);
 }
 
 // HOME
