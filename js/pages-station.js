@@ -1,6 +1,6 @@
 import { FLAG_COLORS, STATIONS, TYPES, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData } from "./core.js";
 import { renderChatPanel, createRadioRecorder } from "./chat.js";
-import { _renderDeviceActivation } from "./pages-public.js";
+import { _renderDeviceActivation } from "./device.js";
 
 // Schermata unica dell'app di postazione finche' il dispositivo non e' stato
 // abilitato: nessuna via verso l'app pubblica, solo lo stato della richiesta.

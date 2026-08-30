@@ -1,8 +1,41 @@
-import { _resizeMap, initMap, refreshMarkers, renderHeader, renderMapLegend } from "./map.js";
-import { CHILD_PHOTO_TTL_MS, _showOnboarding, renderConsigliPage, renderDone, renderForecastPage, renderHome, renderInstallPage, renderLogin, renderMinoreBivio, renderMinoreDone, renderMinoreForm, renderOrdinanzePage, renderPartnerPage, renderSubmit } from "./pages-public.js";
-import { renderDashboard } from "./pages-operator.js";
 import { renderStationPanel, renderAttivazione } from "./pages-station.js";
 import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio } from "./chat.js";
+
+// Quanto resta disponibile la foto di un minore prima della cancellazione
+// automatica. Vive qui e non tra le pagine pubbliche perche' e' una regola di
+// conservazione dei dati, non un dettaglio di una schermata.
+export const CHILD_PHOTO_TTL_MS=6*60*60*1000;   // foto minore cancellata 6h dopo la chiusura del caso
+
+// ---- Cornice e schermate: le mette chi avvia l'app, non core.js ----
+// L'app pubblica ha mappa, intestazione e una ventina di pagine; l'app di
+// postazione non ha nulla di tutto questo e non deve nemmeno scaricarlo. Invece
+// di importare qui i moduli di entrambe, core.js espone un registro: chi parte
+// (boot.js o boot-postazione.js) dichiara cosa esiste. Cio' che non e' stato
+// dichiarato semplicemente non fa nulla, invece di far esplodere il render.
+const chrome={
+  renderHeader:function(){},
+  renderMapLegend:function(){},
+  refreshMarkers:function(){},
+  initMap:function(){},
+  resizeMap:function(){}
+};
+export function registerChrome(parts){
+  Object.keys(parts||{}).forEach(function(k){
+    if(typeof parts[k]==="function")chrome[k]=parts[k];
+  });
+}
+export function refreshMarkers(){chrome.refreshMarkers();}
+export function renderHeader(){chrome.renderHeader();}
+
+const screens={};
+export function registerScreens(map){
+  Object.keys(map||{}).forEach(function(k){
+    if(typeof map[k]==="function")screens[k]=map[k];
+  });
+}
+// Le schermate che entrambe le app hanno sempre: il pannello di postazione e
+// la richiesta di attivazione.
+registerScreens({station:renderStationPanel,attivazione:renderAttivazione});
 
   // Il pacchetto Sentry vero si carica in modo differito (per non rallentare
   // l'avvio): nei primissimi istanti window.Sentry esiste già come "guscio"
@@ -10,9 +43,6 @@ import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio } from "./ch
   // evita che questo blocchi l'esecuzione del resto dell'app.
   _sentrySetTag("role","public"); // valore di default, aggiornato al login/attivazione postazione
   history.replaceState({screen:"home"}, "", "");
-  // Avvia GPS subito, prima del primo render
-  setTimeout(function(){try{requestGPS();}catch(e){}}, 0);
-  setTimeout(function(){_showOnboarding();}, 800);
 // Sblocca AudioContext al primo tocco utente (richiesto da browser mobile)
 export function _unlockAudio(){
   if(_alertCtx){try{if(_alertCtx.state==="suspended")_alertCtx.resume();}catch(e){}return;}
@@ -488,6 +518,7 @@ export const IS_NATIVE_APP=(function(){
 
 export const STATION_APP=(function(){
   try{
+    if(window.__OMNIA_STATION_APP__===true)return true;
     if(new URLSearchParams(location.search).get("app")==="postazione"){
       try{sessionStorage.setItem("omnia_station_app","1");}catch(e){}
       return true;
@@ -1144,14 +1175,15 @@ export function render(screen){
     }catch(e){}
   }
   renderHeader();
-  const mapEl=document.getElementById("main-map");
   const showMap=["home","dashboard","login"].includes(screen);
-  mapEl.style.display=showMap?"block":"none";
-  document.getElementById("map-legend").style.display=showMap?"flex":"none";
+  const mapEl=document.getElementById("main-map");
+  if(mapEl)mapEl.style.display=showMap?"block":"none";
+  const legendEl=document.getElementById("map-legend");
+  if(legendEl)legendEl.style.display=showMap?"flex":"none";
   if(showMap){
-    if(!window.mapObj){initMap();}
-    else{refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){_resizeMap();},t);});}
-    renderMapLegend();
+    if(!window.mapObj){chrome.initMap();}
+    else{chrome.refreshMarkers();[200,600].forEach(function(t){setTimeout(function(){chrome.resizeMap();},t);});}
+    chrome.renderMapLegend();
     if(!nearestStation)requestGPS();
   } else if(screen==="forecast"){
     // Richiedi GPS anche nella pagina meteo per la bandiera della postazione
@@ -1164,22 +1196,11 @@ export function renderPage(){
   const page=document.getElementById("page");page.innerHTML="";
   const _emBar=document.getElementById("_stEmergencyBar");
   if(_emBar)_emBar.style.display=(currentScreen==="station")?"":"none";
-  if(currentScreen==="home")renderHome(page);
-  else if(currentScreen==="login")renderLogin(page);
-  else if(currentScreen==="submit")renderSubmit(page);
-  else if(currentScreen==="done")renderDone(page);
-  else if(currentScreen==="forecast")renderForecastPage(page);
-  else if(currentScreen==="consigli")renderConsigliPage(page);
-  else if(currentScreen==="ordinanze")renderOrdinanzePage(page);
-  else if(currentScreen==="partner")renderPartnerPage(page);
-  else if(currentScreen==="install")renderInstallPage(page);
-  else if(currentScreen==="minore")renderMinoreBivio(page);
-  else if(currentScreen==="minore-perso")renderMinoreForm(page,"perso");
-  else if(currentScreen==="minore-trovato")renderMinoreForm(page,"trovato");
-  else if(currentScreen==="minore-done")renderMinoreDone(page);
-  else if(currentScreen==="dashboard"){if(window.currentRole!=="operator"){render("login");return;}renderDashboard(page);}
-  else if(currentScreen==="station")renderStationPanel(page);
-  else if(currentScreen==="attivazione")renderAttivazione(page);
+  if(currentScreen==="dashboard"&&window.currentRole!=="operator"){render("login");return;}
+  const disegna=screens[currentScreen];
+  // Schermata non registrata: in questa app non esiste (l'app di postazione non
+  // ha home, meteo o dashboard). Meglio non disegnare nulla che rompersi.
+  if(disegna)disegna(page);
 }
 
 // HOME

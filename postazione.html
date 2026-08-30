@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Omnia Segnalazioni</title>
+<title>Omnia Postazioni</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://*.firebasedatabase.app https://cdnjs.cloudflare.com https://www.gstatic.com https://maps.gstatic.com https://www.googleapis.com https://maps.googleapis.com https://www.google.com https://www.gstatic.com/recaptcha/ https://js-de.sentry-cdn.com https://browser.sentry-cdn.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://www.google.com https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net https://www.gstatic.com https://maps.gstatic.com https://api.open-meteo.com https://marine-api.open-meteo.com https://wa.me https://www.anthropic.com https://js-de.sentry-cdn.com https://*.ingest.de.sentry.io; font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; frame-src https://embed.windy.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self';"/>
 <script
   src="https://js-de.sentry-cdn.com/aa986c5b778097da921cc83e2485e79b.min.js"
@@ -46,7 +46,7 @@ window.addEventListener("error",function(e){
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin"/>
 <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=(), payment=()"/>
-<meta name="description" content="Segnalazioni spiaggia Roseto degli Abruzzi - Omnia Adriatic Lifeguard Service"/>
+<meta name="description" content="Pannello dei dispositivi di postazione - Omnia Adriatic Lifeguard Service"/>
 <meta name="theme-color" content="#D62B1F"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="application-name" content="Omnia Segnalazioni"/>
@@ -64,21 +64,8 @@ window.addEventListener("error",function(e){
 </head>
 <body>
 <div id="app">
-  <div class="header" id="hdr"></div>
-  <div id="main-map" style="width:100%;background:#cde;position:relative;z-index:1;"></div>
-  <div class="map-legend" id="map-legend" style="display:none"></div>
   <div id="content"><div class="page-inner" id="page"></div></div>
 </div>
-<script>
-// Loader ufficiale Google Maps (bootstrap dinamico da Google Cloud):
-// carica l'API in modo asincrono e mette a disposizione google.maps.importLibrary().
-// PRIMA DI PUBBLICARE: sostituisci la chiave qui sotto con la tua API key
-// di Google Cloud (Maps JavaScript API abilitata + billing attivo).
-(function(g){var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=function(){return h||(h=new Promise(async function(f,n){await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}))};d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
-  key:"AIzaSyDcLeex_9o0BqgAs2lEEXTiVYG_zRSiXQA",
-  v:"weekly"
-});
-</script>
 <script src="stations-data.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
@@ -119,7 +106,12 @@ var firebaseSdk = window.firebase;
 function _sentrySetTag(key,val){try{if(window.Sentry&&typeof Sentry.setTag==="function")Sentry.setTag(key,val);}catch(e){}}
 function _sentryCapture(err){try{if(window.Sentry&&typeof Sentry.captureException==="function")Sentry.captureException(err);}catch(e){}}
 </script>
-<script type="module" src="js/boot.js"></script>
+<script>
+// Dichiara alla pagina che questa e' l'app dei dispositivi di postazione:
+// core.js lo legge per non mostrare mai nulla dell'app pubblica.
+window.__OMNIA_STATION_APP__=true;
+</script>
+<script type="module" src="js/boot-postazione.js"></script>
 <script>
 // Registra Service Worker per PWA
 if("serviceWorker" in navigator){

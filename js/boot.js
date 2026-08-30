@@ -1,6 +1,36 @@
-import { _activateStationMode, render, renderPage, stationDevicesRef } from "./core.js";
-import { _resizeMap } from "./map.js";
+import { _activateStationMode, registerChrome, registerScreens, render, renderPage, requestGPS, stationDevicesRef } from "./core.js";
+import { _resizeMap, initMap, refreshMarkers, renderHeader, renderMapLegend } from "./map.js";
+import { _showOnboarding, renderConsigliPage, renderDone, renderForecastPage, renderHome, renderInstallPage, renderLogin, renderMinoreBivio, renderMinoreDone, renderMinoreForm, renderOrdinanzePage, renderPartnerPage, renderSubmit } from "./pages-public.js";
+import { renderDashboard } from "./pages-operator.js";
 import { fetchMeteoMarine } from "./meteo.js";
+
+// Questa e' l'app segnalazioni completa: mappa, pagine pubbliche, dashboard
+// operatori. Le dichiara qui, non dentro core.js, cosi' l'app di postazione
+// (boot-postazione.js) puo' dichiararne molte meno e non scaricare nemmeno il
+// codice di cio' che non usera' mai.
+registerChrome({renderHeader,renderMapLegend,refreshMarkers,initMap,resizeMap:_resizeMap});
+registerScreens({
+  home:renderHome,
+  login:renderLogin,
+  submit:renderSubmit,
+  done:renderDone,
+  forecast:renderForecastPage,
+  consigli:renderConsigliPage,
+  ordinanze:renderOrdinanzePage,
+  partner:renderPartnerPage,
+  install:renderInstallPage,
+  minore:renderMinoreBivio,
+  "minore-perso":function(page){renderMinoreForm(page,"perso");},
+  "minore-trovato":function(page){renderMinoreForm(page,"trovato");},
+  "minore-done":renderMinoreDone,
+  dashboard:renderDashboard
+});
+
+// Il GPS serve alla mappa e alla postazione piu' vicina: roba dell'app
+// pubblica. Un tablet di postazione ha una posizione fissa e nota, e non deve
+// vedersi chiedere un permesso che non gli serve.
+setTimeout(function(){try{requestGPS();}catch(e){}},0);
+setTimeout(function(){try{_showOnboarding();}catch(e){}},800);
 
 
 // Tutti i file sono ora caricati: da qui in poi render()/renderPage() possono
