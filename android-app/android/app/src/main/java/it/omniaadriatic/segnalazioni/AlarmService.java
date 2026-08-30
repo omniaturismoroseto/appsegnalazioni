@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -29,6 +30,43 @@ public class AlarmService extends Service {
     private static final int NOTIFICATION_ID = 1001;
 
     private MediaPlayer mediaPlayer;
+
+    // ---- Volume: il canale sveglia si sente anche a suoneria silenziosa, ma
+    // resta al livello impostato sul dispositivo. Su una spiaggia ventosa un
+    // allarme al venti per cento non lo sente nessuno, quindi lo si porta al
+    // massimo per la durata e poi si rimette com'era: un tablet che resta a
+    // volume massimo per sempre e' un effetto collaterale che nessuno vuole.
+    // Con "Non disturbare" attivo il sistema puo' rifiutare la modifica: in
+    // quel caso si suona comunque al volume corrente, che e' meglio di niente.
+    private AudioManager audioManager;
+    private int volumeSveglaPrecedente = -1;
+
+    private void alzaVolumeAlMassimo() {
+        try {
+            if (audioManager == null) audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager == null) return;
+            int massimo = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+            int attuale = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+            if (attuale < massimo) {
+                volumeSveglaPrecedente = attuale;
+                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, massimo, 0);
+            }
+        } catch (Exception e) {
+            volumeSveglaPrecedente = -1;
+        }
+    }
+
+    private void ripristinaVolume() {
+        try {
+            if (audioManager != null && volumeSveglaPrecedente >= 0) {
+                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, volumeSveglaPrecedente, 0);
+            }
+        } catch (Exception e) {
+            // niente da fare: meglio lasciare il volume alto che rischiare un crash
+        }
+        volumeSveglaPrecedente = -1;
+    }
+
 
     @Override
     public void onCreate() {
@@ -120,6 +158,7 @@ public class AlarmService extends Service {
             mediaPlayer.setDataSource(this, alarmUri);
             mediaPlayer.setLooping(true);
             mediaPlayer.prepare();
+            alzaVolumeAlMassimo();
             mediaPlayer.start();
         } catch (Exception e) {
             // Se il suono fallisce la notifica a schermo intero + vibrazione restano comunque attive.
@@ -127,6 +166,7 @@ public class AlarmService extends Service {
     }
 
     private void stopMediaPlayer() {
+        ripristinaVolume();
         if (mediaPlayer != null) {
             try {
                 if (mediaPlayer.isPlaying()) mediaPlayer.stop();

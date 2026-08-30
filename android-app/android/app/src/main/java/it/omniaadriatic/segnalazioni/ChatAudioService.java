@@ -5,9 +5,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.IBinder;
@@ -28,6 +30,43 @@ public class ChatAudioService extends Service {
     private static final int NOTIFICATION_ID = 1002;
 
     private MediaPlayer mediaPlayer;
+
+    // ---- Volume: il canale sveglia si sente anche a suoneria silenziosa, ma
+    // resta al livello impostato sul dispositivo. Su una spiaggia ventosa un
+    // allarme al venti per cento non lo sente nessuno, quindi lo si porta al
+    // massimo per la durata e poi si rimette com'era: un tablet che resta a
+    // volume massimo per sempre e' un effetto collaterale che nessuno vuole.
+    // Con "Non disturbare" attivo il sistema puo' rifiutare la modifica: in
+    // quel caso si suona comunque al volume corrente, che e' meglio di niente.
+    private AudioManager audioManager;
+    private int volumeSveglaPrecedente = -1;
+
+    private void alzaVolumeAlMassimo() {
+        try {
+            if (audioManager == null) audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager == null) return;
+            int massimo = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+            int attuale = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+            if (attuale < massimo) {
+                volumeSveglaPrecedente = attuale;
+                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, massimo, 0);
+            }
+        } catch (Exception e) {
+            volumeSveglaPrecedente = -1;
+        }
+    }
+
+    private void ripristinaVolume() {
+        try {
+            if (audioManager != null && volumeSveglaPrecedente >= 0) {
+                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, volumeSveglaPrecedente, 0);
+            }
+        } catch (Exception e) {
+            // niente da fare: meglio lasciare il volume alto che rischiare un crash
+        }
+        volumeSveglaPrecedente = -1;
+    }
+
 
     @Override
     public void onCreate() {
@@ -98,7 +137,7 @@ public class ChatAudioService extends Service {
                     .build()
             );
             mediaPlayer.setDataSource(url);
-            mediaPlayer.setOnPreparedListener(MediaPlayer::start);
+            mediaPlayer.setOnPreparedListener(mp -> { alzaVolumeAlMassimo(); mp.start(); });
             mediaPlayer.setOnCompletionListener(mp -> stopSelf());
             mediaPlayer.setOnErrorListener((mp, what, extra) -> {
                 stopSelf();
@@ -112,6 +151,7 @@ public class ChatAudioService extends Service {
 
     @Override
     public void onDestroy() {
+        ripristinaVolume();
         if (mediaPlayer != null) {
             try {
                 if (mediaPlayer.isPlaying()) mediaPlayer.stop();
