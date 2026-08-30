@@ -101,4 +101,10 @@
          inaccessibile anche col permesso di sistema concesso a mano. E' un
          permesso normale: si ottiene all'installazione, senza chiedere nulla. -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Serve da quando i campi foto usano "capture": in quel caso Capacitor
+         apre la fotocamera lui (BridgeWebChromeClient.onShowFileChooser) e
+         chiede questo permesso. Senza dichiararlo Android lo negherebbe
+         d'ufficio e la fotocamera non si aprirebbe, come gia' successo col
+         microfono. Senza "capture" non servirebbe: aprirebbe il selettore. -->
+    <uses-permission android:name="android.permission.CAMERA" />
 </manifest>

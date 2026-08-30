@@ -1,6 +1,7 @@
 import { FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stationDevicesRef, stationMode } from "./core.js";
 import { degToCompass, fetchMeteoMarine, knotsFromKmh, renderMeteoCard } from "./meteo.js";
 import { _renderDeviceActivation } from "./device.js";
+import { STATION_APP } from "./core.js";
 
 // ===================== ONBOARDING AL PRIMO AVVIO =====================
 export function _showOnboarding(){
@@ -1389,7 +1390,12 @@ export function renderSubmit(page){
   const notesEl=document.createElement("textarea");notesEl.placeholder="Aggiungi dettagli (opzionale)...";notesEl.rows=3;
   notesEl.addEventListener("input",()=>notes=notesEl.value);wrap.appendChild(notesEl);
   const lbF=document.createElement("label");lbF.textContent="Foto (opzionale)";wrap.appendChild(lbF);
-  const fileInp=document.createElement("input");fileInp.type="file";fileInp.accept="image/*";// capture removed - user can choose camera or gallery
+  const fileInp=document.createElement("input");fileInp.type="file";fileInp.accept="image/*";
+  // Solo sui dispositivi di postazione la foto si scatta sul momento: niente
+  // galleria, cosi' non si allegano immagini vecchie e non restano copie sul
+  // tablet oltre il necessario. Nell'app pubblica resta la scelta, perche' chi
+  // segnala dal proprio telefono puo' avere gia' la foto giusta.
+  if(STATION_APP)fileInp.setAttribute("capture","environment");
   fileInp.style.cssText="font-size:12px;color:var(--text2);width:100%";
   const photoWrap=document.createElement("div");
   fileInp.addEventListener("change",()=>{
@@ -1615,6 +1621,10 @@ export function renderMinoreForm(page,direction){
   let _minoreGpsWarned=false;
   const photoWrap=document.createElement("div");photoWrap.style.cssText="margin-bottom:12px";
   const photoInput=document.createElement("input");photoInput.type="file";photoInput.accept="image/*";photoInput.style.cssText="font-size:13px;width:100%";
+  // Stessa regola della segnalazione. Nell'app pubblica la galleria resta
+  // indispensabile: chi ha perso un bambino non puo' fotografarlo, allega una
+  // foto che ha gia'.
+  if(STATION_APP)photoInput.setAttribute("capture","environment");
   const photoPrev=document.createElement("img");photoPrev.style.cssText="display:none;max-width:100%;border-radius:10px;margin-top:8px;max-height:180px";
   photoInput.addEventListener("change",e=>{const f=e.target.files[0];if(f)resizeImg(f,d=>{childPhoto=d;photoPrev.src=d;photoPrev.style.display="block";});});
   photoWrap.appendChild(photoInput);photoWrap.appendChild(photoPrev);w.appendChild(photoWrap);

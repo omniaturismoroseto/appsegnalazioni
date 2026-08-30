@@ -39,7 +39,7 @@
 // gia' usato per le foto delle segnalazioni (vedi addReport in core.js),
 // invece di introdurre Firebase Storage. Durata massima 60s per restare
 // ben sotto il limite di dimensione (vedi database.rules.json).
-import { IS_NATIVE_APP, STATIONS, _escapeHtml, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
+import { IS_NATIVE_APP, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
 import { ROLE_LABELS } from "./admin.js";
 
 const MAX_RECORDING_S=60;
@@ -97,6 +97,7 @@ const CHANNELS={
     getMessages:()=>chatMessages,
     getResetAt:()=>chatResetAt,
     supportsAudio:true,
+    supportsPhoto:true,
     emptyToday:"Nessun messaggio ancora oggi. Scrivi il primo!",
     headerLabel:"💬 Chat interna — tutte le postazioni"
   },
@@ -206,6 +207,8 @@ function _renderMessages(list,cfg){
       : "";
     const body=m.type==="audio"
       ? '<audio controls preload="none" src="'+_escapeHtml(m.audioData||"")+'" style="width:220px;max-width:100%;height:32px;display:block;margin-top:2px"></audio>'
+      : m.type==="photo"
+      ? '<img src="'+_escapeHtml(m.photoData||"")+'" alt="Foto" style="max-width:220px;width:100%;border-radius:8px;display:block;margin-top:2px"/>'
       : '<div style="font-size:13.5px;color:var(--text);white-space:pre-wrap;word-break:break-word">'+_escapeHtml(m.text||"")+'</div>';
     return '<div style="align-self:flex-start;max-width:85%;background:'+bubbleColor+';border-radius:10px;padding:8px 11px'+(directTo?';border-left:3px solid var(--warning-text)':'')+'">'
       +'<div style="font-size:11px;font-weight:700;color:'+authorColor+';margin-bottom:2px">'+_escapeHtml(m.authorLabel||"?")+directBadge+'</div>'
@@ -429,6 +432,41 @@ export function renderChatPanel(page,opts){
     micBtn.style.cssText="width:auto;padding:9px 13px;font-size:16px;background:var(--bg2)";
     micBtn.textContent="🎙️";
     inputRow.appendChild(micBtn);
+  }
+
+  if(cfg.supportsPhoto){
+    // Sempre scatto diretto, mai galleria: la chat interna serve a mostrare
+    // cosa si ha davanti adesso, e cosi' non si allegano per sbaglio immagini
+    // vecchie del dispositivo. La foto viene rimpicciolita prima di partire
+    // (resizeImg), altrimenti un solo scatto pesa piu' di tutta la chat.
+    const camInput=document.createElement("input");
+    camInput.type="file";camInput.accept="image/*";
+    camInput.setAttribute("capture","environment");
+    camInput.style.display="none";
+    const camBtn=document.createElement("button");camBtn.type="button";
+    camBtn.title="Scatta una foto";
+    camBtn.style.cssText="width:auto;padding:9px 13px;font-size:16px;background:var(--bg2)";
+    camBtn.textContent="📷";
+    camInput.addEventListener("change",function(){
+      const f=camInput.files&&camInput.files[0];
+      camInput.value="";
+      if(!f)return;
+      camBtn.disabled=true;
+      resizeImg(f,function(dataUri){
+        if(!dataUri||dataUri.length>440000){
+          camBtn.disabled=false;
+          alert("Foto troppo grande, riprova.");
+          return;
+        }
+        _sendChatEntry(cfg,channel,{type:"photo",photoData:dataUri},function(err){
+          camBtn.disabled=false;
+          if(err)alert("Errore invio foto: "+err.message);
+        });
+      });
+    });
+    camBtn.addEventListener("click",function(){camInput.click();});
+    inputRow.appendChild(camBtn);
+    inputRow.appendChild(camInput);
   }
 
   const sendBtn=document.createElement("button");

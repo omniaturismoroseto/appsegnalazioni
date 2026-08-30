@@ -651,7 +651,10 @@ exports.sendChatNotification = onValueCreated(
   async (event) => {
     const data = event.data.val();
     const isAudio = data && data.type === "audio";
-    if (!data || (!data.text && !isAudio)) return null;
+    const isPhoto = data && data.type === "photo";
+    // Una foto non ha testo: senza questa riga il messaggio sarebbe scartato e
+    // non arriverebbe nessuna notifica a chi non ha la chat aperta.
+    if (!data || (!data.text && !isAudio && !isPhoto)) return null;
     const msgId = event.params.id;
 
     try {
@@ -697,7 +700,12 @@ exports.sendChatNotification = onValueCreated(
           }
         : {
             tokens,
-            notification: { title: "💬 " + author, body: String(data.text || "").slice(0, 150) },
+            notification: {
+              title: "💬 " + author,
+              // La foto non viaggia nella notifica (troppo pesante per FCM): si
+              // avvisa e basta, il messaggio e' nella chat.
+              body: isPhoto ? "📷 Ha inviato una foto" : String(data.text || "").slice(0, 150),
+            },
             data: { type: "chat_message" },
             android: {
               priority: "high",
