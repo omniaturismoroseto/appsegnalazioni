@@ -182,6 +182,25 @@ function _visibleMessages(cfg){
   return all.filter(m=>m.ts>=cfg.getResetAt());
 }
 
+// Portare la lista in fondo non e' una riga sola: al momento in cui i messaggi
+// vengono inseriti, audio e foto non hanno ancora un'altezza (il file non e'
+// caricato), quindi l'altezza totale e' sottostimata e lo scorrimento si ferma
+// prima. Per questo si riprova dopo il primo disegno del browser e di nuovo
+// quando ogni audio o immagine ha finito di caricarsi.
+function _scorriInFondo(list){
+  if(!list)return;
+  const giu=function(){list.scrollTop=list.scrollHeight;};
+  giu();
+  requestAnimationFrame(function(){
+    giu();
+    requestAnimationFrame(giu);
+  });
+  list.querySelectorAll("img,audio").forEach(function(el){
+    el.addEventListener("load",giu,{once:true});
+    el.addEventListener("loadedmetadata",giu,{once:true});
+  });
+}
+
 function _renderMessages(list,cfg){
   const msgs=_visibleMessages(cfg);
   if(!msgs.length){
@@ -227,7 +246,7 @@ function _renderMessages(list,cfg){
       +'<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right">'+_fmtChatTime(m.ts)+'</div>'
       +'</div>';
   }).join("");
-  list.scrollTop=list.scrollHeight;
+  _scorriInFondo(list);
 }
 
 function _sendChatEntry(cfg,channel,fields,onDone){
