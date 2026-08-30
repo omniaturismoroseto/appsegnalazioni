@@ -1,5 +1,5 @@
 import { renderStationPanel, renderAttivazione } from "./pages-station.js";
-import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio } from "./chat.js";
+import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio, aggiornaListaChat } from "./chat.js";
 
 // Quanto resta disponibile la foto di un minore prima della cancellazione
 // automatica. Vive qui e non tra le pagine pubbliche perche' e' una regola di
@@ -779,7 +779,10 @@ chatRef.limitToLast(200).on("value",function(snap){
   // che non c'entrano ad ogni nuovo messaggio.
   const chatVisible=(currentScreen==="dashboard"&&window.activeDashTab==="chat")
     ||(currentScreen==="station"&&window._stationChatOpen);
-  if(chatVisible)renderPage();
+  // Prima si prova ad aggiornare la sola lista: ridisegnare tutta la pagina
+  // ricostruirebbe anche i lettori audio, interrompendo un vocale in ascolto.
+  // renderPage() resta come ripiego, se la chat non e' quella a schermo.
+  if(chatVisible&&!aggiornaListaChat())renderPage();
 });
 
 // Ogni sera (vedi resetChatSerale in functions/index.js) la chat riparte

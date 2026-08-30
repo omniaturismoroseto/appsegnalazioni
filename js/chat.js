@@ -175,7 +175,11 @@ function _fmtChatTime(ts){
 function _visibleMessages(cfg){
   // Il filtro sui messaggi diretti vale prima di tutto il resto (sulla chat
   // esterna non ha effetto: li' nessun messaggio ha il campo "to").
-  const all=Object.values(cfg.getMessages()||{}).filter(_chatMsgVisibleToMe).sort((a,b)=>a.ts-b.ts);
+  // Ogni messaggio si porta dietro la propria chiave: serve a riconoscere quelli
+  // gia' a schermo e non ridisegnarli (vedi _renderMessages).
+  const all=Object.entries(cfg.getMessages()||{})
+    .map(function(e){return Object.assign({_id:e[0]},e[1]);})
+    .filter(_chatMsgVisibleToMe).sort((a,b)=>a.ts-b.ts);
   // Per l'admin nessuna delle due chat si resetta mai: vede sempre tutto,
   // di default, senza bisogno di un pulsante per richiederlo.
   if(window.isAdmin)return all;
@@ -195,19 +199,25 @@ function _scorriInFondo(list){
     giu();
     requestAnimationFrame(giu);
   });
-  list.querySelectorAll("img,audio").forEach(function(el){
-    el.addEventListener("load",giu,{once:true});
-    el.addEventListener("loadedmetadata",giu,{once:true});
-  });
 }
 
-function _renderMessages(list,cfg){
-  const msgs=_visibleMessages(cfg);
-  if(!msgs.length){
-    list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px">'+cfg.emptyToday+'</div>';
-    return;
-  }
-  list.innerHTML=msgs.map(function(m){
+// Lista dei messaggi attualmente a schermo, se la chat e' aperta. Serve per
+// aggiornarla senza ricostruire tutto il pannello: e' l'unico modo perche' un
+// vocale in ascolto non venga interrotto da un messaggio in arrivo.
+let _listaAperta=null;
+let _cfgAperta=null;
+
+// Chiamata dal listener dei messaggi (core.js). Restituisce true se ha
+// aggiornato la lista da sola: in quel caso non serve ridisegnare la pagina.
+export function aggiornaListaChat(){
+  if(!_listaAperta||!_cfgAperta)return false;
+  if(!_listaAperta.isConnected){_listaAperta=null;_cfgAperta=null;return false;}
+  _renderMessages(_listaAperta,_cfgAperta);
+  return true;
+}
+
+function _bollaHtml(m){
+  return (function(m){
     const isStation=m.role==="station";
     const bubbleColor=isStation?"var(--info-bg)":"var(--bg2)";
     const authorColor=isStation?"var(--info-text)":"var(--text2)";
@@ -245,7 +255,57 @@ function _renderMessages(list,cfg){
       +body
       +'<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right">'+_fmtChatTime(m.ts)+'</div>'
       +'</div>';
-  }).join("");
+  })(m);
+}
+
+// Crea l'elemento di un messaggio. Gli audio e le immagini appena inseriti
+// riportano la lista in fondo quando finiscono di caricarsi: e' in quel momento
+// che l'altezza cambia, e senza questo lo scorrimento si fermerebbe prima.
+function _creaBolla(m,list){
+  const t=document.createElement("div");
+  t.innerHTML=_bollaHtml(m);
+  const el=t.firstElementChild;
+  el.setAttribute("data-mid",m._id);
+  el.querySelectorAll("img,audio").forEach(function(media){
+    media.addEventListener("load",function(){_scorriInFondo(list);},{once:true});
+    media.addEventListener("loadedmetadata",function(){_scorriInFondo(list);},{once:true});
+  });
+  return el;
+}
+
+// Aggiorna la lista invece di ricostruirla. Prima ogni messaggio in arrivo
+// rifaceva tutto da capo, e questo distruggeva il lettore di un vocale in
+// ascolto: chi stava riascoltando un messaggio se lo vedeva interrompere a
+// meta' - proprio la funzione per cui i vocali restano in chat. I messaggi gia'
+// a schermo restano ora gli stessi elementi; si aggiungono solo i nuovi.
+// Esportata per i test: e la funzione che deve preservare gli elementi gia'
+// disegnati, e senza poterla chiamare da sola non c'e modo di dimostrarlo.
+export function _renderMessages(list,cfg){
+  const msgs=_visibleMessages(cfg);
+  if(!msgs.length){
+    list.innerHTML='<div data-vuoto="1" style="text-align:center;color:var(--text3);font-size:12px;padding:20px">'+cfg.emptyToday+'</div>';
+    return;
+  }
+  const vuoto=list.querySelector("[data-vuoto]");
+  if(vuoto)vuoto.remove();
+
+  const presenti=new Map();
+  list.querySelectorAll("[data-mid]").forEach(function(n){presenti.set(n.getAttribute("data-mid"),n);});
+  const attesi=new Set(msgs.map(function(m){return m._id;}));
+  presenti.forEach(function(n,id){
+    // Sparito dall'elenco (azzeramento serale, o messaggio non piu' visibile)
+    if(!attesi.has(id)){n.remove();presenti.delete(id);}
+  });
+
+  let precedente=null;
+  msgs.forEach(function(m){
+    let nodo=presenti.get(m._id);
+    if(!nodo)nodo=_creaBolla(m,list);
+    const posto=precedente?precedente.nextSibling:list.firstChild;
+    if(nodo!==posto)list.insertBefore(nodo,posto);
+    precedente=nodo;
+  });
+
   _scorriInFondo(list);
 }
 
@@ -427,6 +487,8 @@ export function renderChatPanel(page,opts){
     header.appendChild(shiftRow);
   }
 
+  _listaAperta=list;
+  _cfgAperta=cfg;
   _renderMessages(list,cfg);
 
   // ---- Barra destinatario (solo admin/coordinatore, canale postazioni) ----
