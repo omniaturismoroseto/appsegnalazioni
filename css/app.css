@@ -17,7 +17,7 @@ input[type=text],input[type=password],select{width:100%;padding:9px 12px;border:
 input:focus,select:focus,textarea:focus{border-color:var(--navy)}
 textarea{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);resize:vertical;background:var(--bg);color:var(--text);line-height:1.5}
 button{cursor:pointer;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);padding:7px 14px;transition:background .15s}
-button:hover{background:var(--bg2)}
+@media (hover:hover){button:hover{background:var(--bg2)}}
 .btn-primary{background:var(--red);color:white;border-color:var(--red);font-weight:600;padding:12px;width:100%;font-size:15px}
 .btn-primary:hover{background:#b82318}.btn-primary:disabled{opacity:.35;cursor:not-allowed}
 .back-btn{background:none;border:none;color:var(--text2);font-size:13px;padding:0;margin-bottom:20px;display:block}
@@ -426,6 +426,13 @@ body.postazione #pie-pagina{display:none}
   display:flex;flex-direction:column;justify-content:space-between;gap:4px;
   color:#fff;background:var(--st-tinta,#4a4a46);font-family:inherit;
   -webkit-user-select:none;user-select:none}
+/* Il colore del riquadro non cambia al tocco: la regola generica di hover
+   schiariva lo sfondo e il testo bianco spariva - il riquadro sembrava
+   diventato bianco o trasparente. */
+.st-tile:hover,.st-tile:focus,.st-tile:active{background:var(--st-tinta,#4a4a46)}
+.st-note:hover,.st-note:focus,.st-note:active{background:#333}
+.st-flagchooser button:hover,.st-flagchooser button:active{background:var(--st-tinta,#4a4a46)}
+.st-em__btn:hover,.st-em__btn:active{background:#a5140a}
 .st-tile__label{font-size:14px;font-weight:700;opacity:.9;letter-spacing:.02em}
 .st-tile__big{font-size:28px;font-weight:700;display:block;line-height:1.05}
 .st-tile__sub{font-size:14px;opacity:.9}
