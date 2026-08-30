@@ -513,3 +513,36 @@ body.postazione #pie-pagina{display:none}
 @media(max-height:700px){
   .st-chat{padding-bottom:150px}
 }
+
+/* ---- Messaggi della chat ----
+   Si leggono in piedi, alla luce del sole, tenendo il tablet a un braccio di
+   distanza: testo piu' grande del solito e colori scuri e pieni, non i grigi
+   tenui che stanno bene su un monitor al chiuso. */
+.chat-bolla{align-self:flex-start;max-width:85%;background:#f1f3f5;border-radius:12px;padding:10px 13px}
+.chat-bolla--postazione{background:#dbeafe}
+.chat-bolla--diretto{border-left:4px solid #b45309}
+.chat-autore{font-size:14px;font-weight:800;color:#374151;margin-bottom:3px}
+.chat-autore--postazione{color:#1e40af}
+.chat-testo{font-size:17px;line-height:1.35;color:#111827;white-space:pre-wrap;word-break:break-word}
+.chat-ora{font-size:12.5px;color:#4b5563;margin-top:4px;text-align:right}
+.chat-badge{font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:6px;padding:2px 6px;margin-left:6px;white-space:nowrap}
+.chat-audio{display:flex;align-items:center;gap:8px;margin-top:4px}
+.chat-audio audio{width:230px;max-width:100%;height:38px}
+.chat-durata{font-size:13.5px;font-weight:700;color:#374151;white-space:nowrap}
+.chat-foto{max-width:260px;width:100%;border-radius:10px;display:block;margin-top:4px}
+
+/* ---- Scrittura e pulsanti ----
+   Il campo prende tutta la larghezza, i tre comandi stanno sotto in fila e
+   grandi: su un tablet in piedi tre bersagli larghi valgono piu' di tre
+   pulsantini stretti accanto al testo. */
+.chat-inputrow{display:flex;padding:10px 12px 0;background:var(--bg)}
+.chat-input{flex:1;padding:14px;border:1px solid var(--border2);border-radius:10px;font-size:17px;font-family:inherit}
+.chat-azioni{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 12px 12px;background:var(--bg)}
+.chat-azioni button{width:auto;min-height:64px;padding:8px 6px;border-radius:12px;font-size:15px;font-weight:700;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--bg2)}
+.chat-azioni__icona{font-size:22px;line-height:1}
+@media(max-height:700px){
+  .chat-azioni button{min-height:54px;font-size:14px}
+  .chat-azioni__icona{font-size:19px}
+  .chat-input{padding:11px 12px;font-size:16px}
+}

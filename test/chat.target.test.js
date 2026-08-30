@@ -154,7 +154,10 @@ describe("invio", () => {
     const host = renderAs({ role: "coordinator" });
     const sel = host.querySelector("select");
     const input = host.querySelector('input[type="text"]');
-    const sendBtn = [...host.querySelectorAll("button")].find((b) => b.textContent === "Invia");
+    // Ricerca per contenuto e non per uguaglianza esatta: l etichetta del pulsante
+    // porta anche un icona, e un confronto rigido si rompe a ogni ritocco grafico
+    // senza che il comportamento sia cambiato.
+    const sendBtn = [...host.querySelectorAll("button")].find((b) => /Invia/.test(b.textContent));
 
     // 1) a tutte: nessun campo "to", messaggio identico a prima della modifica
     input.value = "a tutti";
@@ -183,7 +186,10 @@ describe("invio", () => {
   it("una postazione non puo' indirizzare: nessun campo 'to'", () => {
     const host = renderAs({ station: "20" });
     const input = host.querySelector('input[type="text"]');
-    const sendBtn = [...host.querySelectorAll("button")].find((b) => b.textContent === "Invia");
+    // Ricerca per contenuto e non per uguaglianza esatta: l etichetta del pulsante
+    // porta anche un icona, e un confronto rigido si rompe a ogni ritocco grafico
+    // senza che il comportamento sia cambiato.
+    const sendBtn = [...host.querySelectorAll("button")].find((b) => /Invia/.test(b.textContent));
     input.value = "ricevuto";
     sendBtn.click();
     expect(state.pushed[0].to).toBeUndefined();

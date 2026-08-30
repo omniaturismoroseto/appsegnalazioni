@@ -199,6 +199,10 @@ function _scorriInFondo(list){
     giu();
     requestAnimationFrame(giu);
   });
+  // Terzo tentativo poco dopo: caratteri e riquadri elastici possono assestarsi
+  // dopo i primi due fotogrammi, e in quel caso l ultimo messaggio resterebbe
+  // di nuovo fuori dallo schermo.
+  setTimeout(giu,150);
 }
 
 // Lista dei messaggi attualmente a schermo, se la chat e' aperta. Serve per
@@ -219,8 +223,6 @@ export function aggiornaListaChat(){
 function _bollaHtml(m){
   return (function(m){
     const isStation=m.role==="station";
-    const bubbleColor=isStation?"var(--info-bg)":"var(--bg2)";
-    const authorColor=isStation?"var(--info-text)":"var(--text2)";
     // audioData e' un data-URI: va ESCAPATO come tutto il resto prima di finire
     // in innerHTML, altrimenti un valore malevolo (le regole del DB ne limitano
     // lunghezza e prefisso, ma non i caratteri) potrebbe chiudere l'attributo
@@ -230,7 +232,7 @@ function _bollaHtml(m){
     // postazione era indirizzato.
     const directTo=(m.to&&m.to!=="all")?String(m.to):"";
     const directBadge=directTo
-      ? '<span style="font-size:9.5px;font-weight:700;background:var(--warning-bg);color:var(--warning-text);border-radius:5px;padding:1px 5px;margin-left:5px;white-space:nowrap">'
+      ? '<span class="chat-badge">'
         +(String(stationMode||"")===directTo?"\uD83D\uDD12 solo per te":"\uD83D\uDD12 solo P."+_escapeHtml(directTo))
         +'</span>'
       : "";
@@ -243,17 +245,17 @@ function _bollaHtml(m){
       return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");
     })();
     const body=m.type==="audio"
-      ? '<div style="display:flex;align-items:center;gap:8px;margin-top:2px">'
-        +'<audio controls preload="metadata" src="'+_escapeHtml(m.audioData||"")+'" style="width:200px;max-width:100%;height:32px"></audio>'
-        +(durata?'<span style="font-size:11px;color:var(--text3);white-space:nowrap">'+durata+'</span>':'')
+      ? '<div class="chat-audio">'
+        +'<audio controls preload="metadata" src="'+_escapeHtml(m.audioData||"")+'"></audio>'
+        +(durata?'<span class="chat-durata">'+durata+'</span>':'')
         +'</div>'
       : m.type==="photo"
-      ? '<img src="'+_escapeHtml(m.photoData||"")+'" alt="Foto" style="max-width:220px;width:100%;border-radius:8px;display:block;margin-top:2px"/>'
-      : '<div style="font-size:13.5px;color:var(--text);white-space:pre-wrap;word-break:break-word">'+_escapeHtml(m.text||"")+'</div>';
-    return '<div style="align-self:flex-start;max-width:85%;background:'+bubbleColor+';border-radius:10px;padding:8px 11px'+(directTo?';border-left:3px solid var(--warning-text)':'')+'">'
-      +'<div style="font-size:11px;font-weight:700;color:'+authorColor+';margin-bottom:2px">'+_escapeHtml(m.authorLabel||"?")+directBadge+'</div>'
+      ? '<img class="chat-foto" src="'+_escapeHtml(m.photoData||"")+'" alt="Foto"/>'
+      : '<div class="chat-testo">'+_escapeHtml(m.text||"")+'</div>';
+    return '<div class="chat-bolla'+(isStation?" chat-bolla--postazione":"")+(directTo?" chat-bolla--diretto":"")+'">'
+      +'<div class="chat-autore'+(isStation?" chat-autore--postazione":"")+'">'+_escapeHtml(m.authorLabel||"?")+directBadge+'</div>'
       +body
-      +'<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:right">'+_fmtChatTime(m.ts)+'</div>'
+      +'<div class="chat-ora">'+_fmtChatTime(m.ts)+'</div>'
       +'</div>';
   })(m);
 }
@@ -533,21 +535,25 @@ export function renderChatPanel(page,opts){
     wrap.appendChild(targetRow);
   }
 
-  // ---- Riga di digitazione (testo, + microfono se il canale lo supporta) ----
+  // ---- Riga di scrittura, e sotto i pulsanti affiancati ----
+  // Il campo di testo si prende tutta la larghezza; microfono, foto e invio
+  // stanno sotto, grandi e in fila. Su un tablet usato in piedi tre bersagli
+  // larghi valgono piu' di tre pulsantini stretti accanto al testo.
   const inputRow=document.createElement("div");
-  inputRow.style.cssText="display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);background:var(--bg)";
+  inputRow.className="chat-inputrow";
   const input=document.createElement("input");
   input.type="text";input.placeholder="Scrivi un messaggio...";input.maxLength=500;
-  input.style.cssText="flex:1;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);font-size:14px";
+  input.className="chat-input";
   inputRow.appendChild(input);
+  const azioniRow=document.createElement("div");
+  azioniRow.className="chat-azioni";
 
   let micBtn=null;
   if(cfg.supportsAudio){
     micBtn=document.createElement("button");micBtn.type="button";
     micBtn.title="Registra messaggio vocale";
-    micBtn.style.cssText="width:auto;padding:9px 13px;font-size:16px;background:var(--bg2)";
-    micBtn.textContent="🎙️";
-    inputRow.appendChild(micBtn);
+    micBtn.innerHTML='<span class="chat-azioni__icona">🎙️</span><span>Vocale</span>';
+    azioniRow.appendChild(micBtn);
   }
 
   if(cfg.supportsPhoto){
@@ -561,8 +567,7 @@ export function renderChatPanel(page,opts){
     camInput.style.display="none";
     const camBtn=document.createElement("button");camBtn.type="button";
     camBtn.title="Scatta una foto";
-    camBtn.style.cssText="width:auto;padding:9px 13px;font-size:16px;background:var(--bg2)";
-    camBtn.textContent="📷";
+    camBtn.innerHTML='<span class="chat-azioni__icona">📷</span><span>Foto</span>';
     camInput.addEventListener("change",function(){
       const f=camInput.files&&camInput.files[0];
       camInput.value="";
@@ -581,57 +586,22 @@ export function renderChatPanel(page,opts){
       });
     });
     camBtn.addEventListener("click",function(){camInput.click();});
-    inputRow.appendChild(camBtn);
-    inputRow.appendChild(camInput);
+    azioniRow.appendChild(camBtn);
+    azioniRow.appendChild(camInput);
   }
 
   const sendBtn=document.createElement("button");
-  sendBtn.className="btn-primary";sendBtn.style.cssText="width:auto;padding:9px 16px";sendBtn.textContent="Invia";
-  inputRow.appendChild(sendBtn);
+  sendBtn.className="btn-primary";
+  sendBtn.innerHTML='<span class="chat-azioni__icona">➤</span><span>Invia</span>';
+  azioniRow.appendChild(sendBtn);
   wrap.appendChild(inputRow);
+  wrap.appendChild(azioniRow);
 
-  // ---- Radio premi-e-parla, sopra la riga di scrittura ----
-  // Serve anche da qui, non solo dalle postazioni: per una risposta rapida
-  // scrivere e' piu' lento che parlare, ed e' proprio il caso in cui la radio
-  // ha senso. Il vocale resta comunque un messaggio della chat, quindi
-  // riascoltabile piu' tardi da chiunque.
-  if(cfg.supportsAudio){
-    const pttBtn=document.createElement("button");pttBtn.type="button";
-    pttBtn.style.cssText="width:100%;padding:12px 14px;border:none;border-top:1px solid var(--border);"
-      +"background:#4a4a46;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;"
-      +"touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s;";
-    function pttFace(bg,testo){pttBtn.style.background=bg;pttBtn.textContent=testo;}
-    function pttIdle(){pttFace("#4a4a46","🎙️ RADIO — tieni premuto per parlare");}
-    function pttIdleTraUnPo(testo,ms){
-      pttFace("#4a4a46",testo);
-      setTimeout(function(){if(!ptt.isRecording())pttIdle();},ms||2500);
-    }
-    pttIdle();
-    const ptt=createRadioRecorder({
-      onStart:function(){pttFace("#c0392b","🔴 STAI TRASMETTENDO — rilascia per inviare · 0:00");},
-      onTick:function(sec){
-        const m=Math.floor(sec/60),r=sec%60;
-        pttFace("#c0392b","🔴 STAI TRASMETTENDO — rilascia per inviare · "+m+":"+String(r).padStart(2,"0"));
-      },
-      onSending:function(){pttFace("#4a4a46","invio in corso…");},
-      onSent:function(){pttIdleTraUnPo("✓ inviato");},
-      onTooShort:function(){pttIdleTraUnPo("tieni premuto mentre parli");},
-      onError:function(msg){pttIdleTraUnPo(msg,4000);},
-      onIdle:function(){pttIdle();}
-    });
-    pttBtn.addEventListener("pointerdown",function(e){
-      e.preventDefault();
-      try{if(pttBtn.setPointerCapture)pttBtn.setPointerCapture(e.pointerId);}catch(err){}
-      ptt.start();
-    });
-    // Il rilascio lo ascolta il registratore sulla finestra: il pannello si
-    // ridisegna a ogni messaggio in arrivo, e un ascolto legato al pulsante
-    // sparirebbe insieme a lui a meta' trasmissione.
-    pttBtn.addEventListener("contextmenu",function(e){e.preventDefault();});
-    wrap.appendChild(pttBtn);
-  }
 
   page.appendChild(wrap);
+  // Ora che il pannello e' nel documento le altezze sono reali: la lista viene
+  // riempita prima di essere appesa, e a quel punto scrollHeight vale zero.
+  _scorriInFondo(list);
   input.focus();
 
   function send(){
