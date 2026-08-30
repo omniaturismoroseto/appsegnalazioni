@@ -176,7 +176,7 @@ export function renderStationPanel(page){
 
   // Fascia NOTA POSTAZIONE
   const noteBar=document.createElement("button");noteBar.type="button";
-  noteBar.className="st-note st-wide";
+  noteBar.className="st-note";
   const noteBarLbl=document.createElement("span");noteBarLbl.className="st-note__label";noteBarLbl.textContent="NOTA POSTAZIONE";
   const noteBarVal=document.createElement("span");noteBarVal.className="st-note__val";
   noteBarVal.textContent=note?String(note).substring(0,40)+(note.length>40?"...":""):"nessuna nota · tocca per aggiungere";
@@ -186,7 +186,7 @@ export function renderStationPanel(page){
 
   // Tile METEO E DIARIO (placeholder in attesa dell'integrazione dati reale)
   const meteoTile=document.createElement("div");
-  meteoTile.className="st-tile st-wide";
+  meteoTile.className="st-tile";
   meteoTile.style.setProperty("--st-tinta","#0ea5e9");
   meteoTile.innerHTML='<span class="st-tile__label">METEO E DIARIO</span>'
     +'<span class="st-tile__sub">Dati non ancora collegati</span>';

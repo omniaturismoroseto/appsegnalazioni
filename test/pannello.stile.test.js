@@ -53,10 +53,20 @@ describe("stile del pannello di postazione", () => {
     expect(bar.querySelector(".st-em__fill")).not.toBeNull();
   });
 
-  it("i riquadri a tutta larghezza sono marcati come tali", () => {
+  it("la bandiera occupa la riga intera, nota e meteo la dividono", () => {
     const page = pannello();
-    // Bandiera, nota e meteo occupano la riga intera: se perdessero questa
-    // classe finirebbero incolonnati in una sola colonna.
-    expect(page.querySelectorAll(".st-grid .st-wide").length).toBeGreaterThanOrEqual(3);
+    const wide = Array.from(page.querySelectorAll(".st-grid .st-wide"));
+    // La bandiera e lo stato che si legge da lontano: tiene la riga tutta per se.
+    const bandiera = page.querySelector(".st-grid .st-tile.st-wide");
+    expect(bandiera).not.toBeNull();
+    expect(bandiera.textContent).toMatch(/BANDIERA/);
+    // Nota e meteo condividono una riga: cosi ne resta una in piu per il
+    // pulsante EMERGENZA, che deve essere il bersaglio piu grande dello schermo.
+    const nota = page.querySelector(".st-note");
+    const meteo = Array.from(page.querySelectorAll(".st-grid .st-tile")).find((n) => /METEO/.test(n.textContent));
+    expect(nota.classList.contains("st-wide")).toBe(false);
+    expect(meteo.classList.contains("st-wide")).toBe(false);
+    // Restano a tutta larghezza solo bandiera e il suo selettore di colore.
+    expect(wide.length).toBe(2);
   });
 });

@@ -401,7 +401,7 @@ body.postazione #pie-pagina{display:none}
 /* La riserva in fondo tiene conto della barra EMERGENZA, che e fissa e
    coprirebbe l ultima riga di riquadri. Va tenuta in accordo con min-height del
    pulsante qui sotto: se cresce uno deve crescere l altra. */
-.st-wrap{display:flex;flex-direction:column;min-height:calc(100dvh - 24px);padding-bottom:126px}
+.st-wrap{display:flex;flex-direction:column;min-height:calc(100dvh - 24px);padding-bottom:170px}
 
 /* ---- Intestazione ---- */
 .st-hdr{background:#D62B1F;color:#fff;border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:10px;
@@ -443,10 +443,11 @@ body.postazione #pie-pagina{display:none}
 .st-flagchooser button.is-attiva{outline:3px solid #0b0b0b;outline-offset:-3px}
 
 /* ---- Nota di postazione ---- */
-.st-note{background:#333;color:#fff;border:none;border-radius:8px;padding:10px 14px;cursor:pointer;text-align:left;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:inherit}
-.st-note__label{font-size:13px;font-weight:700;opacity:.9;white-space:nowrap}
-.st-note__val{font-size:13px;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-note{background:#333;color:#fff;border:none;border-radius:8px;padding:12px 14px;cursor:pointer;text-align:left;
+  display:flex;flex-direction:column;justify-content:space-between;gap:4px;font-family:inherit}
+.st-note__label{font-size:14px;font-weight:700;opacity:.9}
+/* Il testo della nota puo essere lungo: due righe al massimo, poi taglia. */
+.st-note__val{font-size:14px;opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 
 /* ---- Elenco delle segnalazioni aperte ---- */
 .st-replist{display:none;flex-direction:column;gap:6px;margin-top:8px}
@@ -459,7 +460,7 @@ body.postazione #pie-pagina{display:none}
 /* ---- Barra EMERGENZA ---- */
 .st-em{position:fixed;left:0;right:0;bottom:0;z-index:500;background:#0b0b0b;
   padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
-.st-em__btn{position:relative;overflow:hidden;display:block;width:100%;margin:0 auto;min-height:96px;
+.st-em__btn{position:relative;overflow:hidden;display:block;width:100%;margin:0 auto;min-height:140px;
   background:#a5140a;color:#fff;text-align:center;padding:20px 18px;border:none;border-radius:8px;
   font-family:inherit;font-weight:700;font-size:22px;letter-spacing:.03em;cursor:pointer;
   -webkit-user-select:none;user-select:none}
@@ -478,8 +479,8 @@ body.postazione #pie-pagina{display:none}
   .st-tile__sub{font-size:12.5px}
   .st-hdr{padding:8px 14px;margin-bottom:6px}
   .st-hdr__title{font-size:17px}
-  .st-em__btn{min-height:78px;padding:14px 18px;font-size:20px}
-  .st-wrap{padding-bottom:104px}
+  .st-em__btn{min-height:120px;padding:14px 18px;font-size:22px}
+  .st-wrap{padding-bottom:150px}
 }
 
 /* ---- Schermi ampi: testi piu' grandi, si legge da lontano ---- */
@@ -507,8 +508,8 @@ body.postazione #pie-pagina{display:none}
 
 /* La chat aperta dal pannello di postazione occupa tutto, meno la riserva per
    la barra EMERGENZA che resta visibile anche qui. */
-.st-chat{display:flex;flex-direction:column;min-height:calc(100dvh - 24px);padding-bottom:126px}
+.st-chat{display:flex;flex-direction:column;min-height:calc(100dvh - 24px);padding-bottom:170px}
 .st-chat .back-btn{flex:0 0 auto}
 @media(max-height:700px){
-  .st-chat{padding-bottom:104px}
+  .st-chat{padding-bottom:150px}
 }
