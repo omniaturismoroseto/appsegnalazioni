@@ -138,13 +138,28 @@ export function renderSegnalaPostazione(page) {
   lblFoto.className = "seg-titolo";
   lblFoto.textContent = "Foto (opzionale)";
   wrap.appendChild(lblFoto);
+  // Il campo file di sistema mostrava "Scegli file / Nessun file selezionato":
+  // una scelta che qui non esiste, perche' con "capture" si apre comunque la
+  // fotocamera. Resta nascosto e a comandarlo e' un pulsante che dice cosa fa.
   const fotoInput = document.createElement("input");
   fotoInput.type = "file";
   fotoInput.accept = "image/*";
   fotoInput.setAttribute("capture", "environment");
-  fotoInput.className = "seg-foto";
+  fotoInput.hidden = true;
+
+  const fotoBtn = document.createElement("button");
+  fotoBtn.type = "button";
+  fotoBtn.className = "seg-foto-btn";
+  function fotoEtichetta(testo) {
+    fotoBtn.innerHTML = '<span class="seg-foto-btn__icona">\uD83D\uDCF7</span><span>' + testo + '</span>';
+  }
+  fotoEtichetta("Scatta una foto");
+  fotoBtn.addEventListener("click", function () { fotoInput.click(); });
+
   const anteprima = document.createElement("img");
-  anteprima.style.cssText = "display:none;max-width:100%;max-height:180px;border-radius:10px;margin-top:8px";
+  anteprima.className = "seg-anteprima";
+  anteprima.hidden = true;
+
   fotoInput.addEventListener("change", function () {
     const f = fotoInput.files && fotoInput.files[0];
     if (!f) return;
@@ -152,10 +167,15 @@ export function renderSegnalaPostazione(page) {
     resizeImg(f, function (dataUri) {
       foto = dataUri;
       anteprima.src = dataUri;
-      anteprima.style.display = "block";
+      anteprima.hidden = false;
+      // Chi ha gia' scattato deve capire che toccando di nuovo rifa' la foto,
+      // non ne aggiunge una seconda.
+      fotoEtichetta("Rifai la foto");
     });
   });
+
   wrap.appendChild(fotoInput);
+  wrap.appendChild(fotoBtn);
   wrap.appendChild(anteprima);
 
   const invia = document.createElement("button");

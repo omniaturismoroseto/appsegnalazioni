@@ -608,5 +608,12 @@ body.postazione #pie-pagina{display:none}
 .seg-voce.is-scelta{border-color:#111827;box-shadow:0 0 0 3px #fff inset}
 
 .seg-note{width:100%;font-size:16px;padding:12px;border-radius:10px;border:1px solid var(--border2);font-family:inherit}
-.seg-foto{width:100%;font-size:15px;color:var(--text2);padding:8px 0}
+/* Pulsante della fotocamera al posto del campo file di sistema, che offriva
+   una scelta inesistente ("Scegli file") e non diceva cosa sarebbe successo. */
+.seg-foto-btn{width:100%;min-height:72px;border:2px dashed var(--border2);border-radius:12px;
+  background:var(--bg2);color:var(--text);font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.seg-foto-btn:hover,.seg-foto-btn:focus{background:var(--bg2);color:var(--text)}
+.seg-foto-btn__icona{font-size:26px;line-height:1}
+.seg-anteprima{display:block;max-width:100%;max-height:200px;border-radius:12px;margin-top:10px}
 .seg-invia{min-height:72px;font-size:19px;margin-top:18px}

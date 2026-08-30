@@ -78,6 +78,21 @@ describe("schermate dell'app di postazione", () => {
     page.remove();
   });
 
+  it("la foto si scatta da un pulsante, non da un campo file di sistema", () => {
+    // Il campo file mostrava "Scegli file": una scelta che non esiste, perche
+    // con capture si apre comunque la fotocamera.
+    const page = document.createElement("div");
+    document.body.appendChild(page);
+    renderSegnalaPostazione(page);
+    const btn = page.querySelector(".seg-foto-btn");
+    expect(btn).not.toBeNull();
+    expect(btn.textContent).toMatch(/Scatta una foto/);
+    const campo = page.querySelector('input[type="file"]');
+    expect(campo.hidden).toBe(true);
+    expect(campo.getAttribute("capture")).toBe("environment");
+    page.remove();
+  });
+
   it("usa il vocabolario dei bagnini, non quello dell app pubblica", () => {
     // Queste voci sono di servizio e non devono seguire TYPES, che e delle
     // pagine pubbliche: "Soccorso del Vicino" a un bagnante non direbbe nulla.
