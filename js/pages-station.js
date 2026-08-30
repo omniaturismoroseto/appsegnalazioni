@@ -1,5 +1,5 @@
 import { FLAG_COLORS, STATIONS, TYPES, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData } from "./core.js";
-import { renderChatPanel } from "./chat.js";
+import { renderChatPanel, createRadioRecorder } from "./chat.js";
 import { _renderDeviceActivation } from "./pages-public.js";
 
 // Schermata unica dell'app di postazione finche' il dispositivo non e' stato
@@ -163,10 +163,44 @@ export function renderStationPanel(page){
   chatTile.style.cssText=tileStyle;
   chatTile.innerHTML='<span style="font-size:14px;font-weight:700">💬 CHAT</span><span style="font-size:13.5px">con tutte le postazioni</span>';
   chatTile.addEventListener("click",function(){window._stationChatOpen=true;render("station");});
+  // La radio e' il pulsante, non una porta verso la chat: si tiene premuto e si
+  // parla, come una ricetrasmittente. Il messaggio finisce comunque nella chat,
+  // dove resta da riascoltare.
   const wtTile=document.createElement("button");wtTile.type="button";
-  wtTile.style.cssText=tileStyle;
-  wtTile.innerHTML='<span style="font-size:14px;font-weight:700">🎙️ COMUNICAZIONE RADIO</span><span style="font-size:13.5px">messaggi vocali</span>';
-  wtTile.addEventListener("click",function(){window._stationChatOpen=true;render("station");});
+  wtTile.style.cssText=tileStyle+"touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:background .12s;";
+  function radioFace(bg,titolo,sotto){
+    wtTile.style.background=bg;
+    wtTile.innerHTML='<span style="font-size:14px;font-weight:700">'+titolo+'</span><span style="font-size:13.5px">'+sotto+'</span>';
+  }
+  function radioIdle(sotto){radioFace("#4a4a46","🎙️ COMUNICAZIONE RADIO",sotto||"tieni premuto per parlare");}
+  function radioIdleTraUnPo(sotto,ms){
+    radioIdle(sotto);
+    setTimeout(function(){if(!radio.isRecording())radioIdle();},ms||2500);
+  }
+  radioIdle();
+  const radio=createRadioRecorder({
+    onStart:function(){radioFace("#c0392b","🔴 STO TRASMETTENDO","rilascia per inviare · 0:00");},
+    onTick:function(sec){
+      const m=Math.floor(sec/60),r=sec%60;
+      radioFace("#c0392b","🔴 STO TRASMETTENDO","rilascia per inviare · "+m+":"+String(r).padStart(2,"0"));
+    },
+    onSending:function(){radioIdle("invio in corso…");},
+    onSent:function(){radioIdleTraUnPo("✓ inviato a tutte le postazioni");},
+    onTooShort:function(){radioIdleTraUnPo("tieni premuto mentre parli");},
+    onError:function(msg){radioIdleTraUnPo(msg,4000);},
+    onIdle:function(){radioIdle();}
+  });
+  // Il puntatore viene "catturato": se il dito scivola fuori dal pulsante mentre
+  // si parla, il rilascio arriva lo stesso e il messaggio parte invece di
+  // restare in trasmissione all'infinito.
+  wtTile.addEventListener("pointerdown",function(e){
+    e.preventDefault();
+    try{if(wtTile.setPointerCapture)wtTile.setPointerCapture(e.pointerId);}catch(err){}
+    radio.start();
+  });
+  wtTile.addEventListener("pointerup",function(e){e.preventDefault();radio.stopAndSend();});
+  wtTile.addEventListener("pointercancel",function(){radio.cancel();});
+  wtTile.addEventListener("contextmenu",function(e){e.preventDefault();});
   grid.appendChild(chatTile);grid.appendChild(wtTile);
 
   wrap.appendChild(grid);

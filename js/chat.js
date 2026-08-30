@@ -39,7 +39,7 @@
 // gia' usato per le foto delle segnalazioni (vedi addReport in core.js),
 // invece di introdurre Firebase Storage. Durata massima 60s per restare
 // ben sotto il limite di dimensione (vedi database.rules.json).
-import { STATIONS, _escapeHtml, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
+import { IS_NATIVE_APP, STATIONS, _escapeHtml, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
 import { ROLE_LABELS } from "./admin.js";
 
 const MAX_RECORDING_S=60;
@@ -233,6 +233,92 @@ function _sendChatEntry(cfg,channel,fields,onDone){
   }).catch(function(e){
     onDone(e);
   });
+}
+
+// ---- Radio premi-e-parla: registratore senza interfaccia ----
+// L'interfaccia la costruisce chi lo usa (il pannello di postazione). Vive qui
+// perche' un messaggio radio E' un messaggio della chat: stesso invio, stessi
+// limiti di durata e di peso, e resta nella chat da riascoltare se non lo si e'
+// sentito bene. Chi lo riceve lo sente da solo, dall'altoparlante, anche ad app
+// chiusa (vedi ChatAudioService.java, che riproduce sul canale ALARM).
+export function createRadioRecorder(handlers){
+  handlers=handlers||{};
+  const cfg=CHANNELS.stations;
+  var rec=null,chunks=[],stream=null,startedAt=0,timerId=null,discard=false,busy=false;
+
+  function fire(name,arg){try{if(handlers[name])handlers[name](arg);}catch(e){}}
+  function supported(){return !!(navigator.mediaDevices&&window.MediaRecorder);}
+  function cleanup(){
+    if(timerId){clearInterval(timerId);timerId=null;}
+    if(stream){stream.getTracks().forEach(function(t){t.stop();});stream=null;}
+    rec=null;
+  }
+
+  return {
+    supported:supported,
+    isRecording:function(){return !!rec;},
+    start:function(){
+      if(rec||busy)return;
+      if(!supported()){fire("onError","Microfono non disponibile su questo dispositivo");return;}
+      busy=true;
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+        // Il dito puo' essere gia' stato alzato mentre Android chiedeva il
+        // permesso del microfono: in quel caso non si apre una trasmissione
+        // fantasma che nessuno ha voluto.
+        if(!busy){s.getTracks().forEach(function(t){t.stop();});return;}
+        stream=s;chunks=[];discard=false;
+        const mime=(window.MediaRecorder.isTypeSupported&&window.MediaRecorder.isTypeSupported("audio/webm;codecs=opus"))?"audio/webm;codecs=opus":"";
+        try{rec=mime?new MediaRecorder(s,{mimeType:mime,audioBitsPerSecond:32000}):new MediaRecorder(s);}
+        catch(e){rec=new MediaRecorder(s);}
+        rec.addEventListener("dataavailable",function(e){if(e.data&&e.data.size>0)chunks.push(e.data);});
+        rec.addEventListener("stop",function(){
+          const mimeType=(rec&&rec.mimeType)||"audio/webm";
+          const elapsed=Date.now()-startedAt;
+          cleanup();
+          const parts=chunks;chunks=[];
+          if(discard){busy=false;fire("onIdle");return;}
+          // Sotto il mezzo secondo e' un tocco per sbaglio, non una chiamata.
+          if(elapsed<700){busy=false;fire("onTooShort");return;}
+          fire("onSending");
+          const durationS=Math.max(1,Math.round(elapsed/1000));
+          const reader=new FileReader();
+          reader.onload=function(){
+            const dataUri=reader.result;
+            if(!dataUri||dataUri.length>440000){
+              busy=false;fire("onError","Messaggio troppo lungo");return;
+            }
+            _sendChatEntry(cfg,"stations",{type:"audio",audioData:dataUri,audioDuration:durationS},function(err){
+              busy=false;
+              if(err)fire("onError","Invio fallito");
+              else fire("onSent",durationS);
+            });
+          };
+          reader.onerror=function(){busy=false;fire("onError","Errore nella registrazione");};
+          reader.readAsDataURL(new Blob(parts,{type:mimeType}));
+        });
+        rec.start();
+        startedAt=Date.now();
+        fire("onStart");
+        timerId=setInterval(function(){
+          const el=Math.floor((Date.now()-startedAt)/1000);
+          fire("onTick",el);
+          if(el>=MAX_RECORDING_S){try{rec.stop();}catch(e){}}
+        },250);
+      }).catch(function(){
+        busy=false;
+        fire("onError","Permesso microfono negato");
+      });
+    },
+    stopAndSend:function(){
+      if(!rec){busy=false;fire("onIdle");return;}
+      try{rec.stop();}catch(e){cleanup();busy=false;fire("onIdle");}
+    },
+    cancel:function(){
+      discard=true;
+      if(rec){try{rec.stop();}catch(e){cleanup();busy=false;fire("onIdle");}}
+      else{cleanup();busy=false;fire("onIdle");}
+    }
+  };
 }
 
 // opts.isStation: true quando richiamata dal pannello di postazione (mostra
@@ -506,12 +592,14 @@ export function _onIncomingChatAudio(msg,msgId){
       else{window.currentRole="operator";window.activeDashTab="chat";render("dashboard");}
     });
 
-    // Autoplay: il browser lo permette quasi sempre se l'utente ha gia'
-    // interagito con la pagina (praticamente sempre vero qui, si arriva a
-    // questa schermata solo dopo login/attivazione postazione). Se viene
-    // comunque bloccato, il popup resta visibile con "Riascolta" per
-    // avviarlo manualmente.
-    audio.play().catch(function(){});
+    // Dentro l'app la riproduzione la fa il servizio nativo (ChatAudioService,
+    // canale ALARM: altoparlante, e funziona anche ad app chiusa). Suonare
+    // anche qui farebbe sentire lo stesso messaggio due volte, sfasato. Il
+    // popup resta comunque, con "Riascolta" per chi non ha capito bene.
+    // Sul web invece si riproduce qui: l'autoplay passa quasi sempre, perche'
+    // a questa schermata si arriva solo dopo login o attivazione, quindi un
+    // tocco c'e' gia' stato. Se venisse bloccato resta il pulsante.
+    if(!IS_NATIVE_APP)audio.play().catch(function(){});
   }catch(e){
     _sentryCapture(e);
   }

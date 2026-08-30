@@ -479,6 +479,13 @@ export let stationMode=null;
 // niente login operatori. Prima dell'attivazione mostra solo la richiesta di
 // abilitazione, dopo soltanto il pannello di postazione. Il flag vale per la
 // sessione anche se un giro di navigazione perdesse il parametro dall'URL.
+// Vero solo dentro l'APK: fuori (browser, PWA) il ponte nativo non esiste.
+export const IS_NATIVE_APP=(function(){
+  try{
+    return !!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==="function"&&window.Capacitor.isNativePlatform());
+  }catch(e){return false;}
+})();
+
 export const STATION_APP=(function(){
   try{
     if(new URLSearchParams(location.search).get("app")==="postazione"){
