@@ -723,6 +723,14 @@ exports.sendChatNotification = onValueCreated(
           };
 
       const resp = await admin.messaging().sendEachForMulticast(message);
+      // Senza questa riga la funzione non lasciava alcuna traccia: davanti a un
+      // "non si sente niente" non cera modo di sapere se il messaggio fosse
+      // partito, a quanti destinatari e con quale esito.
+      console.log(
+        "Chat " + (isAudio ? "vocale" : isPhoto ? "foto" : "testo") + " " + msgId +
+        ": inviata a " + resp.successCount + "/" + tokens.length +
+        (resp.failureCount ? " (falliti " + resp.failureCount + ")" : "")
+      );
       if (resp.failureCount) {
         const removals = [];
         resp.responses.forEach((r, i) => {
@@ -774,8 +782,14 @@ exports.getChatAudio = onRequest({ region: "europe-west1", cors: false }, async 
       res.status(404).send("messaggio vocale non trovato");
       return;
     }
-    const m = /^data:([^;]+);base64,(.+)$/.exec(data.audioData);
+    // Il tipo puo portarsi dietro dei parametri - il browser registra come
+    // "audio/webm;codecs=opus" - quindi non ci si puo fermare al primo punto e
+    // virgola: va preso tutto fino a ";base64,". Con la versione precedente
+    // ogni vocale registrato dal browser rispondeva 500, e chi lo riceveva
+    // restava semplicemente in silenzio, senza errori visibili da nessuna parte.
+    const m = /^data:(.+?);base64,(.+)$/.exec(data.audioData);
     if (!m) {
+      console.error("getChatAudio: data URI non riconosciuto per " + msgId);
       res.status(500).send("formato audio non valido");
       return;
     }
