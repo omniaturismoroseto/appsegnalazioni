@@ -311,6 +311,14 @@ export function _renderMessages(list,cfg){
   _scorriInFondo(list);
 }
 
+// Invia un messaggio nella chat interna da fuori del pannello: la usa il
+// protocollo persona smarrita, che compone il testo e lo diffonde a tutte le
+// postazioni senza far riscrivere niente a mano a chi ha una famiglia in
+// panico davanti.
+export function inviaInChat(fields,onDone){
+  _sendChatEntry(CHANNELS.stations,"stations",fields,onDone||function(){});
+}
+
 function _sendChatEntry(cfg,channel,fields,onDone){
   const {authorLabel,role}=_chatAuthorAndRole(channel);
   const base={

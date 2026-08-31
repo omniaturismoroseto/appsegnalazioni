@@ -14,6 +14,7 @@
 // mandare il dato al server (addReport), che e' il punto in cui le due app si
 // parlano davvero.
 import { STATIONS, addReport, emergencyContactsRef, render, resizeImg, stationMode } from "./core.js";
+import { avviaProtocolloMinore } from "./station-minore.js";
 
 // Sulle emergenze che richiedono il soccorso della postazione vicina la prima
 // cosa da fare e' parlare col coordinatore: il tocco apre il telefono, la
@@ -90,7 +91,7 @@ export function renderSegnalaPostazione(page) {
   // scelta di chi viene avvisato.
   const voci = [
     { tipo: "emergenza", testo: "Annegamento / Soccorso del Vicino", chiamaCoordinatore: true },
-    { tipo: "emergenza", testo: "Persona / Minore disperso" },
+    { tipo: "emergenza", testo: "Persona / Minore disperso", protocollo: avviaProtocolloMinore },
     { tipo: "emergenza", testo: "Infortunio" },
     { tipo: "emergenza", testo: "Malore in spiaggia" },
     { tipo: "pericolo", testo: "Vento Forte" },
@@ -106,9 +107,15 @@ export function renderSegnalaPostazione(page) {
     b.className = "seg-voce seg-voce--" + v.tipo;
     b.setAttribute("aria-pressed", "false");
     b.innerHTML = '<span class="seg-voce__gravita">' + (v.tipo === "emergenza" ? "Emergenza" : "Pericolo")
-      + (v.chiamaCoordinatore ? ' · chiama il coordinatore' : '') + '</span>'
+      + (v.chiamaCoordinatore ? ' · chiama il coordinatore' : '')
+      + (v.protocollo ? ' · domande guidate' : '') + '</span>'
       + '<span class="seg-voce__testo">' + v.testo + '</span>';
     b.addEventListener("click", function () {
+      // Alcune voci non sono una casella da spuntare ma una procedura: la
+      // persona smarrita ha un protocollo di domande che raccoglie i dati
+      // nell'ordine giusto e compone da solo l'annuncio. Aprirlo subito evita
+      // che finisca in una nota scritta a mano mentre i genitori urlano.
+      if (v.protocollo) { v.protocollo(); return; }
       tipo = v.tipo;
       sotto = v.testo;
       if (v.chiamaCoordinatore) _chiamaCoordinatore();

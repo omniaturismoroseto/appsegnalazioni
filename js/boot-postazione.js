@@ -11,13 +11,21 @@
 // registrata resta quella vuota di core.js, che non fa nulla.
 import { _activateStationMode, registerScreens, render, stationDevicesRef } from "./core.js";
 import { renderSegnalaFatto, renderSegnalaPostazione } from "./station-segnala.js";
+import { renderProtocolloMinore } from "./station-minore.js";
 import { avviaAutoAggiornamento } from "./autoupdate.js";
 
 // La segnalazione della postazione e' una schermata sua, non quella pubblica:
 // chi la usa e' un bagnino in servizio, non un bagnante. Da qui in poi questa
 // app non importa piu' nulla dalle pagine pubbliche, quindi modificarle non
 // puo' romperla.
-registerScreens({ submit: renderSegnalaPostazione, "segnala-fatto": renderSegnalaFatto });
+//
+// Il protocollo della persona smarrita e' registrato qui e solo qui: e' una
+// procedura di servizio, non ha senso nell'app pubblica.
+registerScreens({
+  submit: renderSegnalaPostazione,
+  "segnala-fatto": renderSegnalaFatto,
+  "minore-protocollo": renderProtocolloMinore,
+});
 
 window._appReady = true;
 

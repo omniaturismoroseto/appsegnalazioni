@@ -617,3 +617,61 @@ body.postazione #pie-pagina{display:none}
 .seg-foto-btn__icona{font-size:26px;line-height:1}
 .seg-anteprima{display:block;max-width:100%;max-height:200px;border-radius:12px;margin-top:10px}
 .seg-invia{min-height:72px;font-size:19px;margin-top:18px}
+
+/* ---- Protocollo persona/minore smarrito (app di postazione) ----
+   Una domanda alla volta, riquadri grandi, testi scuri: si usa in piedi, al
+   sole, con qualcuno che parla addosso. Tutto quello che si tocca e' alto
+   almeno 72px, perche' un tocco sbagliato qui costa secondi veri. */
+.min-wrap{max-width:900px;margin:0 auto;padding-bottom:24px}
+.min-indietro{width:auto;background:#333;color:#fff;border:none;border-radius:10px;
+  padding:12px 16px;font-size:16px;font-weight:700;margin-bottom:14px;cursor:pointer}
+.min-indietro:hover,.min-indietro:focus{background:#444;color:#fff}
+.min-testa{margin:6px 0 16px}
+.min-passo{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.min-titolo{font-size:24px;font-weight:800;color:#111827;margin:4px 0 0;line-height:1.2}
+.min-sotto{font-size:16px;color:#374151;line-height:1.45;margin:8px 0 0}
+
+.min-scelte{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:760px){.min-scelte{grid-template-columns:repeat(2,1fr)}}
+.min-scelta{min-height:96px;border:3px solid var(--border2);border-radius:14px;padding:14px 16px;
+  background:var(--bg2);color:#111827;font-family:inherit;font-size:19px;font-weight:700;text-align:left;
+  cursor:pointer;display:flex;align-items:center;gap:14px}
+.min-scelta:hover,.min-scelta:focus{background:var(--bg2);color:#111827}
+/* La risposta che fa scattare l'allerta massima si vede da lontano, prima di
+   leggerla: chi la tocca deve sapere gia' che sta cambiando tutto. */
+.min-scelta--grave{background:#b91c1c;color:#fff;border-color:#7f1d1d}
+.min-scelta--grave:hover,.min-scelta--grave:focus{background:#b91c1c;color:#fff}
+.min-scelta__icona{font-size:30px;line-height:1}
+
+.min-campo{margin-bottom:14px}
+.min-campo__label{display:block;font-size:16px;font-weight:700;color:#111827;margin-bottom:6px}
+.min-campo__input{width:100%;min-height:56px;font-size:18px;padding:12px;border-radius:10px;
+  border:2px solid var(--border2);font-family:inherit;color:#111827;background:#fff}
+
+.min-avanti{min-height:72px;font-size:19px;margin-top:18px}
+
+/* La frase da dire, prima della prima domanda. Colori calmi di proposito: e'
+   l'unico riquadro della procedura che non deve mettere fretta, ed e' quello
+   che il bagnino legge mentre qualcuno gli parla addosso. */
+.min-calma{background:#e0f2fe;border-left:8px solid #0369a1;border-radius:12px;padding:14px 16px;margin-bottom:18px}
+.min-calma__titolo{font-size:17px;font-weight:800;color:#0c4a6e}
+.min-calma__frase{font-size:19px;font-weight:600;color:#0c4a6e;line-height:1.4;margin:8px 0 0}
+.min-calma__nota{font-size:15px;color:#075985;margin:8px 0 0}
+
+/* Il riquadro dell'allerta massima resta in cima a ogni passo successivo: il
+   protocollo dice di chiamare subito, non alla fine delle domande. */
+.min-urgenza{background:#7f1d1d;border-radius:14px;padding:14px;margin-bottom:16px}
+.min-urgenza__titolo{font-size:18px;font-weight:800;color:#fff}
+.min-urgenza__testo{font-size:15px;color:#fecaca;margin:4px 0 12px}
+.min-chiamate{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:760px){.min-chiamate{grid-template-columns:repeat(4,1fr)}}
+.min-chiamata{min-height:72px;border:none;border-radius:12px;background:#166534;color:#fff;
+  font-family:inherit;font-size:17px;font-weight:800;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.min-chiamata:hover,.min-chiamata:focus{background:#166534;color:#fff}
+
+.min-anteprima{white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:17px;
+  line-height:1.45;color:#111827;background:var(--bg2);border:2px solid var(--border2);
+  border-radius:12px;padding:14px;margin:0}
+.min-fatto{text-align:center;padding:20px 0 16px}
+.min-fatto__segno{font-size:52px;line-height:1}
