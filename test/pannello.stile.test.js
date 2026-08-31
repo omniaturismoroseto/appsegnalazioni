@@ -11,6 +11,8 @@
 // negli attributi di stile possono restare solo variabili di colore - che sono
 // dati (il colore della bandiera cambia col mare), non misure.
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderStationPanel } from "../js/pages-station.js";
 
 function pannello() {
@@ -20,7 +22,7 @@ function pannello() {
   return page;
 }
 
-const CLASSI_AMMESSE = ["st-tile", "st-note", "st-flagchooser", "st-replist"];
+const CLASSI_AMMESSE = ["st-tile", "st-note", "st-flagchooser"];
 
 describe("stile del pannello di postazione", () => {
   it("ogni riquadro porta una classe, nessuno e' lasciato agli stili in linea", () => {
@@ -68,5 +70,23 @@ describe("stile del pannello di postazione", () => {
     expect(meteo.classList.contains("st-wide")).toBe(false);
     // Restano a tutta larghezza solo bandiera e il suo selettore di colore.
     expect(wide.length).toBe(2);
+  });
+});
+
+describe("elementi nascosti con hidden", () => {
+  // jsdom non applica il foglio di stile, quindi questo e' l'unico posto dove
+  // il difetto si puo' bloccare: un elemento con display: flex o block resta a
+  // schermo anche con l'attributo "hidden", perche' la regola scritta qui vince
+  // su quella del browser. E' successo davvero - il pulsante "Chiudi
+  // segnalazione" restava sotto la domanda di conferma - e a occhio nudo nei
+  // test non si vedeva, perche' l'attributo risultava impostato.
+  const css = readFileSync(join(process.cwd(), "css", "app.css"), "utf8");
+
+  const daNascondere = ["sr-chiudi__btn", "sr-conferma", "seg-anteprima", "seg-foto-btn"];
+
+  daNascondere.forEach((classe) => {
+    it("resta invisibile davvero: ." + classe, () => {
+      expect(css).toContain("." + classe + "[hidden]");
+    });
   });
 });

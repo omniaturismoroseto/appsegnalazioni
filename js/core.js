@@ -1,4 +1,5 @@
 import { renderStationPanel, renderAttivazione } from "./pages-station.js";
+import { renderSegnalazioniAperte } from "./station-segnalazioni.js";
 import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio, aggiornaListaChat } from "./chat.js";
 
 // Quanto resta disponibile la foto di un minore prima della cancellazione
@@ -42,9 +43,10 @@ export function registerScreens(map){
     if(typeof map[k]==="function")screens[k]=map[k];
   });
 }
-// Le schermate che entrambe le app hanno sempre: il pannello di postazione e
-// la richiesta di attivazione.
-registerScreens({station:renderStationPanel,attivazione:renderAttivazione});
+// Le schermate che entrambe le app hanno sempre: il pannello di postazione, la
+// richiesta di attivazione e l'elenco delle segnalazioni aperte, che dal
+// pannello si raggiunge con un tocco.
+registerScreens({station:renderStationPanel,attivazione:renderAttivazione,"segnalazioni-aperte":renderSegnalazioniAperte});
 
   // Il pacchetto Sentry vero si carica in modo differito (per non rallentare
   // l'avvio): nei primissimi istanti window.Sentry esiste già come "guscio"
@@ -748,6 +750,10 @@ function _onReportsSnapshot(snap){
   if(currentScreen==="dashboard")renderPage();
   if(currentScreen==="home")renderPage();
   if(currentScreen==="station")renderPage();
+  // Anche l'elenco della postazione: e' li' che si chiudono le segnalazioni, e
+  // una scheda appena chiusa (da qui o dal centro operativo) deve sparire da
+  // sola invece di restare a dire "aperta".
+  if(currentScreen==="segnalazioni-aperte")renderPage();
   renderHeader();
 }
 
@@ -890,6 +896,16 @@ export function getReports(){
   return Object.entries(window.reportsData).map(([k,v])=>({...v,_key:k})).sort((a,b)=>b.id-a.id);
 }
 export function getFlags(){return{...flagsData};}
+// L'etichetta della postazione non e' solo un titolo: e' la chiave con cui una
+// segnalazione ritrova la propria postazione. Viene scritta dentro ogni
+// segnalazione (campo "zone") e riconfrontata dal pannello e dall'elenco delle
+// aperte. Finche' era ricalcolata in quattro file diversi bastava un trattino
+// di differenza perche' una postazione smettesse di vedere le proprie.
+export function zonaPostazione(num){
+  const n=String((num===undefined||num===null)?(stationMode||""):num);
+  const st=STATIONS.find(function(s){return String(s.num)===n;});
+  return "P."+n+(st?" – "+st.name:"");
+}
 export function addReport(r){
   var newRef=reportsRef.push();
   return newRef.set(r).then(function(){return {key:newRef.key};});

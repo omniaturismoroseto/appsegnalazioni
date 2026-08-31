@@ -1,4 +1,4 @@
-import { FLAG_COLORS, STATIONS, TYPES, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData } from "./core.js";
+import { FLAG_COLORS, STATIONS, _escapeHtml, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData, zonaPostazione } from "./core.js";
 import { renderChatPanel, createRadioRecorder } from "./chat.js";
 
 // Il registratore e il pulsante vivono fuori dalla funzione di disegno: il
@@ -95,7 +95,7 @@ export function renderStationPanel(page){
 
   const st=STATIONS.find(s=>String(s.num)===String(num));
   const stName=st?st.name:"";
-  const zoneStr="P."+num+" – "+stName;
+  const zoneStr=zonaPostazione(num);
   const flagColor=flagsData[num]||"verde";
   const note=stationNotesData[String(num)];
   const openReports=Object.values(window.reportsData||{}).filter(r=>r&&r.status==="aperta"&&r.zone===zoneStr);
@@ -143,17 +143,28 @@ export function renderStationPanel(page){
   grid.appendChild(flagTile);grid.appendChild(flagChooser);
 
   // Tile SEGNALAZIONI + SEGNALA
+  //
+  // Il numero da solo non diceva abbastanza: "1 aperta" costringeva ad aprire
+  // l'elenco per sapere se era un cane sciolto o un annegamento. Il riquadro
+  // mostra l'ultima arrivata, cosi' con un'occhiata si sa cosa c'e' in corso;
+  // il conto resta, piu' piccolo, perche' serve a capire se ce n'e' altre.
   const repTile=document.createElement("button");repTile.type="button";
   repTile.className="st-tile";
   repTile.style.setProperty("--st-tinta","#1A3B8C");
-  repTile.innerHTML='<span class="st-tile__label">SEGNALAZIONI</span>'
-    +'<span><span class="st-tile__big">'+openReports.length+'</span>'
-    +'<span class="st-tile__sub">apert'+(openReports.length===1?"a":"e")+'</span></span>';
-  const repList=document.createElement("div");
-  repList.className="st-replist";
-  repTile.addEventListener("click",function(){
-    repList.classList.toggle("is-aperto");
-  });
+  if(openReports.length){
+    const ultima=openReports.slice().sort(function(a,b){return new Date(b.ts)-new Date(a.ts);})[0];
+    repTile.innerHTML='<span class="st-tile__label">SEGNALAZIONI</span>'
+      +'<span class="st-tile__anteprima">'+_escapeHtml(ultima.sub||"Segnalazione")+'</span>'
+      +'<span class="st-tile__sub">'+openReports.length+' apert'+(openReports.length===1?"a":"e")
+      +' · '+_escapeHtml(fmt(ultima.ts))+'</span>';
+  }else{
+    repTile.innerHTML='<span class="st-tile__label">SEGNALAZIONI</span>'
+      +'<span><span class="st-tile__big">0</span>'
+      +'<span class="st-tile__sub">nessuna aperta</span></span>';
+  }
+  // Una pagina sua, non piu' un elenco che si apriva sotto la griglia: li' le
+  // schede erano di sola lettura e non c'era modo di dire "risolta".
+  repTile.addEventListener("click",function(){render("segnalazioni-aperte");});
 
   const segTile=document.createElement("button");segTile.type="button";
   segTile.className="st-tile st-tile--segnala";
@@ -162,17 +173,6 @@ export function renderStationPanel(page){
   segTile.addEventListener("click",function(){window.activeStation=zoneStr;render("submit");});
 
   grid.appendChild(repTile);grid.appendChild(segTile);
-  openReports.forEach(function(r){
-    const card=document.createElement("div");card.className="st-repcard";
-    const topRow=document.createElement("div");topRow.className="st-repcard__top";
-    const badge=document.createElement("span");badge.className="badge badge-"+r.type;badge.textContent=TYPES[r.type].label.toUpperCase();
-    const subEl=document.createElement("span");subEl.className="st-repcard__sub";subEl.textContent=r.sub;
-    topRow.appendChild(badge);topRow.appendChild(subEl);
-    const metaEl=document.createElement("div");metaEl.className="st-repcard__meta";
-    metaEl.textContent=fmt(r.ts)+(r.notes?" · "+r.notes:"");
-    card.appendChild(topRow);card.appendChild(metaEl);
-    repList.appendChild(card);
-  });
 
   // Fascia NOTA POSTAZIONE
   const noteBar=document.createElement("button");noteBar.type="button";
@@ -220,10 +220,6 @@ export function renderStationPanel(page){
   grid.appendChild(chatTile);grid.appendChild(wtTile);
 
   wrap.appendChild(grid);
-  // L elenco delle segnalazioni aperte sta SOTTO la griglia, non dentro: come
-  // riquadro prendeva l altezza piena di una riga e, aperto, mostrava una
-  // fascia vuota chiara sotto le poche schede. Qui cresce quanto gli serve.
-  wrap.appendChild(repList);
   page.appendChild(wrap);
 
   // Barra EMERGENZA fissa in basso, tieni-premuto per confermare l'invio

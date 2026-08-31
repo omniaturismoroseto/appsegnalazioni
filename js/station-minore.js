@@ -15,7 +15,7 @@
 //    nome e un numero di telefono non si possono indovinare, il resto si'.
 //  - Il messaggio lo compone l'app, non il bagnino. Dettare un annuncio chiaro
 //    mentre qualcuno urla e' proprio la cosa che riesce peggio.
-import { STATIONS, addReport, emergencyContactsRef, render, resizeImg, stationMode } from "./core.js";
+import { addReport, emergencyContactsRef, render, resizeImg, zonaPostazione } from "./core.js";
 import { inviaInChat } from "./chat.js";
 
 const MAX_TESTO_CHAT = 500;   // limite imposto dalle regole del database
@@ -38,11 +38,7 @@ export function avviaProtocolloMinore() {
   render("minore-protocollo");
 }
 
-function _postazione() {
-  const num = String(stationMode || "");
-  const st = STATIONS.find(function (s) { return String(s.num) === num; });
-  return "P." + num + (st ? " – " + st.name : "");
-}
+const _postazione = zonaPostazione;
 
 function _chiama(numero) {
   const tel = String(numero || "").replace(/[^+0-9]/g, "");
@@ -340,6 +336,20 @@ function _manda(btn) {
     status: "aperta",
     photo: dati.foto || null,
     gps: null,
+    // Stessa forma che usa il modulo pubblico dei minori. Non e' un dettaglio
+    // di comodo: e' cio' che fa scattare nel centro operativo il cronometro,
+    // l'incrocio con un eventuale ritrovamento e - alla chiusura - la
+    // cancellazione della foto del minore, che non deve restare nel database
+    // una volta finita la ricerca.
+    childCase: {
+      direction: "perso",
+      age: dati.eta || null,
+      clothing: [dati.costume, dati.aspetto].filter(Boolean).join(" · ") || null,
+      name: dati.nome || null,
+      reporterName: dati.genitore || null,
+      reporterPhone: dati.telefono || null,
+      matchedKey: null,
+    },
   }).catch(function () { /* la chat resta la via principale: non blocca l'avviso */ });
 
   inviaInChat({ text: testo }, function (err) {

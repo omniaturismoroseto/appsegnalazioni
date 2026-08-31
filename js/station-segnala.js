@@ -13,7 +13,7 @@
 // un bagnino vede in servizio. Cio' che resta in comune e' solo il modo di
 // mandare il dato al server (addReport), che e' il punto in cui le due app si
 // parlano davvero.
-import { STATIONS, addReport, emergencyContactsRef, render, resizeImg, stationMode } from "./core.js";
+import { addReport, emergencyContactsRef, render, resizeImg, zonaPostazione } from "./core.js";
 import { avviaProtocolloMinore } from "./station-minore.js";
 
 // Sulle emergenze che richiedono il soccorso della postazione vicina la prima
@@ -33,11 +33,7 @@ function _chiamaCoordinatore() {
   });
 }
 
-function _etichettaPostazione() {
-  const num = String(stationMode || "");
-  const st = STATIONS.find(function (s) { return String(s.num) === num; });
-  return "P." + num + (st ? " – " + st.name : "");
-}
+const _etichettaPostazione = zonaPostazione;
 
 export function renderSegnalaPostazione(page) {
   let tipo = "";

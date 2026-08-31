@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 
 import { renderAttivazione, renderStationPanel } from "../js/pages-station.js";
 import { renderSegnalaFatto, renderSegnalaPostazione } from "../js/station-segnala.js";
+import { renderSegnalazioniAperte } from "../js/station-segnalazioni.js";
 import { avviaProtocolloMinore, componiMessaggio, renderProtocolloMinore } from "../js/station-minore.js";
 import {
   renderConsigliPage,
@@ -243,5 +244,119 @@ describe("schermate dell'app pubblica", () => {
     it("disegna qualcosa: " + nome, () => {
       expect(disegna(fn).length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("segnalazioni aperte della postazione", () => {
+  // In prova stationMode non e' impostato, quindi la zona della postazione e'
+  // "P." e basta: le finte segnalazioni devono portare la stessa, altrimenti il
+  // filtro le scarta e non si starebbe piu' verificando niente.
+  const ZONA = "P.";
+
+  function conSegnalazioni(elenco) {
+    window.reportsData = {};
+    elenco.forEach((r, i) => { window.reportsData["k" + i] = r; });
+  }
+
+  beforeEach(() => {
+    window.reportsData = {};
+  });
+
+  function disegnaElenco() {
+    const page = document.createElement("div");
+    document.body.appendChild(page);
+    renderSegnalazioniAperte(page);
+    return page;
+  }
+
+  it("senza niente di aperto lo dice, invece di mostrare una pagina vuota", () => {
+    const page = disegnaElenco();
+    expect(page.querySelector(".sr-vuoto")).not.toBeNull();
+    expect(page.querySelectorAll(".sr-card").length).toBe(0);
+    page.remove();
+  });
+
+  it("mostra le aperte della propria postazione, dalla piu recente", () => {
+    conSegnalazioni([
+      { status: "aperta", zone: ZONA, type: "pericolo", sub: "Vento Forte", ts: "2026-08-31T09:00:00.000Z" },
+      { status: "aperta", zone: ZONA, type: "emergenza", sub: "Infortunio", ts: "2026-08-31T11:00:00.000Z" },
+      { status: "risolta", zone: ZONA, type: "pericolo", sub: "Gia chiusa", ts: "2026-08-31T10:00:00.000Z" },
+      { status: "aperta", zone: "P.9 – Altra", type: "emergenza", sub: "Di un altra postazione", ts: "2026-08-31T12:00:00.000Z" },
+    ]);
+    const page = disegnaElenco();
+    const subs = Array.from(page.querySelectorAll(".sr-card__sub")).map((n) => n.textContent);
+    expect(subs).toEqual(["Infortunio", "Vento Forte"]);
+    page.remove();
+  });
+
+  it("chiudere chiede conferma: il primo tocco non chiude niente", () => {
+    // Queste schede si toccano di corsa e con le mani bagnate, e una
+    // segnalazione chiusa per sbaglio dal tablet non si puo riaprire da li.
+    conSegnalazioni([
+      { status: "aperta", zone: ZONA, type: "emergenza", sub: "Infortunio", ts: "2026-08-31T11:00:00.000Z" },
+    ]);
+    const page = disegnaElenco();
+    const card = page.querySelector(".sr-card");
+    const avvia = card.querySelector(".sr-chiudi__btn");
+    const conferma = card.querySelector(".sr-conferma");
+    expect(conferma.hidden).toBe(true);
+
+    avvia.click();
+    // Il primo tocco chiede soltanto: la scheda e ancora aperta.
+    expect(conferma.hidden).toBe(false);
+    expect(avvia.hidden).toBe(true);
+    expect(card.classList.contains("is-chiusa")).toBe(false);
+
+    card.querySelector(".sr-conferma__no").click();
+    expect(conferma.hidden).toBe(true);
+    expect(avvia.hidden).toBe(false);
+    page.remove();
+  });
+});
+
+describe("riquadro delle segnalazioni nel pannello", () => {
+  beforeEach(() => {
+    window.reportsData = {};
+  });
+
+  function riquadro() {
+    const page = document.createElement("div");
+    document.body.appendChild(page);
+    renderStationPanel(page);
+    const tile = Array.from(page.querySelectorAll(".st-tile")).find((t) =>
+      /SEGNALAZIONI/.test(t.textContent)
+    );
+    return { page, tile };
+  }
+
+  it("con una aperta mostra cosa e, non solo quante sono", () => {
+    // Il numero da solo costringeva ad aprire l elenco per sapere se era un
+    // cane sciolto o un annegamento.
+    window.reportsData = {
+      k0: { status: "aperta", zone: "P.", type: "emergenza", sub: "Persona / Minore disperso", ts: "2026-08-31T11:00:00.000Z" },
+    };
+    const { page, tile } = riquadro();
+    const anteprima = tile.querySelector(".st-tile__anteprima");
+    expect(anteprima).not.toBeNull();
+    expect(anteprima.textContent).toBe("Persona / Minore disperso");
+    expect(tile.textContent).toMatch(/1 aperta/);
+    page.remove();
+  });
+
+  it("senza niente di aperto resta il conto a zero", () => {
+    const { page, tile } = riquadro();
+    expect(tile.querySelector(".st-tile__anteprima")).toBeNull();
+    expect(tile.textContent).toMatch(/nessuna aperta/);
+    page.remove();
+  });
+
+  it("l elenco non si apre piu dentro il pannello: ha una pagina sua", () => {
+    window.reportsData = {
+      k0: { status: "aperta", zone: "P.", type: "pericolo", sub: "Vento Forte", ts: "2026-08-31T11:00:00.000Z" },
+    };
+    const { page } = riquadro();
+    expect(page.querySelector(".st-replist")).toBeNull();
+    expect(page.querySelector(".st-repcard")).toBeNull();
+    page.remove();
   });
 });

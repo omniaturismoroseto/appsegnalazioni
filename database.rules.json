@@ -3,7 +3,7 @@
     "reports": {
       ".read": "auth != null",
       "$reportId": {
-        ".write": "!data.exists() || (auth != null && auth.token.role !== 'station')",
+        ".write": "!data.exists() || (auth != null && (auth.token.role !== 'station' || ((data.child('zone').val() === 'P.' + auth.token.station || data.child('zone').val().beginsWith('P.' + auth.token.station + ' ')) && data.child('status').val() === 'aperta' && newData.child('status').val() === 'risolta' && newData.child('type').val() === data.child('type').val() && newData.child('sub').val() === data.child('sub').val() && newData.child('zone').val() === data.child('zone').val() && newData.child('ts').val() === data.child('ts').val())))",
         ".validate": "newData.hasChildren(['type','sub','zone','ts','status']) && newData.child('type').val().matches(/^(emergenza|pericolo)$/) && newData.child('status').val().matches(/^(aperta|risolta)$/) && newData.child('ts').isString() && newData.child('zone').isString() && newData.child('zone').val().length < 100 && newData.child('sub').isString() && newData.child('sub').val().length < 200 && (!newData.hasChild('notes') || (newData.child('notes').isString() && newData.child('notes').val().length < 1000)) && (!newData.hasChild('photo') || (newData.child('photo').isString() && newData.child('photo').val().length < 400000)) && (!newData.hasChild('phone') || (newData.child('phone').isString() && newData.child('phone').val().length < 40)) && (!newData.hasChild('author') || (newData.child('author').isString() && newData.child('author').val().length < 100))"
       }
     },
