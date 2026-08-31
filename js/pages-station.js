@@ -80,6 +80,18 @@ export function _sendStationEmergency(num,zoneStr){
   ]);
 }
 
+// Il nome vale solo se la copia dei turni e' di oggi: se il ponte col progetto
+// dei turni si e' interrotto ieri sera, meglio non mostrare nessuno che
+// mostrare il bagnino di ieri come se fosse in servizio adesso.
+function _bagninoInTurno(num){
+  const t=window.turniOggiData;
+  if(!t||!t.postazioni)return null;
+  const oggi=new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Rome",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  if(t.data!==oggi)return null;
+  const p=t.postazioni[String(num)];
+  return (p&&p.adesso)||null;
+}
+
 export function renderStationPanel(page){
   const num=stationMode;
 
@@ -109,6 +121,18 @@ export function renderStationPanel(page){
   const hdrClock=document.createElement("span");hdrClock.id="_stClock";hdrClock.className="st-hdr__clock";
   hdrClock.textContent=new Date().toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
   hdr.appendChild(hdrTitle);hdr.appendChild(hdrClock);wrap.appendChild(hdr);
+
+  // Chi e' in turno qui adesso, secondo l'app dei turni. Compare da solo: non
+  // c'e' niente da scegliere o confermare, e se manca il dato non compare
+  // niente - una riga vuota direbbe meno di nessuna riga.
+  const inTurno=_bagninoInTurno(num);
+  if(inTurno){
+    const turnoEl=document.createElement("div");
+    turnoEl.className="st-turno";
+    turnoEl.innerHTML='<span class="st-turno__label">IN TURNO</span>'
+      +'<span class="st-turno__nome">'+_escapeHtml(inTurno)+'</span>';
+    wrap.appendChild(turnoEl);
+  }
 
   const grid=document.createElement("div");
   grid.className="st-grid";

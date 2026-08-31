@@ -15,6 +15,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { renderAttivazione, renderStationPanel } from "../js/pages-station.js";
 import { renderSegnalaFatto, renderSegnalaPostazione } from "../js/station-segnala.js";
 import { renderSegnalazioniAperte } from "../js/station-segnalazioni.js";
+import { stationMode } from "../js/core.js";
 import { avviaProtocolloMinore, componiMessaggio, renderProtocolloMinore } from "../js/station-minore.js";
 import {
   renderConsigliPage,
@@ -357,6 +358,73 @@ describe("riquadro delle segnalazioni nel pannello", () => {
     const { page } = riquadro();
     expect(page.querySelector(".st-replist")).toBeNull();
     expect(page.querySelector(".st-repcard")).toBeNull();
+    page.remove();
+  });
+});
+
+describe("bagnino in turno nel pannello", () => {
+  // Il nome arriva dall'app dei turni, che e' un altro progetto Firebase: qui
+  // dentro e' solo una copia depositata dal server in config/turniOggi. Il
+  // pannello deve fidarsene solo se e' di oggi.
+  const oggi = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+
+  beforeEach(() => {
+    window.reportsData = {};
+    window.turniOggiData = null;
+  });
+
+  function pannello() {
+    const page = document.createElement("div");
+    document.body.appendChild(page);
+    renderStationPanel(page);
+    return page;
+  }
+
+  it("mostra chi e in turno adesso", () => {
+    window.turniOggiData = {
+      data: oggi,
+      fasciaCorrente: "pomeriggio",
+      postazioni: { [String(stationMode)]: { adesso: "Mario Rossi", fascia: "giornata" } },
+    };
+    const page = pannello();
+    const el = page.querySelector(".st-turno");
+    expect(el).not.toBeNull();
+    expect(el.textContent).toMatch(/Mario Rossi/);
+    page.remove();
+  });
+
+  it("con una copia di ieri non mostra nessuno", () => {
+    // Se il ponte col progetto dei turni si e' interrotto, il bagnino di ieri
+    // non deve comparire come se fosse in servizio adesso.
+    window.turniOggiData = {
+      data: "2020-01-01",
+      postazioni: { [String(stationMode)]: { adesso: "Mario Rossi", fascia: "giornata" } },
+    };
+    const page = pannello();
+    expect(page.querySelector(".st-turno")).toBeNull();
+    page.remove();
+  });
+
+  it("fuori orario, quando nessuno e in turno, non mostra la fascia vuota", () => {
+    window.turniOggiData = {
+      data: oggi,
+      fasciaCorrente: null,
+      postazioni: { [String(stationMode)]: { adesso: null, fascia: null, mattina: "Mario Rossi" } },
+    };
+    const page = pannello();
+    expect(page.querySelector(".st-turno")).toBeNull();
+    page.remove();
+  });
+
+  it("senza copia dei turni il pannello si disegna lo stesso", () => {
+    // Il ponte puo' non esserci ancora, o essere caduto: il pannello e' la
+    // schermata che il bagnino ha davanti tutto il giorno e non puo' dipendere
+    // da un altro progetto per esistere.
+    const page = pannello();
+    expect(page.querySelector(".st-grid")).not.toBeNull();
+    expect(page.querySelector(".st-turno")).toBeNull();
     page.remove();
   });
 });

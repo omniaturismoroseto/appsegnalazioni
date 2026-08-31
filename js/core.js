@@ -306,6 +306,11 @@ export const reportsRef=_realDb.ref("reports");
 export const reportsPublicRef=_realDb.ref("reportsPublic");
 export const flagsRef=_realDb.ref("flags");
 export const stationNotesRef=_realDb.ref("stationNotes");
+// Chi e' in turno oggi, postazione per postazione. Il dato nasce nell'app dei
+// turni, che e' un altro progetto Firebase: qui arriva una copia depositata dal
+// server (vedi sincronizzaTurni nelle Cloud Function). Per il client e' un nodo
+// come gli altri, e se il ponte si interrompe resta l'ultima copia buona.
+export const turniOggiRef=_realDb.ref("config/turniOggi");
 export const stationDevicesRef=_realDb.ref("stationDevices");
 export const stationEmergenciesRef=_realDb.ref("stationEmergencies");
 export const emergencyContactsRef=_realDb.ref("config/emergencyContacts");
@@ -695,6 +700,15 @@ setInterval(function(){
   var hasOpenChild=Object.values(window.reportsData||{}).some(function(r){return r&&r.childCase&&r.status==="aperta";});
   if(hasOpenChild)renderPage();
 },30000);
+// La copia dei turni si legge solo da autenticati: per il pubblico non esiste,
+// e i nomi del personale non finiscono nell'app dei bagnanti.
+turniOggiRef.on("value",function(snap){
+  // Su window come window.reportsData: e' un dato che il pannello legge, non un
+  // pezzo di logica condivisa fra moduli.
+  window.turniOggiData=snap.val()||null;
+  if(currentScreen==="station")renderPage();
+},function(){ /* non autorizzato o offline: il pannello non mostra nomi */ });
+
 stationNotesRef.on("value",function(snap){
   var raw=snap.val()||{};
   stationNotesData={};

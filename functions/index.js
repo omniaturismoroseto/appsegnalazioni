@@ -2,6 +2,7 @@ const { onValueCreated, onValueWritten } = require("firebase-functions/v2/databa
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { defineSecret } = require("firebase-functions/params");
 const Sentry = require("@sentry/google-cloud-serverless");
 
 Sentry.init({
@@ -1128,3 +1129,58 @@ exports.deleteOperatorAccount = onCall({ region: "europe-west1" }, async (reques
     throw new HttpsError("internal", "Errore nell'eliminazione dell'account");
   }
 });
+
+/* ===================== TURNI: CHI E' IN POSTAZIONE OGGI =====================
+
+I turni vivono in un altro progetto Firebase (omnia-turni): questo database non
+li ha e i tablet non possono leggerli, perché sono autenticati qui e non là.
+
+Invece di dare a un progetto i permessi sull'altro, questa funzione va a
+chiederli ogni cinque minuti e ne deposita una copia in `config/turniOggi`, che
+e' un nodo di questo database come tutti gli altri: il pannello di postazione lo
+legge senza sapere che i turni esistono altrove, e se il ponte cade il pannello
+continua a mostrare l'ultimo dato buono invece di rompersi.
+
+La copia contiene solo i nomi di battesimo di chi e' in servizio - nient'altro
+dell'anagrafica del personale attraversa il ponte.
+*/
+
+const PONTE_TURNI_KEY = defineSecret("PONTE_TURNI_KEY");
+const TURNI_ENDPOINT = "https://europe-west1-omnia-turni.cloudfunctions.net/turniInCorso";
+
+exports.sincronizzaTurni = onSchedule(
+  {
+    schedule: "*/5 * * * *",
+    timeZone: "Europe/Rome",
+    region: "europe-west1",
+    secrets: [PONTE_TURNI_KEY],
+  },
+  async () => {
+    let risposta;
+    try {
+      const r = await fetch(TURNI_ENDPOINT + "?citta=roseto", {
+        headers: { "x-ponte-key": PONTE_TURNI_KEY.value() },
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status + " " + (await r.text()).slice(0, 200));
+      risposta = await r.json();
+    } catch (e) {
+      // Un ponte caduto non deve svuotare quello che il pannello sta gia'
+      // mostrando: meglio un turno di cinque minuti fa che nessun nome.
+      await reportError(e, "sincronizzaTurni");
+      return;
+    }
+
+    if (!risposta || typeof risposta.data !== "string") {
+      await reportError(new Error("risposta inattesa: " + JSON.stringify(risposta).slice(0, 200)), "sincronizzaTurni");
+      return;
+    }
+
+    await admin.database().ref("config/turniOggi").set({
+      data: risposta.data,
+      fasciaCorrente: risposta.fasciaCorrente || null,
+      postazioni: risposta.postazioni || {},
+      aggiornato: Date.now(),
+    });
+  }
+);
