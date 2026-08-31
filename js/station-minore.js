@@ -149,8 +149,12 @@ function _indietro(contenitore) {
   contenitore.appendChild(b);
 }
 
-// Le quattro chiamate che contano, sempre nello stesso ordine e sempre nello
-// stesso posto: chi le ha usate una volta le ritrova senza doverle cercare.
+// Le chiamate che contano, sempre nello stesso ordine e sempre nello stesso
+// posto: chi le ha usate una volta le ritrova senza doverle cercare.
+//
+// Il 1530 della Guardia Costiera non c'e': non e' piu' in uso, e un numero che
+// non risponde e' peggio di un pulsante in meno - farebbe perdere il tempo che
+// tutta questa procedura serve a guadagnare.
 function _pulsantiChiamata() {
   const riga = document.createElement("div");
   riga.className = "min-chiamate";
@@ -158,7 +162,6 @@ function _pulsantiChiamata() {
     { t: "Coordinatore", a: function () { _chiamaContatto("coordinator"); } },
     { t: "Responsabile", a: function () { _chiamaContatto("admin"); } },
     { t: "112", a: function () { _chiama("112"); } },
-    { t: "1530", a: function () { _chiama("1530"); } },
   ].forEach(function (c) {
     const b = document.createElement("button");
     b.type = "button";

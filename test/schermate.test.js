@@ -159,9 +159,11 @@ describe("schermate dell'app di postazione", () => {
     page = disegnaProtocollo();
     const urgenza = page.querySelector(".min-urgenza");
     expect(urgenza).not.toBeNull();
-    expect(urgenza.querySelectorAll(".min-chiamata").length).toBe(4);
+    expect(urgenza.querySelectorAll(".min-chiamata").length).toBe(3);
     expect(urgenza.textContent).toMatch(/112/);
-    expect(urgenza.textContent).toMatch(/1530/);
+    // Il 1530 non e' piu' in uso: un numero che non risponde farebbe perdere
+    // proprio il tempo che questa procedura serve a guadagnare.
+    expect(urgenza.textContent).not.toMatch(/1530/);
     page.remove();
 
     // Il messaggio dice subito la cosa piu grave, e resta entro il limite che

@@ -664,7 +664,13 @@ body.postazione #pie-pagina{display:none}
 .min-urgenza__titolo{font-size:18px;font-weight:800;color:#fff}
 .min-urgenza__testo{font-size:15px;color:#fecaca;margin:4px 0 12px}
 .min-chiamate{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-@media(min-width:760px){.min-chiamate{grid-template-columns:repeat(4,1fr)}}
+/* Sono tre: stretto vanno due sopra e il terzo largo sotto, senza il buco che
+   lascerebbe un pulsante spaiato. Sul tablet stanno in fila. */
+.min-chiamate .min-chiamata:last-child{grid-column:1/-1}
+@media(min-width:760px){
+  .min-chiamate{grid-template-columns:repeat(3,1fr)}
+  .min-chiamate .min-chiamata:last-child{grid-column:auto}
+}
 .min-chiamata{min-height:72px;border:none;border-radius:12px;background:#166534;color:#fff;
   font-family:inherit;font-size:17px;font-weight:800;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
