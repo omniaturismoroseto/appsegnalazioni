@@ -959,6 +959,19 @@ export function resolveReport(key){
   }
   return reportsRef.child(key).update(upd);
 }
+// "L'ho vista": ferma la ripetizione dell'avviso senza chiudere niente.
+//
+// Sono due cose diverse e vanno tenute diverse: chiudere dice "e' finita",
+// prendere in carico dice "me ne sto occupando io". Senza questa distinzione il
+// telefono continuerebbe a suonare ogni minuto in tasca a chi sta gia'
+// correndo sul posto - e chi impara a ignorare il telefono lo ignora anche la
+// volta che arriva la sirena.
+export function takeReport(key,chi){
+  return reportsRef.child(key).child("presaInCarico").set({
+    da:String(chi||"").slice(0,99),
+    ts:new Date().toISOString()
+  });
+}
 export function deleteReport(key){
   if(_alertReportKey===key)_stopAlertSound();
   setTimeout(_checkForActiveAlerts,500);

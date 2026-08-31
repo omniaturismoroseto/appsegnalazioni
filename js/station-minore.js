@@ -343,6 +343,12 @@ function _manda(btn) {
     // una volta finita la ricerca.
     childCase: {
       direction: "perso",
+      // Non e' una ripetizione del testo: e' il dato su cui il server decide il
+      // livello dell'avviso. "In acqua" fa partire la sirena sulle postazioni
+      // del tratto invece di una notifica da guardare quando si puo'. Nel testo
+      // dell'annuncio la stessa cosa e' scritta a parole, ma le parole un
+      // programma non le legge.
+      inAcqua: dati.inAcqua === true,
       age: dati.eta || null,
       clothing: [dati.costume, dati.aspetto].filter(Boolean).join(" · ") || null,
       name: dati.nome || null,

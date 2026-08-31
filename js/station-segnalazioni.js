@@ -11,7 +11,7 @@
 // dito. La chiusura chiede conferma sulla scheda stessa - non con una
 // finestrella di sistema, che su un tablet ha pulsanti minuscoli - perche'
 // chiudere per sbaglio un'emergenza in corso e' l'errore che costa di piu'.
-import { fmt, render, resolveReport, zonaPostazione } from "./core.js";
+import { fmt, render, resolveReport, takeReport, zonaPostazione } from "./core.js";
 
 // Le segnalazioni aperte di questa postazione, dalla piu' recente. E' la stessa
 // selezione che fa il pannello: se cambia una, deve cambiare l'altra.
@@ -88,8 +88,42 @@ function _scheda(r) {
     card.appendChild(img);
   }
 
+  card.appendChild(_presaInCarico(r));
   card.appendChild(_chiusura(r, card));
   return card;
+}
+
+// "L'ho vista", il tocco che ferma la ripetizione dell'avviso.
+//
+// Non chiude la segnalazione: dice solo che qualcuno se ne sta occupando. Senza
+// questo, il server continuerebbe a richiamare ogni minuto un bagnino che sta
+// gia' camminando verso il punto.
+function _presaInCarico(r) {
+  const box = document.createElement("div");
+  box.className = "sr-presa";
+
+  if (r.presaInCarico) {
+    box.classList.add("sr-presa--fatta");
+    const chi = r.presaInCarico.da ? " · " + r.presaInCarico.da : "";
+    box.textContent = "👁 Presa in carico" + chi;
+    return box;
+  }
+
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "sr-presa__btn";
+  b.innerHTML = "<span class=\"sr-presa__segno\">👁</span><span>L'ho vista, me ne occupo</span>";
+  b.addEventListener("click", function () {
+    b.disabled = true;
+    b.textContent = "…";
+    takeReport(r._key, zonaPostazione()).catch(function (e) {
+      b.disabled = false;
+      b.innerHTML = "<span class=\"sr-presa__segno\">👁</span><span>L'ho vista, me ne occupo</span>";
+      alert("Non sono riuscito a segnarla: " + e.message);
+    });
+  });
+  box.appendChild(b);
+  return box;
 }
 
 // La chiusura in due tempi, dentro la scheda: il primo tocco chiede conferma,

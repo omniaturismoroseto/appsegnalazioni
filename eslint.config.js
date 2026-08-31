@@ -63,6 +63,9 @@ module.exports = [
         process: "readonly", console: "readonly", __dirname: "readonly", __filename: "readonly",
         Buffer: "readonly", setTimeout: "readonly", clearTimeout: "readonly",
         setInterval: "readonly", clearInterval: "readonly", global: "readonly",
+        // Globali di Node 24 (le funzioni girano su nodejs24): fetch e
+        // AbortSignal esistono senza import, ma eslint non lo sa da solo.
+        fetch: "readonly", AbortSignal: "readonly",
       },
     },
     rules: {

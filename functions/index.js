@@ -2,6 +2,8 @@ const { onValueCreated, onValueWritten } = require("firebase-functions/v2/databa
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const STATIONS = require("./stations-data.js");
+const { postazioneDellaSegnalazione } = require("./instradamento.js");
 const { defineSecret } = require("firebase-functions/params");
 const Sentry = require("@sentry/google-cloud-serverless");
 
@@ -50,8 +52,6 @@ function buildMessage(tokens, data, reportId, opts) {
   const body =
     bodyParts.join(" · ").slice(0, 240) || "Nuova segnalazione ricevuta";
 
-  const isEmergenza = data.type === "emergenza";
-
   return {
     tokens,
     notification: { title, body },
@@ -64,7 +64,13 @@ function buildMessage(tokens, data, reportId, opts) {
     android: {
       priority: "high",
       notification: {
-        channelId: isEmergenza ? "omnia_emergenze" : "omnia_segnalazioni",
+        // Livello 2 della scala dei suoni: "guarda lo schermo appena puoi".
+        // Un canale solo, perche' i livelli devono essere pochi e riconoscibili
+        // a orecchio: con un suono per ogni categoria nessuno li impara, e un
+        // livello che non si riconosce vale come non averlo. Il livello 1 - la
+        // sirena - non passa di qui: e' un messaggio di soli dati che sveglia
+        // AlarmService (vedi sendStationEmergency).
+        channelId: "omnia_allerta",
         sound: "default",
         color: isMinore ? "#D81B8C" : "#D62B1F",
         defaultVibrateTimings: false,
@@ -92,34 +98,75 @@ function buildMessage(tokens, data, reportId, opts) {
   };
 }
 
-// ---- Legge i token operatore abilitati ----
-async function getEnabledTokens() {
-  const snap = await admin.database().ref("operatorTokens").once("value");
-  const obj = snap.val();
-  if (!obj) return [];
-  return Object.values(obj)
-    .filter((row) => row && row.enabled === true && row.token)
-    .map((row) => row.token);
-}
+// ---- Chi deve sapere di una nuova segnalazione ----
+//
+// Le postazioni cambiano col caso; il centro operativo no.
+//
+//  - persona smarrita: **tutte** le postazioni. Chi si e' perso puo' essere
+//    ovunque lungo la spiaggia, ed e' l'unico caso in cui deve saperlo tutta la
+//    costa invece del solo tratto interessato.
+//  - qualsiasi altra segnalazione: la postazione di competenza, che e' quella
+//    scritta nella segnalazione stessa.
+//  - sempre, in ogni caso: gli operatori con la dashboard aperta, il
+//    responsabile e il coordinatore.
+//
+// Torna una mappa token -> percorso nel database, cosi' un token morto si puo'
+// cancellare da dove sta davvero: operatori, postazioni e contatti tengono i
+// propri token in tre posti diversi.
+async function destinatariSegnalazione(data) {
+  const percorsi = new Map();
+  const tutteLePostazioni = !!(data && data.childCase);
+  const postazione = postazioneDellaSegnalazione(data);
 
-// ---- Rimuove dal database i token risultati non più validi ----
-async function cleanupInvalidTokens(response, tokens) {
-  if (!response.failureCount) return;
-  const removals = [];
-  response.responses.forEach((r, i) => {
-    if (!r.success) {
-      const code = r.error && r.error.code;
-      if (
-        code === "messaging/registration-token-not-registered" ||
-        code === "messaging/invalid-registration-token" ||
-        code === "messaging/invalid-argument"
-      ) {
-        const key = Buffer.from(tokens[i]).toString("base64url");
-        removals.push(admin.database().ref("operatorTokens/" + key).remove());
-      }
+  const [operatoriSnap, devicesSnap, contattiSnap] = await Promise.all([
+    admin.database().ref("operatorTokens").once("value"),
+    admin.database().ref("stationDevices").once("value"),
+    admin.database().ref("config/emergencyContacts").once("value"),
+  ]);
+
+  Object.entries(operatoriSnap.val() || {}).forEach(([chiave, row]) => {
+    if (row && row.enabled === true && row.token && !percorsi.has(row.token)) {
+      percorsi.set(row.token, "operatorTokens/" + chiave);
     }
   });
-  if (removals.length) await Promise.allSettled(removals);
+
+  const postazioniAvvisate = [];
+  Object.entries(devicesSnap.val() || {}).forEach(([id, d]) => {
+    if (!d || !d.enabled || !d.pushToken) return;
+    if (!tutteLePostazioni && String(d.station) !== String(postazione)) return;
+    postazioniAvvisate.push(String(d.station));
+    if (!percorsi.has(d.pushToken)) percorsi.set(d.pushToken, "stationDevices/" + id + "/pushToken");
+  });
+
+  const contatti = contattiSnap.val() || {};
+  ["admin", "coordinator"].forEach((ruolo) => {
+    const t = contatti[ruolo] && contatti[ruolo].pushToken;
+    if (t && !percorsi.has(t)) percorsi.set(t, "config/emergencyContacts/" + ruolo + "/pushToken");
+  });
+
+  return { percorsi, postazione, tutteLePostazioni, postazioniAvvisate };
+}
+
+// ---- Cancella i token risultati morti, ognuno da dove sta ----
+async function ripulisciToken(resp, tokens, percorsi) {
+  if (!resp.failureCount) return;
+  const rimozioni = [];
+  resp.responses.forEach((r, i) => {
+    if (r.success) return;
+    const code = r.error && r.error.code;
+    if (
+      code === "messaging/registration-token-not-registered" ||
+      code === "messaging/invalid-registration-token" ||
+      code === "messaging/invalid-argument"
+    ) {
+      const percorso = percorsi.get(tokens[i]);
+      if (percorso) rimozioni.push(admin.database().ref(percorso).remove());
+    }
+  });
+  if (rimozioni.length) {
+    await Promise.allSettled(rimozioni);
+    console.log("Token push non validi rimossi:", rimozioni.length);
+  }
 }
 
 // ============================================================
@@ -174,15 +221,32 @@ exports.sendPushOnNewReport = onValueCreated(
     }
 
     try {
-      const tokens = await getEnabledTokens();
+      const { percorsi, postazione, tutteLePostazioni, postazioniAvvisate } =
+        await destinatariSegnalazione(data);
+      const tokens = [...percorsi.keys()];
       if (!tokens.length) {
-        console.log("Lista token vuota");
+        console.log("Segnalazione", reportId, ": nessun destinatario con push attiva");
         return null;
       }
       const message = buildMessage(tokens, data, reportId, { repeat: false });
       const response = await admin.messaging().sendEachForMulticast(message);
-      console.log("Push iniziale:", response.successCount, "Errori:", response.failureCount);
-      await cleanupInvalidTokens(response, tokens);
+      console.log(
+        "Segnalazione", reportId,
+        tutteLePostazioni ? "(persona smarrita: a tutte le postazioni)" : "(postazione P." + postazione + ")",
+        "inviata a", response.successCount, "destinatari",
+        "[postazioni avvisate: " + (postazioniAvvisate.join(",") || "nessuna") + "]",
+        "falliti:", response.failureCount
+      );
+      await ripulisciToken(response, tokens, percorsi);
+
+      // Livello 1: un minore visto l'ultima volta **in acqua** non e' una
+      // segnalazione da guardare quando si puo'. Sulle postazioni del tratto -
+      // le due a nord e le due a sud, quelle che possono entrare in acqua nei
+      // secondi che contano - parte la sirena a tutto schermo, la stessa del
+      // pulsante EMERGENZA. Le altre restano al livello 2 e cercano.
+      if (data.childCase && data.childCase.inAcqua === true) {
+        await sirenaPostazioniVicine(data, reportId);
+      }
     } catch (error) {
       await reportError(error, "sendPushOnNewReport");
     }
@@ -190,9 +254,64 @@ exports.sendPushOnNewReport = onValueCreated(
   }
 );
 
+// ---- Sirena sulle postazioni del tratto ----
+// Stesso meccanismo del pulsante EMERGENZA: messaggio di **soli dati**, perche'
+// e' l'unico che fa girare il nostro codice anche ad app chiusa e permette di
+// accendere lo schermo e suonare sul canale sveglia (vedi OmniaMessagingService
+// e AlarmService nel progetto Android). Un messaggio con "notification" verrebbe
+// mostrato dal sistema come una notifica qualsiasi, e la sirena non partirebbe.
+async function sirenaPostazioniVicine(data, reportId) {
+  const postazione = postazioneDellaSegnalazione(data);
+  if (!postazione) return;
+
+  const { north, south } = stationNeighbors(postazione);
+  const bersagli = [...north, ...south].map((s) => String(s.num));
+  bersagli.push(String(postazione));
+
+  const devicesSnap = await admin.database().ref("stationDevices").once("value");
+  const percorsi = new Map();
+  Object.entries(devicesSnap.val() || {}).forEach(([id, d]) => {
+    if (d && d.enabled && d.pushToken && bersagli.includes(String(d.station)) && !percorsi.has(d.pushToken)) {
+      percorsi.set(d.pushToken, "stationDevices/" + id + "/pushToken");
+    }
+  });
+  const tokens = [...percorsi.keys()];
+  if (!tokens.length) {
+    console.log("Minore in acqua", reportId, ": nessuna postazione del tratto raggiungibile");
+    return;
+  }
+
+  const resp = await admin.messaging().sendEachForMulticast({
+    tokens,
+    data: {
+      type: "station_emergency",
+      station: String(postazione),
+      title: "🚨 MINORE IN ACQUA — P." + postazione,
+      body: "Minore visto l'ultima volta in acqua. Entra in acqua e cerca.",
+      id: String(reportId || ""),
+    },
+    android: { priority: "high" },
+  });
+  console.log(
+    "Minore in acqua", reportId, "sirena su P." + bersagli.join(",P."),
+    "riusciti:", resp.successCount, "falliti:", resp.failureCount
+  );
+  await ripulisciToken(resp, tokens, percorsi);
+}
+
 // ============================================================
-// 2) RIPETIZIONE ogni 30s (per le segnalazioni aperte da < 15 min)
-//    La funzione gira ogni minuto e invia DUE raffiche distanziate di 30s.
+// 2) RIPETIZIONE ogni minuto, finche' qualcuno non la prende in carico
+//
+//    Ripetere finche' la segnalazione e' *aperta* sarebbe sbagliato: un bagnino
+//    puo' averla vista benissimo ed essere gia' per strada, mentre la
+//    segnalazione resta aperta venti minuti. Il telefono continuerebbe a
+//    suonare in tasca a chi sta gia' intervenendo, e in una settimana avrebbe
+//    imparato a ignorarlo - proprio l'apparecchio da cui un giorno arrivera' la
+//    sirena.
+//
+//    Quindi si ripete finche' nessuno ha detto "l'ho vista" (presaInCarico), e
+//    comunque non oltre i 15 minuti: una ripetizione infinita e' peggio di
+//    nessuna ripetizione.
 // ============================================================
 exports.repeatOpenAlerts = onSchedule(
   {
@@ -201,16 +320,6 @@ exports.repeatOpenAlerts = onSchedule(
     timeZone: "Europe/Rome",
   },
   async () => {
-    let tokens;
-    try {
-      tokens = await getEnabledTokens();
-    } catch (e) {
-      await reportError(e, "repeatOpenAlerts:getEnabledTokens");
-      return;
-    }
-    if (!tokens.length) return;
-
-    // Legge tutte le segnalazioni e tiene solo quelle APERTE entro la finestra di 15 min
     const snap = await admin.database().ref("reports").once("value");
     const reports = snap.val() || {};
     const now = Date.now();
@@ -218,36 +327,37 @@ exports.repeatOpenAlerts = onSchedule(
     const daRipetere = [];
     for (const [id, r] of Object.entries(reports)) {
       if (!r || r.status !== "aperta") continue;
-      if (r.quickAlert === true) continue; // niente broadcast a tutti per gli allarmi rapidi di postazione
-      // r.id è il timestamp di creazione (Date.now() lato app); fallback su r.ts
+      if (r.quickAlert === true) continue; // gli allarmi rapidi hanno la loro strada
+      if (r.presaInCarico) continue;       // qualcuno se ne sta gia' occupando
+      // r.id e' il timestamp di creazione (Date.now() lato app); fallback su r.ts
       const creato = Number(r.id) || (r.ts ? new Date(r.ts).getTime() : 0);
       if (!creato) continue;
       const eta = now - creato;
-      if (eta >= 0 && eta <= REPEAT_WINDOW_MS) {
-        daRipetere.push([id, r]);
-      }
+      if (eta >= 0 && eta <= REPEAT_WINDOW_MS) daRipetere.push([id, r]);
     }
 
     if (!daRipetere.length) return;
 
-    async function inviaRaffica() {
-      for (const [id, r] of daRipetere) {
-        try {
-          const message = buildMessage(tokens, r, id, { repeat: true });
-          const resp = await admin.messaging().sendEachForMulticast(message);
-          await cleanupInvalidTokens(resp, tokens);
-        } catch (e) {
-          await reportError(e, "repeatOpenAlerts:inviaRaffica:" + id);
-        }
+    let inviate = 0;
+    for (const [id, r] of daRipetere) {
+      try {
+        // Gli stessi destinatari dell'invio iniziale: chi e' stato avvisato
+        // dev'essere anche chi viene richiamato, altrimenti la ripetizione
+        // insiste con qualcuno che non era stato chiamato in causa.
+        const { percorsi } = await destinatariSegnalazione(r);
+        const tokens = [...percorsi.keys()];
+        if (!tokens.length) continue;
+        const resp = await admin.messaging().sendEachForMulticast(
+          buildMessage(tokens, r, id, { repeat: true })
+        );
+        await ripulisciToken(resp, tokens, percorsi);
+        inviate++;
+      } catch (e) {
+        await reportError(e, "repeatOpenAlerts:" + id);
       }
     }
 
-    // Prima raffica subito, seconda dopo 30 secondi → effetto "ogni 30s"
-    await inviaRaffica();
-    await new Promise((res) => setTimeout(res, 30000));
-    await inviaRaffica();
-
-    console.log("Ripetizione inviata per", daRipetere.length, "segnalazioni aperte");
+    console.log("Ripetizione inviata per", inviate, "segnalazioni non ancora prese in carico");
   }
 );
 
@@ -346,7 +456,7 @@ exports.resetChatEsternaSerale = onSchedule(
 // ../stations-data.js, copiata qui automaticamente ad ogni deploy (vedi
 // "predeploy" in firebase.json) — non modificare stations-data.js in questa
 // cartella a mano, si perde al prossimo deploy.
-const STATIONS = require("./stations-data.js");
+
 
 // Ordina le postazioni da sud a nord per LATITUDINE REALE (non per numero:
 // P.31-35 non sono in sequenza geografica col resto), poi prende fino a 2

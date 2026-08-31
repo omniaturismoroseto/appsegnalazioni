@@ -510,6 +510,18 @@ body.postazione #pie-pagina{display:none}
    conferma e la pagina si ridisegna: cosi' il tocco ha un effetto immediato. */
 .sr-card.is-chiusa{opacity:.45}
 
+/* "L'ho vista": ferma la ripetizione, non chiude niente. Sta sopra il pulsante
+   di chiusura e ha un peso visivo minore, perche' e' il gesto piu' frequente e
+   meno definitivo dei due: chiudere si fa una volta sola, e per sbaglio non si
+   torna indietro. */
+.sr-presa{margin-top:12px}
+.sr-presa__btn{width:100%;min-height:60px;border:2px solid #1d4ed8;border-radius:12px;
+  background:#eff6ff;color:#1d4ed8;font-family:inherit;font-size:17px;font-weight:800;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.sr-presa__btn:hover,.sr-presa__btn:focus{background:#eff6ff;color:#1d4ed8}
+.sr-presa__segno{font-size:20px;line-height:1}
+.sr-presa--fatta{font-size:16px;font-weight:700;color:#1d4ed8;padding:10px 2px}
+
 .sr-chiudi{margin-top:14px}
 .sr-chiudi__btn{width:100%;min-height:68px;border:none;border-radius:12px;background:#166534;color:#fff;
   font-family:inherit;font-size:18px;font-weight:800;cursor:pointer;
