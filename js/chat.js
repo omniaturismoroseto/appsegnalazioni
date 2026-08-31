@@ -39,7 +39,7 @@
 // gia' usato per le foto delle segnalazioni (vedi addReport in core.js),
 // invece di introdurre Firebase Storage. Durata massima 60s per restare
 // ben sotto il limite di dimensione (vedi database.rules.json).
-import { IS_NATIVE_APP, ROLE_LABELS, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode } from "./core.js";
+import { IS_NATIVE_APP, ROLE_LABELS, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode, zonaPostazione } from "./core.js";
 
 
 const MAX_RECORDING_S=60;
@@ -128,16 +128,6 @@ export function _chatDeviceId(){
   }catch(e){return "unknown";}
 }
 
-function _stationSurname(){
-  try{return localStorage.getItem("omnia_station_surname")||"";}catch(e){return "";}
-}
-function _promptStationSurname(){
-  let name="";
-  try{name=(prompt("Cognome del bagnino in turno a questa postazione:")||"").trim();}catch(e){}
-  name=name.slice(0,30);
-  try{if(name)localStorage.setItem("omnia_station_surname",name);}catch(e){}
-  return name;
-}
 
 function _promptOwnName(){
   try{
@@ -161,11 +151,70 @@ function _chatAuthorAndRole(channel){
     return {authorLabel:_promptOwnName()+" ("+roleLabel+")", role:window.userRole||"operator"};
   }
   if(stationMode){
-    let surname=_stationSurname();
-    if(!surname)surname=_promptStationSurname();
-    return {authorLabel:(surname?surname+" ":"")+"P."+stationMode, role:"station"};
+    // Nell'etichetta salvata va solo la postazione, mai il nome di chi c'e'
+    // dentro: quel campo lo legge ogni tablet della costa, e il nome del
+    // bagnino riguarda solo il centro operativo. Il nome lo aggiunge chi
+    // legge, se ne ha diritto (vedi _etichettaMittente).
+    //
+    // Prima qui il cognome veniva chiesto con un prompt e tenuto in memoria
+    // locale: finiva scritto nel messaggio, visibile a tutti, e dopo un cambio
+    // turno restava quello di chi aveva risposto per primo.
+    return {authorLabel:"P."+stationMode, role:"station"};
   }
   return {authorLabel:_promptOwnName(), role:"operator"};
+}
+
+// ---- Il nome del bagnino: chi lo vede, e da dove arriva ----
+//
+// Il nome non e' scritto nel messaggio (vedi _chatAuthorAndRole): nel database
+// c'e' solo il numero di postazione, che tutti possono leggere. Il nome lo
+// aggiunge qui chi legge, e solo se e' il centro operativo o il coordinatore -
+// le altre postazioni vedono numero e nome della postazione, e basta.
+//
+// Non e' una tenda tirata sul client: le regole del database non lasciano a una
+// postazione leggere la riga dei turni di un'altra, quindi anche cambiando
+// questo file da un tablet non ci sarebbe niente da mostrare.
+function _vedeNomiBagnini(){
+  return window.userRole==="admin"||window.userRole==="coordinator";
+}
+
+function _oggiRoma(){
+  return new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Rome",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+}
+
+// "Mario Rossi" diventa "M. Rossi": in una riga di chat conta riconoscere chi
+// ha parlato, non registrarlo all'anagrafe.
+function _nomeBreve(nome){
+  const parti=String(nome||"").trim().split(/\s+/).filter(Boolean);
+  if(parti.length<2)return parti[0]||"";
+  return parti[0].charAt(0).toUpperCase()+". "+parti.slice(1).join(" ");
+}
+
+// Chi era in turno a quella postazione quando il messaggio e' partito. La chat
+// si azzera alle 20, quindi i messaggi sono sempre della giornata in corso: per
+// scegliere la fascia basta l'ora del messaggio.
+function _bagninoDiTurno(num,ts){
+  const t=window.turniOggiData;
+  if(!t||!t.postazioni||t.data!==_oggiRoma())return null;
+  const p=t.postazioni[String(num)];
+  if(!p)return null;
+  let ora=14;
+  try{
+    ora=Number(new Intl.DateTimeFormat("it-IT",{timeZone:"Europe/Rome",hour:"2-digit",hourCycle:"h23"}).format(new Date(ts||Date.now())));
+  }catch(e){ /* meglio nessun nome che uno sbagliato */ return null; }
+  return (ora<14?p.mattina:p.pomeriggio)||p.adesso||null;
+}
+
+// L'etichetta che si legge sopra il messaggio.
+export function _etichettaMittente(m){
+  if(!m||m.role!=="station")return (m&&m.authorLabel)||"?";
+  const num=m.station?String(m.station):"";
+  // I messaggi vecchi non portano il numero come dato: resta la loro etichetta.
+  if(!num)return m.authorLabel||"?";
+  const base=zonaPostazione(num);
+  if(!_vedeNomiBagnini())return base;
+  const nome=_bagninoDiTurno(num,m.ts);
+  return nome?base+" · "+_nomeBreve(nome):base;
 }
 
 function _fmtChatTime(ts){
@@ -253,7 +302,7 @@ function _bollaHtml(m){
       ? '<img class="chat-foto" src="'+_escapeHtml(m.photoData||"")+'" alt="Foto"/>'
       : '<div class="chat-testo">'+_escapeHtml(m.text||"")+'</div>';
     return '<div class="chat-bolla'+(isStation?" chat-bolla--postazione":"")+(directTo?" chat-bolla--diretto":"")+'">'
-      +'<div class="chat-autore'+(isStation?" chat-autore--postazione":"")+'">'+_escapeHtml(m.authorLabel||"?")+directBadge+'</div>'
+      +'<div class="chat-autore'+(isStation?" chat-autore--postazione":"")+'">'+_escapeHtml(_etichettaMittente(m))+directBadge+'</div>'
       +body
       +'<div class="chat-ora">'+_fmtChatTime(m.ts)+'</div>'
       +'</div>';
@@ -327,6 +376,10 @@ function _sendChatEntry(cfg,channel,fields,onDone){
     deviceId: _chatDeviceId(),
     ts: Date.now()
   };
+  // Il numero come dato a se': chi legge ricostruisce da solo nome della
+  // postazione e - se ne ha diritto - bagnino in turno, senza dover
+  // interpretare una stringa.
+  if(role==="station"&&stationMode)base.station=String(stationMode);
   // Destinatario: il campo "to" si scrive solo quando serve davvero, cosi'
   // i messaggi a tutti restano identici a prima. Le regole del DB
   // ricontrollano il claim di chi scrive.
@@ -480,21 +533,18 @@ export function renderChatPanel(page,opts){
   wrap.appendChild(list);
 
   if(opts.isStation){
-    // Riga "bagnino in turno", editabile in ogni momento (cambia col cambio turno).
-    const shiftRow=document.createElement("div");
-    shiftRow.style.cssText="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px";
-    const shiftLabel=document.createElement("span");
-    function refreshShiftLabel(){
-      const s=_stationSurname();
-      shiftLabel.textContent=s?("Bagnino in turno: "+s):"Bagnino in turno: non impostato";
+    // Chi e' in turno qui, secondo l'app dei turni. Prima era un campo da
+    // riempire a mano con un "cambia" accanto: nessuno lo aggiornava al cambio
+    // turno, e il nome restava quello di chi aveva risposto per primo al
+    // prompt. Ora e' un dato che arriva da solo, quindi non c'e' piu' niente
+    // da premere - e se manca, non si mostra una riga che dice "non impostato".
+    const nome=_bagninoDiTurno(stationMode,Date.now());
+    if(nome){
+      const shiftRow=document.createElement("div");
+      shiftRow.style.cssText="font-size:11px;color:var(--text3)";
+      shiftRow.textContent="In turno: "+nome;
+      header.appendChild(shiftRow);
     }
-    refreshShiftLabel();
-    const changeBtn=document.createElement("button");changeBtn.type="button";
-    changeBtn.style.cssText="font-size:11px;padding:2px 8px;color:var(--info-text);background:var(--info-bg);border-color:transparent";
-    changeBtn.textContent="cambia";
-    changeBtn.addEventListener("click",function(){_promptStationSurname();refreshShiftLabel();});
-    shiftRow.appendChild(shiftLabel);shiftRow.appendChild(changeBtn);
-    header.appendChild(shiftRow);
   }
 
   _listaAperta=list;
@@ -741,7 +791,7 @@ export function _onIncomingChatAudio(msg,msgId){
     modal.innerHTML='<div style="font-size:15px;font-weight:700;margin-bottom:4px">🎙️ Messaggio vocale'
       +(directTo?' <span style="font-size:11px;background:var(--warning-bg);color:var(--warning-text);border-radius:5px;padding:2px 6px">\uD83D\uDD12 solo per te</span>':'')
       +'</div>'
-      +'<div style="font-size:13px;color:var(--text2);margin-bottom:14px">da '+_escapeHtml(msg.authorLabel||"?")+'</div>';
+      +'<div style="font-size:13px;color:var(--text2);margin-bottom:14px">da '+_escapeHtml(_etichettaMittente(msg))+'</div>';
 
     const audio=document.createElement("audio");
     audio.src=msg.audioData||("https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/getChatAudio?id="+encodeURIComponent(msgId));

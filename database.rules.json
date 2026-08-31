@@ -80,8 +80,13 @@
     },
     "config": {
       "turniOggi": {
-        ".read": "auth != null",
-        ".write": false
+        ".read": "auth != null && (auth.token.role === 'admin' || auth.token.role === 'coordinator')",
+        ".write": false,
+        "postazioni": {
+          "$num": {
+            ".read": "auth != null && auth.token.station === $num"
+          }
+        }
       },
       "emergencyContacts": {
         ".read": "auth != null && auth.token.role !== 'station'",

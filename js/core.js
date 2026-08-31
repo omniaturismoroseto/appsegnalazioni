@@ -165,6 +165,7 @@ export async function _activateStationMode(deviceId,station){
     await _a.signInWithCustomToken(token);
     stationMode=String((j.result&&j.result.station)||station);
     _sentrySetTag("role","station");_sentrySetTag("station",stationMode);
+    _ascoltaTurni();
     render("station");
     _registerStationPush(deviceId);
   }catch(e){
@@ -700,14 +701,35 @@ setInterval(function(){
   var hasOpenChild=Object.values(window.reportsData||{}).some(function(r){return r&&r.childCase&&r.status==="aperta";});
   if(hasOpenChild)renderPage();
 },30000);
-// La copia dei turni si legge solo da autenticati: per il pubblico non esiste,
-// e i nomi del personale non finiscono nell'app dei bagnanti.
-turniOggiRef.on("value",function(snap){
-  // Su window come window.reportsData: e' un dato che il pannello legge, non un
-  // pezzo di logica condivisa fra moduli.
-  window.turniOggiData=snap.val()||null;
-  if(currentScreen==="station")renderPage();
-},function(){ /* non autorizzato o offline: il pannello non mostra nomi */ });
+// Chi ascolta cosa, e non e' un dettaglio tecnico: il nome del bagnino lo
+// vedono solo il centro operativo e il coordinatore. Una postazione legge una
+// riga sola, la propria - il nome di chi e' in servizio due chilometri piu' in
+// la' non la riguarda, e le regole del database non glielo lasciano leggere
+// nemmeno se qualcuno cambiasse questo file.
+//
+// Su window come window.reportsData: e' un dato che le schermate leggono, non
+// un pezzo di logica condivisa fra moduli.
+var _turniAscolto=null;
+export function _ascoltaTurni(){
+  var percorso=stationMode
+    ? "postazioni/"+String(stationMode)
+    : ((window.userRole==="admin"||window.userRole==="coordinator") ? "" : null);
+  if(percorso===null||_turniAscolto===percorso)return;
+  _turniAscolto=percorso;
+  var ref=percorso?turniOggiRef.child(percorso):turniOggiRef;
+  ref.on("value",function(snap){
+    var v=snap.val()||null;
+    // Il tablet riceve solo la propria riga: la si incarta nella stessa forma
+    // che vede il centro operativo, cosi' chi legge non deve sapere da quale
+    // dei due punti di vista sta guardando.
+    window.turniOggiData=(stationMode&&v)
+      ? {data:v.data||null,postazioni:_unaRiga(String(stationMode),v)}
+      : v;
+    if(currentScreen==="station")renderPage();
+    if(currentScreen==="dashboard")renderPage();
+  },function(){ /* non autorizzato o offline: nessun nome, il resto funziona */ });
+}
+function _unaRiga(num,v){var o={};o[num]=v;return o;}
 
 stationNotesRef.on("value",function(snap){
   var raw=snap.val()||{};
@@ -881,6 +903,7 @@ chatEsternaResetAtRef.on("value",function(snap){
           user.getIdTokenResult(true).then(function(res){
             window.userRole=(res.claims&&res.claims.role)||null;
             window.isAdmin=window.userRole==="admin";
+            _ascoltaTurni();
             if(currentScreen==="dashboard")renderPage();
           }).catch(function(){window.userRole=null;window.isAdmin=false;});
         }else{

@@ -1176,10 +1176,19 @@ exports.sincronizzaTurni = onSchedule(
       return;
     }
 
+    // La data finisce anche dentro ogni postazione, ripetuta. Serve perche' un
+    // tablet non puo' leggere l'intero nodo - i nomi delle altre postazioni non
+    // lo riguardano - quindi legge solo la propria riga, e li' dentro deve
+    // trovare tutto quello che gli serve per capire se il dato e' di oggi.
+    const postazioni = {};
+    Object.entries(risposta.postazioni || {}).forEach(([num, v]) => {
+      postazioni[num] = Object.assign({}, v, { data: risposta.data });
+    });
+
     await admin.database().ref("config/turniOggi").set({
       data: risposta.data,
       fasciaCorrente: risposta.fasciaCorrente || null,
-      postazioni: risposta.postazioni || {},
+      postazioni,
       aggiornato: Date.now(),
     });
   }
