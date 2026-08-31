@@ -90,3 +90,75 @@ describe("elementi nascosti con hidden", () => {
     });
   });
 });
+
+describe("il pannello sta dentro lo schermo", () => {
+  // Il 31 agosto 2026, su un tablet in orizzontale, chat e radio finivano sotto
+  // la barra EMERGENZA e la pagina scorreva di 124px: due riquadri erano a
+  // schermo ma non premibili. Non era un dettaglio estetico, era meta pannello
+  // fuori uso.
+  //
+  // La causa erano due misure che sembravano prudenti e invece impedivano di
+  // adattarsi: min-height sul contenitore, che lo lascia crescere oltre il
+  // bordo, e un minimo di 56px sulle righe, che quando lo spazio non basta non
+  // si comprime - sfonda. jsdom non calcola il layout, quindi qui si verifica
+  // il patto che tiene: il contenitore e vincolato all altezza dello schermo e
+  // le righe si spartiscono quello che c e.
+  const css = readFileSync(join(process.cwd(), "css", "app.css"), "utf8");
+
+  function regola(selettore) {
+    const i = css.indexOf(selettore + "{");
+    expect(i, "regola non trovata: " + selettore).toBeGreaterThan(-1);
+    return css.slice(i + selettore.length + 1, css.indexOf("}", i));
+  }
+
+  it("il contenitore e alto quanto lo schermo, non 'almeno'", () => {
+    const r = regola(".st-wrap");
+    expect(r).toMatch(/height:calc\(100dvh/);
+    // min-height lo lascerebbe crescere oltre il bordo appena il contenuto non
+    // ci sta: e esattamente il guasto di prima.
+    expect(r).not.toMatch(/min-height:calc\(100dvh/);
+  });
+
+  it("le righe si spartiscono lo spazio, senza un minimo che le faccia debordare", () => {
+    const r = regola(".st-grid");
+    expect(r).toMatch(/grid-auto-rows:minmax\(0,\s*1fr\)/);
+    // Senza min-height:0 un elemento flex non scende sotto il proprio
+    // contenuto, e la griglia tornerebbe a sfondare comunque.
+    expect(r).toMatch(/min-height:0/);
+  });
+
+  it("sugli schermi bassi si stringe prima la barra EMERGENZA, non i riquadri", () => {
+    // L ordine in cui si cede spazio conta: la barra e una riga fissa che sa
+    // rimpicciolirsi senza perdere niente, i riquadri sono quello che si preme.
+    expect(css).toMatch(/@media\(max-height:560px\)/);
+    const bassi = css.slice(css.indexOf("@media(max-height:560px)"));
+    expect(bassi).toMatch(/\.st-em__btn\{min-height:84px/);
+    expect(bassi).toMatch(/\.st-wrap\{padding-bottom:104px/);
+  });
+
+  it("la riserva in fondo copre la barra EMERGENZA in ogni scaglione", () => {
+    // Se la riserva fosse piu bassa della barra, l ultima riga di riquadri
+    // finirebbe sotto: e la stessa coppia di misure che si era slegata.
+    const scaglioni = [
+      { barra: 140, riserva: 170 },   // schermi normali
+      { barra: 110, riserva: 138 },   // max-height:700px
+      { barra: 84, riserva: 104 },    // max-height:560px
+    ];
+    scaglioni.forEach(({ barra, riserva }) => {
+      expect(riserva, "riserva " + riserva + " non copre una barra da " + barra)
+        .toBeGreaterThan(barra);
+    });
+    expect(regola(".st-em__btn")).toMatch(/min-height:140px/);
+    expect(regola(".st-wrap")).toMatch(/padding-bottom:170px/);
+  });
+
+  it("la chat riserva lo stesso spazio del pannello: sotto c e la stessa barra", () => {
+    // Quando le due misure si erano slegate, in orizzontale la chat lasciava
+    // una striscia vuota alta quanto la differenza.
+    expect(regola(".st-chat")).toMatch(/padding-bottom:170px/);
+    const bassi = css.slice(css.indexOf("@media(max-height:700px)"));
+    expect(bassi).toMatch(/\.st-chat\{padding-bottom:138px/);
+    const bassissimi = css.slice(css.indexOf("@media(max-height:560px)"));
+    expect(bassissimi).toMatch(/\.st-chat\{padding-bottom:104px/);
+  });
+});

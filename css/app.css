@@ -398,10 +398,15 @@ body.postazione #content{padding:12px}
    ha destinatario, e occupava spazio che serve ai riquadri. */
 body.postazione #pie-pagina{display:none}
 
-/* La riserva in fondo tiene conto della barra EMERGENZA, che e fissa e
-   coprirebbe l ultima riga di riquadri. Va tenuta in accordo con min-height del
-   pulsante qui sotto: se cresce uno deve crescere l altra. */
-.st-wrap{display:flex;flex-direction:column;min-height:calc(100dvh - 24px);padding-bottom:170px}
+/* Alto quanto lo schermo, non "almeno alto quanto": con min-height il pannello
+   cresceva oltre il bordo appena le righe non ci stavano, e in orizzontale
+   chat e radio finivano sotto la barra EMERGENZA. Con height il contenitore e'
+   un vincolo, e a spartirsi lo spazio che c'e' e' la griglia.
+
+   La riserva in fondo tiene conto della barra EMERGENZA, che e' fissa e
+   coprirebbe l'ultima riga. Va tenuta in accordo con min-height del pulsante
+   piu' sotto: se cresce uno deve crescere l'altra, in ogni scaglione. */
+.st-wrap{display:flex;flex-direction:column;height:calc(100dvh - 24px);padding-bottom:170px}
 
 /* ---- Intestazione ---- */
 .st-hdr{background:#D62B1F;color:#fff;border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:10px;
@@ -417,12 +422,26 @@ body.postazione #pie-pagina{display:none}
 .st-turno__nome{font-size:19px;font-weight:800;line-height:1.15}
 
 /* ---- Griglia ----
-   Le righe usano minmax(56px,1fr): il minimo garantisce un bersaglio toccabile
-   anche quando i riquadri sono tanti, 1fr fa il resto e riempie lo schermo. */
+   Le righe usano minmax(0,1fr): si spartiscono in parti uguali lo spazio che
+   c'e', qualunque esso sia. Prima il minimo era 56px - la misura di un
+   bersaglio sicuro per un dito - ma un minimo, quando lo spazio non basta,
+   non si comprime: si sfonda. Su un tablet in orizzontale le ultime due righe
+   finivano sotto la barra EMERGENZA, cioe' proprio dove non si potevano piu'
+   premere.
+
+   I 56px restano garantiti da come e' fatto il resto: sugli schermi bassi si
+   stringono prima intestazione, fascia del turno e barra EMERGENZA (vedi piu'
+   sotto), e alla griglia resta abbastanza da tenere le righe sopra quella
+   misura. Se un giorno uno schermo fosse cosi' basso da non farcela, i
+   riquadri diventano piu' bassi ma restano tutti a schermo e premibili: e'
+   meglio di due riquadri giusti e due irraggiungibili.
+
+   min-height:0 e' indispensabile: senza, un elemento flex non scende mai sotto
+   la dimensione del proprio contenuto, e la griglia tornerebbe a sfondare. */
 /* Due colonne a qualunque larghezza. Con tre, le coppie segnalazioni/segnala e
    chat/radio ne occupavano due e lasciavano un buco nella terza: meglio due
    riquadri larghi che tre con un vuoto in fondo alla riga. */
-.st-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;flex:1;grid-auto-rows:minmax(56px,1fr)}
+.st-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;flex:1;min-height:0;grid-auto-rows:minmax(0,1fr)}
 /* 1/-1 arriva in fondo qualunque sia il numero di colonne: cosi' i riquadri a
    tutta larghezza non vanno ritoccati a ogni cambio di formato. */
 .st-grid .st-wide{grid-column:1/-1}
@@ -526,17 +545,45 @@ body.postazione #pie-pagina{display:none}
 /* ---- Schermi bassi (tablet in orizzontale) ----
    Con molte righe lo spazio verticale e' poco: si stringono margini e testi
    invece di far ricomparire lo scorrimento, che su un pannello da consultare
-   con un'occhiata e' il difetto peggiore. */
+   con un'occhiata e' il difetto peggiore.
+
+   L'ordine in cui si cede spazio non e' casuale: prima intestazione, fascia
+   del turno e barra EMERGENZA, che sono righe fisse e sanno stringersi senza
+   perdere niente; i riquadri per ultimi, perche' sono quello che si preme. */
 @media(max-height:700px){
   .st-grid{gap:6px}
   .st-tile{padding:8px 12px}
   .st-tile__label{font-size:13px}
   .st-tile__big{font-size:22px}
   .st-tile__sub{font-size:12.5px}
+  .st-tile__anteprima{font-size:15px}
   .st-hdr{padding:8px 14px;margin-bottom:6px}
   .st-hdr__title{font-size:17px}
-  .st-em__btn{min-height:120px;padding:14px 18px;font-size:22px}
-  .st-wrap{padding-bottom:150px}
+  .st-turno{padding:6px 14px;margin-bottom:6px}
+  .st-turno__nome{font-size:17px}
+  .st-em__btn{min-height:110px;padding:12px 18px;font-size:21px}
+  .st-wrap{padding-bottom:138px}
+}
+
+/* Tablet davvero bassi in orizzontale (800x480 e simili). Qui la barra
+   EMERGENZA da sola si prendeva quasi un terzo dello schermo e le ultime due
+   righe di riquadri finivano sotto: resta un bersaglio enorme anche a 84px -
+   piu' alto di un riquadro - e quello che si libera torna alla griglia. */
+@media(max-height:560px){
+  .st-hdr{padding:6px 12px;margin-bottom:5px}
+  .st-hdr__title{font-size:15px}
+  .st-hdr__clock{font-size:13px}
+  .st-turno{padding:5px 12px;margin-bottom:5px}
+  .st-turno__label{font-size:11px}
+  .st-turno__nome{font-size:15px}
+  .st-tile{padding:6px 10px}
+  .st-tile__label{font-size:12px}
+  .st-tile__big{font-size:19px}
+  .st-tile__sub{font-size:11.5px}
+  .st-tile__anteprima{font-size:14px}
+  .st-em{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
+  .st-em__btn{min-height:84px;padding:10px 14px;font-size:19px}
+  .st-wrap{padding-bottom:104px}
 }
 
 /* ---- Schermi ampi: testi piu' grandi, si legge da lontano ---- */
@@ -573,8 +620,14 @@ body.postazione #pie-pagina{display:none}
 .st-chat .back-btn{flex:0 0 auto;background:#333;color:#fff;border-radius:10px;
   padding:12px 16px;font-size:16px;font-weight:700;margin-bottom:10px;text-align:left;width:100%}
 .st-chat .back-btn:hover{background:#444;color:#fff}
+/* La riserva della chat segue quella del pannello, scaglione per scaglione:
+   sotto c'e' la stessa barra EMERGENZA. Quando le due si erano slegate, in
+   orizzontale la chat lasciava una striscia vuota alta quanto la differenza. */
 @media(max-height:700px){
-  .st-chat{padding-bottom:150px}
+  .st-chat{padding-bottom:138px}
+}
+@media(max-height:560px){
+  .st-chat{padding-bottom:104px}
 }
 
 /* ---- Messaggi della chat ----
