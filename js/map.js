@@ -15,8 +15,12 @@ export const GOOGLE_MAPS_MAP_ID = "cbaae1ae9ce4c3d9f9d0f882";
 // spostano, ricalcola la rotta P.34 -> P.33 e sottrai 90.
 export const COAST_HEADING = 61;
 const HEADING_PREF_KEY = "omnia_map_heading";
+// La costa orizzontale e' la vista normale dell'app: si apre cosi' senza che
+// nessuno debba premere niente. Il nord in alto resta a un tocco di distanza,
+// ma solo per chi lo chiede: vale quindi unicamente la scelta esplicita
+// salvata, non l'assenza di scelta.
 function _savedHeadingMode(){
-  try{return localStorage.getItem(HEADING_PREF_KEY)==="coast"?"coast":"north";}catch(e){return "north";}
+  try{return localStorage.getItem(HEADING_PREF_KEY)==="north"?"north":"coast";}catch(e){return "coast";}
 }
 function _saveHeadingMode(mode){
   try{localStorage.setItem(HEADING_PREF_KEY,mode);}catch(e){/* memoria locale non disponibile */}
