@@ -4,6 +4,24 @@ import { STATION_APP, ALERT_COLORS, BOE_CANTIERE_23_2026, CC_POINT, COMUNE_POINT
 // (Google Maps Platform > Map Management) con le Advanced Markers abilitate.
 export const GOOGLE_MAPS_MAP_ID = "cbaae1ae9ce4c3d9f9d0f882";
 
+// La costa di Roseto corre da nord-ovest a sud-est: con il nord in alto il
+// litorale attraversa lo schermo in diagonale e nella mappa (alta 38vh sul
+// telefono, vedi css/app.css) entrano cinque o sei postazioni. Ruotando la
+// mappa di questo angolo la costa diventa orizzontale e sfrutta il lato lungo
+// dello schermo: ci stanno quasi tutte le postazioni dalla 10 alla 33.
+// 61 gradi e' la direzione del mare (perpendicolare alla costa) calcolata sul
+// tratto continuo P.34 -> P.33 di public/stations-data.js: con questo heading
+// il mare finisce in alto e la spiaggia in basso. Se le postazioni si
+// spostano, ricalcola la rotta P.34 -> P.33 e sottrai 90.
+export const COAST_HEADING = 61;
+const HEADING_PREF_KEY = "omnia_map_heading";
+function _savedHeadingMode(){
+  try{return localStorage.getItem(HEADING_PREF_KEY)==="coast"?"coast":"north";}catch(e){return "north";}
+}
+function _saveHeadingMode(mode){
+  try{localStorage.setItem(HEADING_PREF_KEY,mode);}catch(e){/* memoria locale non disponibile */}
+}
+
 export function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
   if(stationMode){hdr.style.display="none";return;}
@@ -170,12 +188,17 @@ export async function initMap(){
     window.mapObj=new Map(el,{
       center:{lat:42.686,lng:14.010},
       zoom:13,
+      heading:_savedHeadingMode()==="coast"?COAST_HEADING:0,
       mapId:GOOGLE_MAPS_MAP_ID,
       mapTypeId:"hybrid",
       streetViewControl:false,
       mapTypeControl:false,
       fullscreenControl:false,
       zoomControl:true,
+      // Appena la mappa e' ruotata Google mostra il suo comando bussola/inclinazione,
+      // che sul telefono cade proprio sopra la fila delle postazioni. La rotazione
+      // la governa il pulsante 🧭 qui sotto, quindi il comando non serve.
+      cameraControl:false,
       clickableIcons:false
     });
     // Il controllo nativo Mappa/Satellite di Google non viene disegnato sulle
@@ -183,6 +206,7 @@ export async function initMap(){
     // l'opzione mapTypeControl viene accettata ma ignorata silenziosamente,
     // quindi ricreiamo un pulsante equivalente a mano.
     addMapTypeToggle();
+    addHeadingToggle();
     ensureLocamareMarker();
     addCCMarker();
     addPLMarker();
@@ -228,6 +252,45 @@ function addMapTypeToggle(){
   });
   el.appendChild(btn);
   window._mapTypeToggleBtn=btn;
+}
+// Alterna nord-in-alto e costa-in-orizzontale. La rotazione (heading) esiste
+// solo sulle mappe vettoriali: se il mapId venisse ricreato come raster,
+// setHeading verrebbe ignorato in silenzio, quindi il pulsante si nasconde da
+// solo invece di restare li' a non fare niente.
+function addHeadingToggle(){
+  if(!window.mapObj||window._headingToggleBtn)return;
+  var el=document.getElementById("main-map");
+  if(!el)return;
+  if(getComputedStyle(el).position==="static")el.style.position="relative";
+  var btn=document.createElement("button");
+  btn.type="button";
+  btn.style.cssText="position:absolute;top:52px;right:10px;z-index:5;padding:8px 14px;"
+    +"background:#fff;border:0;border-radius:3px;box-shadow:0 1px 4px -1px rgba(0,0,0,.5);"
+    +"font-family:Roboto,Arial,sans-serif;font-size:13px;font-weight:600;color:#1a1a1a;cursor:pointer;";
+  function isCoast(){return Math.round(window.mapObj.getHeading()||0)!==0;}
+  function sync(){
+    btn.textContent=isCoast()?"🧭 Nord":"🧭 Costa";
+    btn.title=isCoast()?"Rimetti il nord in alto":"Gira la mappa con la costa in orizzontale";
+  }
+  sync();
+  btn.addEventListener("click",function(){
+    var coast=!isCoast();
+    window.mapObj.setHeading(coast?COAST_HEADING:0);
+    _saveHeadingMode(coast?"coast":"north");
+    sync();
+  });
+  el.appendChild(btn);
+  window._headingToggleBtn=btn;
+  function checkSupport(){
+    var rt=window.mapObj.getRenderingType&&window.mapObj.getRenderingType();
+    if(!rt||rt==="UNINITIALIZED")return;
+    if(rt!=="VECTOR"){
+      btn.style.display="none";
+      if(window.mapObj.getHeading())window.mapObj.setHeading(0);
+    }
+  }
+  checkSupport();
+  try{window.mapObj.addListener("renderingtype_changed",checkSupport);}catch(e){}
 }
 // Fonte delle segnalazioni per la mappa: un operatore/postazione autenticato
 // vede i dati completi (window.reportsData), un visitatore pubblico la copia
