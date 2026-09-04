@@ -52,7 +52,13 @@ export function _renderDeviceActivation(wrap,onRef){
       reqBtn.textContent="Richiedi attivazione";
       reqBtn.addEventListener("click",function(){
         reqBtn.disabled=true;reqBtn.textContent="Invio richiesta…";
-        ref.set({requestedAt:Date.now(),enabled:false,userAgent:String(navigator.userAgent||"").slice(0,200)}).catch(function(e){
+        // Se il kiosk ci ha detto quale postazione siamo, la richiesta parte
+        // gia' col numero scritto: chi approva deve solo confermare, e non puo'
+        // scriverne uno diverso da quello scelto nella pagina del kiosk.
+        var _richiesta={requestedAt:Date.now(),enabled:false,userAgent:String(navigator.userAgent||"").slice(0,200)};
+        var _post=window._omniaPostazioneGestita;
+        if(_post)_richiesta.station=String(_post);
+        ref.set(_richiesta).catch(function(e){
           reqBtn.disabled=false;reqBtn.textContent="Richiedi attivazione";
           console.error("Errore richiesta attivazione dispositivo:",e);
         });

@@ -1,4 +1,4 @@
-﻿package it.omniaadriatic.segnalazioni;
+package it.omniaadriatic.segnalazioni;
 
 import android.app.NotificationChannel;
 import android.media.AudioAttributes;
@@ -13,6 +13,10 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Registrato **prima** di super.onCreate: e' li' che Capacitor crea il
+        // ponte e comincia a caricare la pagina, e un componente aggiunto dopo
+        // non sarebbe visibile al codice di avvio.
+        registerPlugin(GestitoPlugin.class);
 
         super.onCreate(savedInstanceState);
         createChatChannel();

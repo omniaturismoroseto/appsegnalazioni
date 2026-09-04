@@ -33,6 +33,59 @@ window._appReady = true;
 // continuerebbe a far girare la versione con cui e' partito la mattina.
 avviaAutoAggiornamento();
 
+/**
+ * Se siamo su un dispositivo amministrato, chi siamo ce lo dice il kiosk.
+ *
+ * L'identificativo generato a caso e salvato nel browser ha un difetto che si
+ * paga nel tempo: **non sopravvive a una reinstallazione**. Ogni ripristino del
+ * telefono lascia dietro una registrazione morta, con lo stesso numero di
+ * postazione di quella viva, e dopo qualche anno di sostituzioni l'elenco dei
+ * dispositivi smette di dire la verita'.
+ *
+ * L'identita' consegnata dal kiosk invece vive nel dispositivo amministrato e
+ * resta la stessa. La si copia qui, cosi' tutto il resto dell'app continua a
+ * leggerla da dove l'ha sempre letta e non cambia una riga.
+ *
+ * Su un dispositivo senza kiosk questa funzione non trova niente e si toglie di
+ * mezzo in silenzio: un tablet normale, un browser, il telefono di un
+ * coordinatore si comportano esattamente come prima.
+ */
+function _identitaDalKiosk() {
+  try {
+    var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Gestito;
+    if (!plugin) return Promise.resolve();
+
+    // Due secondi e non uno di piu'.
+    //
+    // Da qui in poi c'e' l'avvio dell'app, e un'attesa senza scadenza
+    // significa un pannello di postazione che non si apre mai perche' una
+    // lettura di configurazione e' rimasta appesa. Sapere quale postazione
+    // siamo e' comodo; avere l'app e' indispensabile.
+    var scadenza = new Promise(function (ok) { setTimeout(ok, 2000); });
+    return Promise.race([_leggi(plugin), scadenza]);
+  } catch (e) {
+    return Promise.resolve();
+  }
+}
+
+function _leggi(plugin) {
+  try {
+    return plugin.leggi().then(function (v) {
+      if (!v) return;
+      if (v.postazione) window._omniaPostazioneGestita = String(v.postazione);
+      if (!v.deviceId) return;
+      try {
+        if (localStorage.getItem("omnia_device_id") !== v.deviceId) {
+          localStorage.setItem("omnia_device_id", v.deviceId);
+        }
+      } catch (e) { /* memoria locale non disponibile */ }
+    }).catch(function () { /* nessun amministratore: si prosegue come sempre */ });
+  } catch (e) {
+    return Promise.resolve();
+  }
+}
+
+_identitaDalKiosk().then(function () {
 try {
   // Il dispositivo si riconosce dall'identificativo salvato in locale. Se il
   // centro operativo lo ha gia' abilitato si apre direttamente il pannello;
@@ -64,3 +117,4 @@ try {
     + '<pre style="background:#f5f5f5;padding:10px;font-size:11px;white-space:pre-wrap">' + e2.toString() + '\n' + e2.stack + '</pre>'
     + '</div>';
 }
+});
