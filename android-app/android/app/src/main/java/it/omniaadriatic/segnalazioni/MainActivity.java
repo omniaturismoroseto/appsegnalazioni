@@ -1,4 +1,4 @@
-package it.omniaadriatic.segnalazioni;
+﻿package it.omniaadriatic.segnalazioni;
 
 import android.app.NotificationChannel;
 import android.media.AudioAttributes;
@@ -6,15 +6,57 @@ import android.media.RingtoneManager;
 import android.app.NotificationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         createChatChannel();
         createReportChannels();
+    }
+
+    // I tasti laterali fanno da pulsante della ricetrasmittente: premuto si
+    // trasmette, rilasciato si invia. Sono gli stessi due momenti del dito sul
+    // pulsante a schermo, cosi' la radio si usa senza guardare il display.
+    //
+    // Il tasto di accensione non e' utilizzabile: Android lo riserva al sistema
+    // e non lo consegna mai alle app. Restano quelli del volume, che su un
+    // dispositivo bloccato in kiosk non servono ad altro.
+    //
+    // L'evento viene consumato (return true), quindi al sistema non arriva e il
+    // volume non cambia. E' voluto: e' il motivo per cui la radio convive con il
+    // volume forzato al massimo dall'MDM invece di doverlo sacrificare.
+    //
+    // Su un telefono con tasto PTT dedicato basta aggiungere qui il suo codice:
+    // il resto del meccanismo resta identico.
+    private static final int[] TASTI_RADIO = {
+        KeyEvent.KEYCODE_VOLUME_UP,
+        KeyEvent.KEYCODE_VOLUME_DOWN
+    };
+
+    private static boolean isTastoRadio(int keyCode) {
+        for (int k : TASTI_RADIO) if (k == keyCode) return true;
+        return false;
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (!isTastoRadio(event.getKeyCode()) || getBridge() == null) {
+            return super.dispatchKeyEvent(event);
+        }
+        // getRepeatCount() > 0 sono le ripetizioni automatiche del tasto tenuto
+        // premuto: la trasmissione e' gia' partita al primo colpo e non va
+        // fatta ripartire a ogni ripetizione.
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            getBridge().triggerWindowJSEvent("omniaPttDown");
+        } else if (event.getAction() == KeyEvent.ACTION_UP) {
+            getBridge().triggerWindowJSEvent("omniaPttUp");
+        }
+        return true;
     }
 
     // Livello 3 della scala dei suoni: "quando puoi, leggi".

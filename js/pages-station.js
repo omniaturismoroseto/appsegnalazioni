@@ -34,6 +34,26 @@ function _radioRecorder(){
   });
   return _radio;
 }
+
+// Il guscio Android (MainActivity.dispatchKeyEvent) intercetta i tasti laterali
+// e li rilancia qui come eventi di finestra: sono gli stessi due momenti del
+// dito sul pulsante, premuto parte e rilasciato invia. Fuori dall'app nativa
+// questi eventi non arrivano mai e il pulsante a schermo resta l'unica via.
+let _pttArmato=false;
+function _armaTastoRadio(){
+  if(_pttArmato)return;
+  _pttArmato=true;
+  // Il pannello si ridisegna da solo e _radioTile puo' essere un pulsante non
+  // piu' a schermo: senza questo controllo il tasto trasmetterebbe anche dalla
+  // chat o dall'app pubblica, dove nessuno se lo aspetta.
+  window.addEventListener("omniaPttDown",function(){
+    if(!_radioTile||!document.body.contains(_radioTile))return;
+    _radioRecorder().start();
+  });
+  window.addEventListener("omniaPttUp",function(){
+    if(_radio&&_radio.isRecording())_radio.stopAndSend();
+  });
+}
 import { _renderDeviceActivation } from "./device.js";
 
 // Schermata unica dell'app di postazione finche' il dispositivo non e' stato
@@ -230,6 +250,7 @@ export function renderStationPanel(page){
   const wtTile=document.createElement("button");wtTile.type="button";
   wtTile.className="st-tile st-tile--radio";
   _radioTile=wtTile;
+  _armaTastoRadio();
   _radioIdle();
   wtTile.addEventListener("pointerdown",function(e){
     e.preventDefault();
