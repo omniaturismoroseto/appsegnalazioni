@@ -1194,6 +1194,11 @@ export function _syncUserMarker(){
       bounds.extend({lat,lng});
       bounds.extend({lat:nearestStation.lat,lng:nearestStation.lng});
       window.mapObj.fitBounds(bounds,50);
+      // Su mappa vettoriale fitBounds azzera heading e tilt (documentato da
+      // Google): senza questa riga la mappa si raddrizzava verso nord da sola
+      // appena il GPS agganciava. Rimessa qui, subito, e non al prossimo
+      // fotogramma, cosi' non si vede nessun scatto. Vedi map.js.
+      if(window._applyMapHeading)window._applyMapHeading();
       google.maps.event.addListenerOnce(window.mapObj,"bounds_changed",function(){
         if(window.mapObj.getZoom()>16)window.mapObj.setZoom(16);
       });

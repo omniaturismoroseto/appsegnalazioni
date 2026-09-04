@@ -25,6 +25,23 @@ function _savedHeadingMode(){
 function _saveHeadingMode(mode){
   try{localStorage.setItem(HEADING_PREF_KEY,mode);}catch(e){/* memoria locale non disponibile */}
 }
+function _wantedHeading(){
+  return _savedHeadingMode()==="coast"?COAST_HEADING:0;
+}
+// La mappa non deve MAI raddrizzarsi da sola. Chi guarda non ha modo di
+// ruotarla col gesto (headingInteractionEnabled e' spento e il comando bussola
+// di Google e' disattivato), quindi un heading diverso da quello scelto non
+// puo' che essere un effetto collaterale di qualcun altro: il caso vero visto
+// in spiaggia e' fitBounds(), che sulle mappe vettoriali azzera heading e tilt
+// (documentato da Google) e che _syncUserMarker chiama quando arriva il primo
+// fix GPS. Invece di rincorrere una per una le chiamate che lo azzerano,
+// rimettiamo la rotazione scelta ogni volta che qualcosa la cambia.
+export function applyHeadingPreference(){
+  if(!window.mapObj)return;
+  var want=_wantedHeading();
+  if(Math.round(window.mapObj.getHeading()||0)===want)return;
+  try{window.mapObj.setHeading(want);}catch(e){/* mappa raster: rotazione non supportata */}
+}
 
 export function renderHeader(){
   const hdr=document.getElementById("hdr");hdr.innerHTML="";
@@ -209,6 +226,11 @@ export async function initMap(){
     // mappe vettoriali (quelle con mapId, necessarie per gli Advanced Markers):
     // l'opzione mapTypeControl viene accettata ma ignorata silenziosamente,
     // quindi ricreiamo un pulsante equivalente a mano.
+    window.mapObj.addListener("heading_changed",applyHeadingPreference);
+    // core.js non importa map.js (sarebbe un giro circolare: e' map.js a
+    // importare core.js), ma _syncUserMarker deve poter rimettere la rotazione
+    // subito dopo il fitBounds che la azzera, prima che lo schermo la disegni.
+    window._applyMapHeading=applyHeadingPreference;
     addMapTypeToggle();
     addHeadingToggle();
     ensureLocamareMarker();
@@ -271,27 +293,34 @@ function addHeadingToggle(){
   btn.style.cssText="position:absolute;top:52px;right:10px;z-index:5;padding:8px 14px;"
     +"background:#fff;border:0;border-radius:3px;box-shadow:0 1px 4px -1px rgba(0,0,0,.5);"
     +"font-family:Roboto,Arial,sans-serif;font-size:13px;font-weight:600;color:#1a1a1a;cursor:pointer;";
-  function isCoast(){return Math.round(window.mapObj.getHeading()||0)!==0;}
+  // L'etichetta segue la scelta salvata, non l'heading letto dalla mappa: se
+  // qualcosa azzera la rotazione per un istante, il pulsante non deve mettersi
+  // a raccontare che siamo tornati a nord.
   function sync(){
-    btn.textContent=isCoast()?"🧭 Nord":"🧭 Costa";
-    btn.title=isCoast()?"Rimetti il nord in alto":"Gira la mappa con la costa in orizzontale";
+    var coast=_savedHeadingMode()==="coast";
+    btn.textContent=coast?"🧭 Nord":"🧭 Costa";
+    btn.title=coast?"Rimetti il nord in alto":"Gira la mappa con la costa in orizzontale";
   }
   sync();
   btn.addEventListener("click",function(){
-    var coast=!isCoast();
-    window.mapObj.setHeading(coast?COAST_HEADING:0);
-    _saveHeadingMode(coast?"coast":"north");
+    // Prima si salva la scelta, poi si gira la mappa: il guardiano su
+    // heading_changed legge la preferenza, e con l'ordine invertito
+    // rimetterebbe subito la rotazione precedente.
+    _saveHeadingMode(_savedHeadingMode()==="coast"?"north":"coast");
+    applyHeadingPreference();
     sync();
   });
   el.appendChild(btn);
   window._headingToggleBtn=btn;
+  // La rotazione esiste solo sulle mappe vettoriali: se il mapId venisse
+  // ricreato come raster, setHeading verrebbe ignorato in silenzio e il
+  // pulsante si nasconde invece di restare li' a non fare niente. Se il
+  // renderer torna vettoriale, la rotazione scelta viene rimessa.
   function checkSupport(){
     var rt=window.mapObj.getRenderingType&&window.mapObj.getRenderingType();
     if(!rt||rt==="UNINITIALIZED")return;
-    if(rt!=="VECTOR"){
-      btn.style.display="none";
-      if(window.mapObj.getHeading())window.mapObj.setHeading(0);
-    }
+    btn.style.display=rt==="VECTOR"?"":"none";
+    if(rt==="VECTOR")applyHeadingPreference();
   }
   checkSupport();
   try{window.mapObj.addListener("renderingtype_changed",checkSupport);}catch(e){}
