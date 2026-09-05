@@ -168,11 +168,61 @@ export async function _activateStationMode(deviceId,station){
     _ascoltaTurni();
     render("station");
     _registerStationPush(deviceId);
+    _battitoPostazione(deviceId);
   }catch(e){
     console.error("Errore attivazione modalità postazione:",e);
     stationMode=null;
     render(window.currentRole==="operator"?"dashboard":"home");
   }
+}
+
+// ---- Dice ogni tanto come sta questo dispositivo ----
+//
+// Prima "l'ultimo accesso" si scriveva una volta sola, quando l'app registrava
+// le notifiche: un tablet acceso da tre giorni risultava visto tre giorni fa, e
+// dalla pagina di gestione era indistinguibile da uno spento in un cassetto.
+//
+// Batteria e versione servono per la stessa ragione: sui dispositivi con il
+// kiosk quei dati li racconta lui, su tutti gli altri non li raccontava nessuno.
+// Un elenco dove meta' delle righe sono vuote non lo guarda piu' nessuno.
+//
+// La versione e' l'impronta dei pacchetti che la pagina sta usando: Vite ne
+// cambia il nome a ogni pubblicazione, quindi due dispositivi con impronte
+// diverse stanno facendo girare codice diverso - che e' esattamente cio' che si
+// vuole sapere dopo un aggiornamento.
+function _versioneWeb(){
+  try{
+    var nodi=document.querySelectorAll("script[src], link[href]");
+    var trovati=[];
+    Array.prototype.forEach.call(nodi,function(n){
+      var u=n.getAttribute("src")||n.getAttribute("href")||"";
+      var i=u.indexOf("assets/");
+      if(i>=0&&/[.]js$/.test(u))trovati.push(u.slice(i+7));
+    });
+    return trovati.sort().join(",").slice(0,90);
+  }catch(e){return "";}
+}
+
+async function _batteria(){
+  try{
+    if(!navigator.getBattery)return null;
+    var b=await navigator.getBattery();
+    return Math.round((b.level||0)*100);
+  }catch(e){return null;}
+}
+
+export function _battitoPostazione(deviceId){
+  if(!deviceId)return;
+  async function scrivi(){
+    try{
+      var dati={lastSeen:Date.now(),versioneWeb:_versioneWeb()};
+      var liv=await _batteria();
+      if(liv!==null)dati.batteria=liv;
+      await stationDevicesRef.child(deviceId).update(dati);
+    }catch(e){ /* rete assente: si riprova al giro dopo */ }
+  }
+  scrivi();
+  setInterval(scrivi,5*60*1000);
 }
 
 // ---- Gestisce una push ricevuta ad app aperta (schermo acceso): banner + suono in loop ----
