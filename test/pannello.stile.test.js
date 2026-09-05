@@ -22,7 +22,7 @@ function pannello() {
   return page;
 }
 
-const CLASSI_AMMESSE = ["st-tile", "st-note", "st-flagchooser"];
+const CLASSI_AMMESSE = ["st-tile", "st-flagchooser"];
 
 describe("stile del pannello di postazione", () => {
   it("ogni riquadro porta una classe, nessuno e' lasciato agli stili in linea", () => {
@@ -55,21 +55,39 @@ describe("stile del pannello di postazione", () => {
     expect(bar.querySelector(".st-em__fill")).not.toBeNull();
   });
 
-  it("la bandiera occupa la riga intera, nota e meteo la dividono", () => {
+  it("nella griglia ci sono solo cose che si premono; nota e meteo stanno fuori", () => {
+    // Nota e meteo sono due righe da leggere, non bersagli da premere in fretta.
+    // Dentro la griglia si prendevano una riga intera - un quarto dello schermo -
+    // e la toglievano ai riquadri che invece si premono davvero.
     const page = pannello();
-    const wide = Array.from(page.querySelectorAll(".st-grid .st-wide"));
-    // La bandiera e lo stato che si legge da lontano: tiene la riga tutta per se.
+    expect(page.querySelector(".st-grid .st-note")).toBeNull();
+    expect(page.querySelector(".st-grid .st-meteo")).toBeNull();
+    const strisce = page.querySelector(".st-strisce");
+    expect(strisce).not.toBeNull();
+    expect(strisce.querySelector(".st-note")).not.toBeNull();
+    expect(strisce.querySelector(".st-meteo")).not.toBeNull();
+    // La bandiera e' lo stato che si legge da lontano: tiene la riga tutta per
+    // se, e con lei solo il suo selettore di colore.
     const bandiera = page.querySelector(".st-grid .st-tile.st-wide");
     expect(bandiera).not.toBeNull();
     expect(bandiera.textContent).toMatch(/BANDIERA/);
-    // Nota e meteo condividono una riga: cosi ne resta una in piu per il
-    // pulsante EMERGENZA, che deve essere il bersaglio piu grande dello schermo.
-    const nota = page.querySelector(".st-note");
-    const meteo = Array.from(page.querySelectorAll(".st-grid .st-tile")).find((n) => /METEO/.test(n.textContent));
-    expect(nota.classList.contains("st-wide")).toBe(false);
-    expect(meteo.classList.contains("st-wide")).toBe(false);
-    // Restano a tutta larghezza solo bandiera e il suo selettore di colore.
-    expect(wide.length).toBe(2);
+    expect(page.querySelectorAll(".st-grid .st-wide").length).toBe(2);
+  });
+
+  it("le icone sono disegnate qui, non affidate alle emoji di sistema", () => {
+    // Le emoji erano grandi quanto la scritta accanto: a un braccio di distanza
+    // e sotto il sole non si riconoscevano, e cambiavano forma da un modello di
+    // telefono all'altro. Ogni riquadro porta il proprio tracciato.
+    const page = pannello();
+    const riquadri = Array.from(page.querySelectorAll(".st-grid .st-tile"));
+    expect(riquadri.length).toBeGreaterThan(0);
+    const senzaIcona = riquadri.filter((t) => !t.querySelector("svg"));
+    expect(senzaIcona.map((t) => t.textContent.trim())).toEqual([]);
+    // E nelle scritte dei riquadri non ne devono ricomparire.
+    const conEmoji = riquadri
+      .map((t) => t.textContent)
+      .filter((t) => /\p{Extended_Pictographic}/u.test(t));
+    expect(conEmoji).toEqual([]);
   });
 });
 
@@ -127,38 +145,36 @@ describe("il pannello sta dentro lo schermo", () => {
     expect(r).toMatch(/min-height:0/);
   });
 
-  it("sugli schermi bassi si stringe prima la barra EMERGENZA, non i riquadri", () => {
-    // L ordine in cui si cede spazio conta: la barra e una riga fissa che sa
-    // rimpicciolirsi senza perdere niente, i riquadri sono quello che si preme.
-    expect(css).toMatch(/@media\(max-height:560px\)/);
-    const bassi = css.slice(css.indexOf("@media(max-height:560px)"));
-    expect(bassi).toMatch(/\.st-em__btn\{min-height:84px/);
-    expect(bassi).toMatch(/\.st-wrap\{padding-bottom:104px/);
+  it("la barra EMERGENZA e la riserva che le lascia posto sono un numero solo", () => {
+    // Non tre elenchi di numeri da tenere allineati a mano - pannello, chat e
+    // barra - ma una coppia di variabili per scaglione, letta da tutti e tre.
+    // Quando erano tre elenchi si sono slegati davvero.
+    expect((css.match(/--st-em-alt:/g) || []).length).toBe(3);
+    expect((css.match(/--st-em-riserva:/g) || []).length).toBe(3);
+    expect(regola(".st-wrap")).toMatch(/padding-bottom:var\(--st-em-riserva\)/);
+    expect(regola(".st-chat")).toMatch(/padding-bottom:var\(--st-em-riserva\)/);
+    expect(regola(".st-em__btn")).toMatch(/min-height:var\(--st-em-alt\)/);
   });
 
   it("la riserva in fondo copre la barra EMERGENZA in ogni scaglione", () => {
     // Se la riserva fosse piu bassa della barra, l ultima riga di riquadri
     // finirebbe sotto: e la stessa coppia di misure che si era slegata.
-    const scaglioni = [
-      { barra: 140, riserva: 170 },   // schermi normali
-      { barra: 110, riserva: 138 },   // max-height:700px
-      { barra: 84, riserva: 104 },    // max-height:560px
-    ];
-    scaglioni.forEach(({ barra, riserva }) => {
+    const coppie = Array.from(
+      css.matchAll(/--st-em-alt:(\d+)px[^}]*?--st-em-riserva:(\d+)px/g)
+    ).map((m) => ({ barra: Number(m[1]), riserva: Number(m[2]) }));
+    expect(coppie.length, "ogni scaglione deve dichiarare la coppia").toBe(3);
+    coppie.forEach(({ barra, riserva }) => {
       expect(riserva, "riserva " + riserva + " non copre una barra da " + barra)
         .toBeGreaterThan(barra);
     });
-    expect(regola(".st-em__btn")).toMatch(/min-height:140px/);
-    expect(regola(".st-wrap")).toMatch(/padding-bottom:170px/);
   });
 
-  it("la chat riserva lo stesso spazio del pannello: sotto c e la stessa barra", () => {
-    // Quando le due misure si erano slegate, in orizzontale la chat lasciava
-    // una striscia vuota alta quanto la differenza.
-    expect(regola(".st-chat")).toMatch(/padding-bottom:170px/);
-    const bassi = css.slice(css.indexOf("@media(max-height:700px)"));
-    expect(bassi).toMatch(/\.st-chat\{padding-bottom:138px/);
-    const bassissimi = css.slice(css.indexOf("@media(max-height:560px)"));
-    expect(bassissimi).toMatch(/\.st-chat\{padding-bottom:104px/);
+  it("sugli schermi bassi si stringe prima la barra EMERGENZA, non i riquadri", () => {
+    // L ordine in cui si cede spazio conta: la barra e una riga fissa che sa
+    // rimpicciolirsi senza perdere niente, i riquadri sono quello che si preme.
+    expect(css).toMatch(/@media\(max-height:560px\)/);
+    const bassi = css.slice(css.indexOf("@media(max-height:560px)"));
+    expect(bassi).toMatch(/--st-em-alt:84px/);
+    expect(bassi).toMatch(/--st-em-riserva:104px/);
   });
 });

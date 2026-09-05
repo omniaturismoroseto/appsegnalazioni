@@ -398,94 +398,245 @@ body.postazione #content{padding:12px}
    ha destinatario, e occupava spazio che serve ai riquadri. */
 body.postazione #pie-pagina{display:none}
 
-/* Alto quanto lo schermo, non "almeno alto quanto": con min-height il pannello
-   cresceva oltre il bordo appena le righe non ci stavano, e in orizzontale
-   chat e radio finivano sotto la barra EMERGENZA. Con height il contenitore e'
-   un vincolo, e a spartirsi lo spazio che c'e' e' la griglia.
+/* La barra EMERGENZA e la riserva che le lascia chi le sta sopra: due misure
+   che devono muoversi insieme, quindi vivono in un posto solo. Le leggono il
+   pannello, la chat aperta dal pannello e la barra stessa - tre contenitori
+   diversi, un numero solo. Quando erano tre numeri si sono slegati davvero:
+   in orizzontale la chat lasciava una striscia vuota, e prima ancora due
+   riquadri finivano sotto la barra, a schermo ma non premibili. */
+:root{--st-em-alt:140px;--st-em-riserva:170px}
 
-   La riserva in fondo tiene conto della barra EMERGENZA, che e' fissa e
-   coprirebbe l'ultima riga. Va tenuta in accordo con min-height del pulsante
-   piu' sotto: se cresce uno deve crescere l'altra, in ogni scaglione. */
-.st-wrap{display:flex;flex-direction:column;height:calc(100dvh - 24px);padding-bottom:170px}
+/* ---- Pannello di postazione ----
+   Le misure non stanno piu' sparse regola per regola: stanno in variabili sul
+   contenitore. Gli scaglioni per schermi bassi ne ridefiniscono cinque invece
+   di riscrivere venti regole, e la coppia che conta - altezza della barra
+   EMERGENZA e riserva in fondo - si legge in due righe vicine, quindi non si
+   puo' piu' slegare senza accorgersene. Era gia' successo: in orizzontale
+   chat e radio finivano sotto la barra, a schermo ma non premibili. */
+.st-wrap{
+  --st-gap:8px;
+  --st-radius:14px;
+  --st-ico:26px;
+  --st-label:13.5px;
+  --st-big:30px;
+  --st-sub:14px;
+  display:flex;flex-direction:column;gap:var(--st-gap);
+  height:calc(100dvh - 24px);
+  padding-bottom:var(--st-em-riserva);
+}
 
-/* ---- Intestazione ---- */
-.st-hdr{background:#D62B1F;color:#fff;border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:10px;
-  display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.st-hdr__title{font-size:20px;font-weight:700}
-.st-hdr__clock{font-size:14px;opacity:.85}
-/* Chi e' in turno: una fascia sotto l'intestazione, non dentro. Nell'intestazione
-   avrebbe dovuto dividersi lo spazio con numero e orologio e sarebbe finita
-   troncata proprio sui nomi lunghi. */
-.st-turno{background:#1f2937;color:#fff;border-radius:var(--radius-lg);
-  padding:10px 16px;margin-bottom:10px;display:flex;align-items:baseline;gap:10px}
-.st-turno__label{font-size:12.5px;font-weight:700;letter-spacing:.06em;opacity:.75;flex:none}
-.st-turno__nome{font-size:19px;font-weight:800;line-height:1.15}
+/* ---- Intestazione ----
+   Una fascia sola invece di due. Prima numero+nome e il bagnino in turno erano
+   due blocchi impilati, con due bordi e due margini: quaranta pixel spesi per
+   una riga di testo. Il turno ora e' una riga dentro la stessa fascia,
+   separata da un filo, e non compete piu' per lo spazio col nome - che era la
+   ragione per cui a suo tempo era stato tirato fuori dall'intestazione. */
+.st-hdr{background:var(--red);color:#fff;border-radius:var(--st-radius);
+  padding:10px 14px;display:grid;grid-template-columns:auto 1fr auto;
+  align-items:center;column-gap:12px;row-gap:8px;flex:none}
+.st-hdr__num{font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.02em;
+  background:rgba(0,0,0,.24);border-radius:10px;padding:3px 10px}
+/* Il nome puo' essere lungo quanto "Spiaggia Libera tra Orsa Minore e
+   Scirocco": due righe al massimo, poi taglia. L'orologio resta al suo posto
+   qualunque cosa succeda al nome. */
+.st-hdr__nome{font-size:16.5px;font-weight:700;line-height:1.2;min-width:0;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.st-hdr__clock{font-size:15px;font-weight:700;opacity:.92;font-variant-numeric:tabular-nums}
+.st-turno{grid-column:1/-1;display:flex;align-items:baseline;gap:9px;
+  border-top:1px solid rgba(255,255,255,.3);padding-top:8px}
+.st-turno__label{font-size:11.5px;font-weight:700;letter-spacing:.08em;opacity:.8;flex:none}
+.st-turno__nome{font-size:17px;font-weight:800;line-height:1.15;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ---- Griglia ----
-   Le righe usano minmax(0,1fr): si spartiscono in parti uguali lo spazio che
-   c'e', qualunque esso sia. Prima il minimo era 56px - la misura di un
-   bersaglio sicuro per un dito - ma un minimo, quando lo spazio non basta,
-   non si comprime: si sfonda. Su un tablet in orizzontale le ultime due righe
-   finivano sotto la barra EMERGENZA, cioe' proprio dove non si potevano piu'
-   premere.
-
-   I 56px restano garantiti da come e' fatto il resto: sugli schermi bassi si
-   stringono prima intestazione, fascia del turno e barra EMERGENZA (vedi piu'
-   sotto), e alla griglia resta abbastanza da tenere le righe sopra quella
-   misura. Se un giorno uno schermo fosse cosi' basso da non farcela, i
-   riquadri diventano piu' bassi ma restano tutti a schermo e premibili: e'
-   meglio di due riquadri giusti e due irraggiungibili.
-
-   min-height:0 e' indispensabile: senza, un elemento flex non scende mai sotto
-   la dimensione del proprio contenuto, e la griglia tornerebbe a sfondare. */
-/* Due colonne a qualunque larghezza. Con tre, le coppie segnalazioni/segnala e
-   chat/radio ne occupavano due e lasciavano un buco nella terza: meglio due
-   riquadri larghi che tre con un vuoto in fondo alla riga. */
-.st-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;flex:1;min-height:0;grid-auto-rows:minmax(0,1fr)}
-/* 1/-1 arriva in fondo qualunque sia il numero di colonne: cosi' i riquadri a
-   tutta larghezza non vanno ritoccati a ogni cambio di formato. */
+   Tre righe invece di quattro: nota e meteo sono uscite di qui (vedi le
+   strisce, piu' sotto) e quello che si libera va ai riquadri che si premono
+   davvero, che diventano piu' alti di un terzo.
+   minmax(0,1fr) e min-height:0 restano il patto che impedisce alla griglia di
+   sfondare sotto la barra EMERGENZA sui tablet bassi: un minimo in pixel, li',
+   non si comprime - sfonda. */
+.st-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--st-gap);
+  flex:1;min-height:0;grid-auto-rows:minmax(0,1fr)}
+/* 1/-1 arriva in fondo qualunque sia il numero di colonne. */
 .st-grid .st-wide{grid-column:1/-1}
-@media(min-width:820px){.st-grid{gap:10px}}
 
-/* ---- Riquadro ---- */
-.st-tile{border:none;border-radius:8px;padding:12px 14px;text-align:left;cursor:pointer;
-  display:flex;flex-direction:column;justify-content:space-between;gap:4px;
-  color:#fff;background:var(--st-tinta,#4a4a46);font-family:inherit;
+/* ---- Riquadro ----
+   Il contenuto e' centrato, non spinto ai due bordi. Con space-between e due
+   soli figli, l'etichetta finiva in alto e il sottotitolo in fondo, e in mezzo
+   restava un buco alto meta' riquadro: era la ragione principale per cui la
+   schermata sembrava non finita.
+   La filigrana - l'icona grande e appena visibile - riempie quello spazio con
+   qualcosa che si riconosce prima di leggere. */
+.st-tile{position:relative;overflow:hidden;border:none;border-radius:var(--st-radius);
+  padding:12px 14px;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:center;gap:5px;
+  color:#fff;background:var(--st-tinta,#3f3f46);font-family:inherit;
   -webkit-user-select:none;user-select:none}
 /* Il colore del riquadro non cambia al tocco: la regola generica di hover
    schiariva lo sfondo e il testo bianco spariva - il riquadro sembrava
    diventato bianco o trasparente. */
-.st-tile:hover,.st-tile:focus,.st-tile:active{background:var(--st-tinta,#4a4a46)}
-.st-note:hover,.st-note:focus,.st-note:active{background:#333}
-.st-flagchooser button:hover,.st-flagchooser button:active{background:var(--st-tinta,#4a4a46)}
-.st-em__btn:hover,.st-em__btn:active{background:#a5140a}
-.st-tile__label{font-size:14px;font-weight:700;opacity:.9;letter-spacing:.02em}
-.st-tile__big{font-size:28px;font-weight:700;display:block;line-height:1.05}
-.st-tile__sub{font-size:14px;opacity:.9}
-/* L'anteprima dell'ultima segnalazione dentro il riquadro blu. Va a capo al
-   massimo due volte: quello che avanza si legge nella pagina dedicata, e un
-   riquadro che si allunga sposterebbe tutti gli altri. */
-.st-tile__anteprima{font-size:17px;font-weight:700;line-height:1.2;
+.st-tile:hover,.st-tile:focus,.st-tile:active{background:var(--st-tinta,#3f3f46)}
+/* flex:none su tutti i testi: senza, quando lo spazio non basta si comprimono
+   a vicenda e non si legge piu' nessuno dei tre. Meglio nasconderne uno negli
+   scaglioni bassi, dove e' una scelta, che schiacciarli tutti per caso. */
+.st-tile__testa{display:flex;align-items:center;gap:8px;position:relative;flex:none;
+  font-size:var(--st-label);font-weight:700;letter-spacing:.05em;opacity:.95}
+.st-tile__ico{width:var(--st-ico);height:var(--st-ico);flex:none}
+.st-tile__ico svg{width:100%;height:100%;display:block}
+.st-tile__big{font-size:var(--st-big);font-weight:800;line-height:1.05;position:relative;flex:none}
+.st-tile__sub{font-size:var(--st-sub);opacity:.9;position:relative;line-height:1.25;flex:none}
+/* L'anteprima dell'ultima segnalazione: due righe al massimo, quello che
+   avanza si legge nella pagina dedicata. */
+.st-tile__anteprima{font-size:calc(var(--st-sub) + 3px);font-weight:700;line-height:1.2;position:relative;flex:none;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.st-tile--segnala{align-items:center;justify-content:center;gap:2px;text-align:center}
-/* La radio si tiene premuta: touch-action none impedisce al browser di
-   interpretare la pressione come uno scorrimento e annullarla. */
-.st-tile--radio{touch-action:none;-webkit-touch-callout:none;transition:background .12s}
-.st-tile--segnala .st-tile__big{font-size:22px}
+/* Ancorata al centro del bordo destro, non a un angolo: l'altezza del riquadro
+   cambia molto fra telefono e tablet in orizzontale, e dall'angolo l'icona
+   usciva tagliata in modo diverso a ogni formato - una scheggia che non si
+   riconosceva piu'. Dal centro esce sempre lo stesso mezzo disegno. */
+.st-tile__filigrana{position:absolute;right:-20px;top:50%;transform:translateY(-50%);
+  width:104px;height:104px;opacity:.11;pointer-events:none}
+.st-tile__filigrana svg{width:100%;height:100%;display:block}
 
-/* ---- Scelta della bandiera ---- */
-.st-flagchooser{display:none;grid-template-columns:repeat(3,1fr);gap:8px}
+/* ---- Bandiera ----
+   Lo sfondo resta il colore vero della bandiera: e' l'unica cosa del pannello
+   che si legge da venti metri, e la si legge dal colore, non dalla parola.
+   La parola pero' non puo' stare in bianco sul giallo - 1,6:1, illeggibile al
+   sole, ed era proprio il riquadro piu' grande dello schermo. Sta su una targa
+   scura appoggiata sopra: bianco su quasi nero, oltre 11:1 per tutti e tre gli
+   stati, e il colore attorno non perde un millimetro. */
+.st-tile--bandiera{align-items:center;justify-content:center}
+.st-bandiera__targa{display:inline-flex;align-items:center;gap:12px;
+  background:rgba(0,0,0,.74);border-radius:12px;padding:9px 16px 10px;max-width:100%}
+.st-bandiera__ico{width:calc(var(--st-ico) + 16px);height:calc(var(--st-ico) + 16px);flex:none}
+.st-bandiera__ico svg{width:100%;height:100%;display:block}
+.st-bandiera__testi{display:flex;flex-direction:column;gap:2px;min-width:0}
+.st-bandiera__label{font-size:11.5px;font-weight:700;letter-spacing:.1em;opacity:.75}
+.st-bandiera__parola{font-size:calc(var(--st-big) + 8px);font-weight:800;line-height:1;letter-spacing:.01em}
+.st-bandiera__hint{font-size:12.5px;opacity:.72;margin-top:1px}
+
+/* ---- Scelta della bandiera ----
+   Stessa targa scura del riquadro: sul giallo la parola in bianco sparirebbe
+   qui esattamente come sparirebbe la'. */
+.st-flagchooser{display:none;grid-template-columns:repeat(3,1fr);gap:var(--st-gap)}
 .st-flagchooser.is-aperto{display:grid}
-.st-flagchooser button{border:none;border-radius:8px;min-height:56px;color:#fff;font-weight:700;font-size:15px;
-  cursor:pointer;background:var(--st-tinta,#4a4a46);font-family:inherit}
+.st-flagchooser button{border:none;border-radius:var(--st-radius);min-height:56px;
+  color:#fff;font-weight:800;font-size:15px;letter-spacing:.06em;
+  cursor:pointer;background:var(--st-tinta,#3f3f46);font-family:inherit;
+  display:flex;align-items:center;justify-content:center}
+.st-flagchooser button span{background:rgba(0,0,0,.74);border-radius:8px;padding:5px 12px}
 .st-flagchooser button.is-attiva{outline:3px solid #0b0b0b;outline-offset:-3px}
+.st-flagchooser button:hover,.st-flagchooser button:active{background:var(--st-tinta,#3f3f46)}
 
-/* ---- Nota di postazione ---- */
-.st-note{background:#333;color:#fff;border:none;border-radius:8px;padding:12px 14px;cursor:pointer;text-align:left;
-  display:flex;flex-direction:column;justify-content:space-between;gap:4px;font-family:inherit}
-.st-note__label{font-size:14px;font-weight:700;opacity:.9}
-/* Il testo della nota puo essere lungo: due righe al massimo, poi taglia. */
-.st-note__val{font-size:14px;opacity:.85;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+/* ---- SEGNALA ----
+   Qui l'icona e' gia' grande e al centro: una filigrana dietro la stessa forma
+   sarebbe solo un doppione sfocato. */
+.st-tile--segnala .st-tile__filigrana{display:none}
+.st-tile--segnala{align-items:center;justify-content:center;text-align:center;gap:6px}
+.st-tile--segnala .st-tile__ico{width:calc(var(--st-ico) + 14px);height:calc(var(--st-ico) + 14px)}
+.st-tile--segnala .st-tile__big{font-size:calc(var(--st-big) - 4px);letter-spacing:.04em}
+
+/* ---- Radio ----
+   Si tiene premuta: touch-action none impedisce al browser di leggere la
+   pressione come uno scorrimento e annullarla. */
+.st-tile--radio{touch-action:none;-webkit-touch-callout:none;transition:background .12s}
+
+/* ---- Strisce basse: nota di postazione e meteo ----
+   Due righe da leggere, non bersagli da premere in fretta. Dentro la griglia
+   si prendevano una riga intera e la toglievano ai riquadri che invece si
+   premono. Affiancate dove c'e' larghezza; sul telefono impilate, perche' a
+   meta' schermo la nota resterebbe un moncone di tre parole. */
+.st-strisce{display:grid;grid-template-columns:1fr;gap:var(--st-gap);flex:none}
+@media(min-width:600px){.st-strisce{grid-template-columns:1fr 1fr}}
+.st-striscia{display:flex;align-items:center;gap:11px;min-height:58px;min-width:0;
+  background:#262626;color:#fff;border:none;border-radius:var(--st-radius);
+  padding:9px 14px;text-align:left;font-family:inherit}
+button.st-striscia{cursor:pointer}
+.st-striscia:hover,.st-striscia:focus,.st-striscia:active{background:#262626}
+.st-striscia__ico{width:22px;height:22px;flex:none;opacity:.85}
+.st-striscia__ico svg{width:100%;height:100%;display:block}
+.st-striscia__testi{display:flex;flex-direction:column;gap:1px;min-width:0}
+.st-striscia__label{font-size:11.5px;font-weight:700;letter-spacing:.08em;opacity:.7}
+/* Una riga sola, con i puntini: la nota per intero si legge aprendola. */
+.st-striscia__val{font-size:14.5px;opacity:.95;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.st-striscia--vuota .st-striscia__val{opacity:.6;font-style:italic}
+/* Il meteo non si preme e non ha ancora dati: l'accento azzurro sull'icona e'
+   l'unica cosa che lo distingue dalla nota, e basta cosi'. */
+.st-meteo .st-striscia__ico{color:#38bdf8;opacity:1}
+
+/* ---- Barra EMERGENZA ----
+   Resta il bersaglio piu' grande dello schermo. L'altezza e' la stessa
+   variabile che la riserva in fondo al pannello deve superare. */
+.st-em{position:fixed;left:0;right:0;bottom:0;z-index:500;background:#0b0b0b;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
+.st-em__btn{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:12px;
+  width:100%;min-height:var(--st-em-alt);
+  background:#a5140a;color:#fff;text-align:center;padding:16px 18px;border:none;border-radius:14px;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);
+  font-family:inherit;font-weight:800;font-size:22px;letter-spacing:.03em;cursor:pointer;
+  -webkit-user-select:none;user-select:none}
+.st-em__btn:hover,.st-em__btn:active{background:#a5140a}
+.st-em__fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:rgba(255,255,255,.35);transition:width linear}
+.st-em__ico{position:relative;width:38px;height:38px;flex:none}
+.st-em__ico svg{width:100%;height:100%;display:block}
+.st-em__label{position:relative;line-height:1.15}
+
+/* ---- Schermi bassi (tablet in orizzontale) ----
+   Si cede spazio in ordine: prima l'intestazione e la barra EMERGENZA, che
+   sono righe fisse e sanno stringersi senza perdere niente; i riquadri per
+   ultimi, perche' sono quello che si preme. */
+@media(max-height:700px){
+  :root{--st-em-alt:110px;--st-em-riserva:134px}
+  .st-wrap{--st-gap:6px;--st-ico:23px;--st-label:12.5px;--st-big:24px;--st-sub:13px}
+  .st-hdr{padding:8px 13px;row-gap:6px}
+  .st-hdr__num{font-size:20px}
+  .st-hdr__nome{font-size:15px}
+  .st-turno{padding-top:6px}
+  .st-turno__nome{font-size:15.5px}
+  .st-striscia{min-height:48px}
+  .st-em__btn{font-size:21px;padding:12px 16px}
+  .st-tile__filigrana{width:80px;height:80px;right:-16px}
+  /* In orizzontale la riga della bandiera e' alta un centinaio di pixel: la
+     targa si mette in riga e lascia cadere il suggerimento, che a schermo
+     basso ruberebbe l'altezza alla parola - ed e' la parola che si legge. */
+  .st-bandiera__targa{padding:7px 14px 8px;gap:10px}
+  .st-bandiera__testi{flex-direction:row;align-items:baseline;gap:9px}
+  .st-bandiera__hint{display:none}
+}
+/* Tablet davvero bassi in orizzontale (800x480 e simili). Qui la barra
+   EMERGENZA da sola si prendeva quasi un terzo dello schermo: resta un
+   bersaglio enorme anche a 84px - piu' alto di un riquadro - e quello che si
+   libera torna alla griglia. */
+@media(max-height:560px){
+  :root{--st-em-alt:84px;--st-em-riserva:104px}
+  .st-wrap{--st-gap:5px;--st-ico:20px;--st-label:11.5px;--st-big:20px;--st-sub:12px}
+  .st-em{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
+  .st-hdr{padding:6px 12px;row-gap:5px}
+  .st-hdr__num{font-size:17px;padding:2px 8px}
+  .st-hdr__nome{font-size:13.5px;-webkit-line-clamp:1}
+  .st-turno{padding-top:5px}
+  .st-turno__label{font-size:10.5px}
+  .st-turno__nome{font-size:14px}
+  .st-striscia{min-height:42px;padding:6px 12px}
+  .st-striscia__val{font-size:13px}
+  .st-em__btn{font-size:18px;padding:10px 14px;gap:10px}
+  .st-em__ico{width:30px;height:30px}
+  .st-tile__filigrana{width:64px;height:64px;right:-12px}
+  /* Su un riquadro alto una settantina di pixel l'anteprima non ci sta: gli
+     altri testi si schiacciavano per farle posto e non si leggeva piu' nessuno
+     dei tre. Qui sparisce, e restano il conto e l'ora - esattamente quello che
+     il riquadro diceva prima di avere un'anteprima. Il testo per intero e'
+     nella pagina dedicata, a un tocco. */
+  .st-tile__anteprima{display:none}
+}
+
+/* ---- Schermi ampi: si legge da lontano ---- */
+@media(min-width:820px) and (min-height:701px){
+  .st-wrap{--st-gap:10px;--st-ico:32px;--st-label:15px;--st-big:36px;--st-sub:15.5px}
+  .st-hdr__num{font-size:28px}
+  .st-hdr__nome{font-size:19px}
+  .st-turno__nome{font-size:20px}
+  .st-tile__filigrana{width:128px;height:128px;right:-24px}
+}
 
 /* ---- Elenco delle segnalazioni aperte ---- */
 /* ---- Segnalazioni aperte della postazione (pagina dedicata) ----
@@ -544,67 +695,6 @@ body.postazione #pie-pagina{display:none}
    vuota prima ancora che una foto sia stata scattata. */
 .sr-chiudi__btn[hidden],.sr-conferma[hidden],.seg-anteprima[hidden],.seg-foto-btn[hidden]{display:none}
 
-/* ---- Barra EMERGENZA ---- */
-.st-em{position:fixed;left:0;right:0;bottom:0;z-index:500;background:#0b0b0b;
-  padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
-.st-em__btn{position:relative;overflow:hidden;display:block;width:100%;margin:0 auto;min-height:140px;
-  background:#a5140a;color:#fff;text-align:center;padding:20px 18px;border:none;border-radius:8px;
-  font-family:inherit;font-weight:700;font-size:22px;letter-spacing:.03em;cursor:pointer;
-  -webkit-user-select:none;user-select:none}
-.st-em__fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:rgba(255,255,255,.35);transition:width linear}
-.st-em__label{position:relative}
-
-/* ---- Schermi bassi (tablet in orizzontale) ----
-   Con molte righe lo spazio verticale e' poco: si stringono margini e testi
-   invece di far ricomparire lo scorrimento, che su un pannello da consultare
-   con un'occhiata e' il difetto peggiore.
-
-   L'ordine in cui si cede spazio non e' casuale: prima intestazione, fascia
-   del turno e barra EMERGENZA, che sono righe fisse e sanno stringersi senza
-   perdere niente; i riquadri per ultimi, perche' sono quello che si preme. */
-@media(max-height:700px){
-  .st-grid{gap:6px}
-  .st-tile{padding:8px 12px}
-  .st-tile__label{font-size:13px}
-  .st-tile__big{font-size:22px}
-  .st-tile__sub{font-size:12.5px}
-  .st-tile__anteprima{font-size:15px}
-  .st-hdr{padding:8px 14px;margin-bottom:6px}
-  .st-hdr__title{font-size:17px}
-  .st-turno{padding:6px 14px;margin-bottom:6px}
-  .st-turno__nome{font-size:17px}
-  .st-em__btn{min-height:110px;padding:12px 18px;font-size:21px}
-  .st-wrap{padding-bottom:138px}
-}
-
-/* Tablet davvero bassi in orizzontale (800x480 e simili). Qui la barra
-   EMERGENZA da sola si prendeva quasi un terzo dello schermo e le ultime due
-   righe di riquadri finivano sotto: resta un bersaglio enorme anche a 84px -
-   piu' alto di un riquadro - e quello che si libera torna alla griglia. */
-@media(max-height:560px){
-  .st-hdr{padding:6px 12px;margin-bottom:5px}
-  .st-hdr__title{font-size:15px}
-  .st-hdr__clock{font-size:13px}
-  .st-turno{padding:5px 12px;margin-bottom:5px}
-  .st-turno__label{font-size:11px}
-  .st-turno__nome{font-size:15px}
-  .st-tile{padding:6px 10px}
-  .st-tile__label{font-size:12px}
-  .st-tile__big{font-size:19px}
-  .st-tile__sub{font-size:11.5px}
-  .st-tile__anteprima{font-size:14px}
-  .st-em{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
-  .st-em__btn{min-height:84px;padding:10px 14px;font-size:19px}
-  .st-wrap{padding-bottom:104px}
-}
-
-/* ---- Schermi ampi: testi piu' grandi, si legge da lontano ---- */
-@media(min-width:820px) and (min-height:701px){
-  .st-tile__label{font-size:15px}
-  .st-tile__sub{font-size:15px}
-  .st-tile__big{font-size:34px}
-}
-
 /* ---- Pulsanti del popup del vocale ----
    Stessa filosofia dei riquadri: bersagli grandi, non pulsantini in fila. */
 .popup-azioni{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -625,22 +715,17 @@ body.postazione #pie-pagina{display:none}
    la barra EMERGENZA che resta visibile anche qui. */
 /* Altezza esatta, non minima: cosi la pagina non scorre e i comandi in fondo
    restano sempre a schermo. A scorrere e solo l elenco dei messaggi. */
-.st-chat{display:flex;flex-direction:column;height:calc(100dvh - 24px);padding-bottom:170px;overflow:hidden}
+.st-chat{display:flex;flex-direction:column;height:calc(100dvh - 24px);padding-bottom:var(--st-em-riserva);overflow:hidden}
 .st-chat .chat-wrap{flex:1 1 0;height:auto;min-height:0}
 /* Il ritorno al pannello era un testo grigio tenue: su un tablet al sole non
    si vedeva. Diventa un pulsante vero, scuro e alto quanto un bersaglio. */
 .st-chat .back-btn{flex:0 0 auto;background:#333;color:#fff;border-radius:10px;
   padding:12px 16px;font-size:16px;font-weight:700;margin-bottom:10px;text-align:left;width:100%}
 .st-chat .back-btn:hover{background:#444;color:#fff}
-/* La riserva della chat segue quella del pannello, scaglione per scaglione:
-   sotto c'e' la stessa barra EMERGENZA. Quando le due si erano slegate, in
-   orizzontale la chat lasciava una striscia vuota alta quanto la differenza. */
-@media(max-height:700px){
-  .st-chat{padding-bottom:138px}
-}
-@media(max-height:560px){
-  .st-chat{padding-bottom:104px}
-}
+/* La riserva della chat non si ricopia piu' scaglione per scaglione: e' la
+   stessa variabile del pannello, perche' sotto c'e' la stessa barra. Quando
+   erano due elenchi di numeri si sono slegati, e in orizzontale la chat
+   lasciava una striscia vuota alta quanto la differenza. */
 
 /* ---- Messaggi della chat ----
    Si leggono in piedi, alla luce del sole, tenendo il tablet a un braccio di
