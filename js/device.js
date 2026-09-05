@@ -31,6 +31,22 @@ export function _renderDeviceActivation(wrap,onRef){
   box.textContent="Verifica dello stato del dispositivo…";
   wrap.appendChild(box);
 
+  // Dice se questo dispositivo e' amministrato da un kiosk e cosa gli ha
+  // detto. Su un tablet normale resta scritto che non lo e', ed e' giusto:
+  // e' un'informazione, non un errore.
+  //
+  // Senza questa riga, un'identita' che non arriva e' indistinguibile da un
+  // dispositivo non amministrato - e sono due cose molto diverse da cercare.
+  const stato=document.createElement("div");
+  stato.style.cssText="font-size:11.5px;color:var(--text2);margin-top:8px";
+  const _l=window._omniaLettura;
+  stato.textContent = !_l ? "Kiosk: non ancora letto"
+    : _l.assente ? "Kiosk: assente su questo dispositivo"
+    : (_l.deviceId||_l.postazione)
+      ? "Kiosk: postazione "+(_l.postazione||"non indicata")+" · identita' "+(_l.deviceId?"ricevuta":"non ricevuta")
+      : "Kiosk: presente ma non ha ancora indicato la postazione";
+  wrap.appendChild(stato);
+
   const ref=stationDevicesRef.child(deviceId);
   if(onRef)onRef(ref);
   ref.on("value",function(snap){

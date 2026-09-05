@@ -52,8 +52,8 @@ avviaAutoAggiornamento();
  */
 function _identitaDalKiosk() {
   try {
-    var plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Gestito;
-    if (!plugin) return Promise.resolve();
+    var plugin = _componente();
+    if (!plugin) { window._omniaLettura = { assente: true }; return Promise.resolve(); }
 
     // Due secondi e non uno di piu'.
     //
@@ -68,9 +68,28 @@ function _identitaDalKiosk() {
   }
 }
 
+/**
+ * Trova il componente, per tutte le strade possibili.
+ *
+ * Capacitor ne offre due, e quale delle due funzioni dipende da come la pagina
+ * e' stata caricata. Provarne una sola significa che, se e' quella sbagliata,
+ * il dispositivo si comporta come se non fosse amministrato - senza dire niente
+ * e senza che nessuno capisca perche'.
+ */
+function _componente() {
+  var C = window.Capacitor;
+  if (!C) return null;
+  if (C.Plugins && C.Plugins.Gestito) return C.Plugins.Gestito;
+  if (typeof C.registerPlugin === "function") {
+    try { return C.registerPlugin("Gestito"); } catch (e) { return null; }
+  }
+  return null;
+}
+
 function _leggi(plugin) {
   try {
     return plugin.leggi().then(function (v) {
+      window._omniaLettura = v || {};
       if (!v) return;
       if (v.postazione) window._omniaPostazioneGestita = String(v.postazione);
       if (!v.deviceId) return;
