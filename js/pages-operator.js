@@ -326,6 +326,21 @@ export function renderDispositivi(page){
     var sel=document.createElement("select");sel.style.cssText="width:auto;padding:6px 8px;font-size:12.5px";
     var ph=document.createElement("option");ph.value="";ph.textContent="Scegli postazione…";sel.appendChild(ph);
     STATIONS.forEach(function(s){var o=document.createElement("option");o.value=String(s.num);o.textContent="P."+s.num+" – "+s.name;sel.appendChild(o);});
+    // Se la richiesta arriva gia' con una postazione, l'ha indicata il kiosk che
+    // amministra quel dispositivo - dove il numero e' stato scelto una volta
+    // sola. Riscriverlo qui a mano vuol dire poterlo scrivere diverso, e un
+    // tablet che si crede la 12 mentre il kiosk lo crede la 21 e' un errore che
+    // si scopre in agosto, con qualcuno in acqua.
+    //
+    // Resta modificabile: se il kiosk ha sbagliato, o il dispositivo e' stato
+    // spostato, qui si corregge.
+    if(d.station){
+      sel.value=String(d.station);
+      var nota=document.createElement("div");
+      nota.style.cssText="font-size:10.5px;color:var(--text3);margin-top:2px";
+      nota.textContent="postazione indicata dal kiosk";
+      info.appendChild(nota);
+    }
     row.appendChild(sel);
     var actBtn=document.createElement("button");actBtn.className="btn-primary";actBtn.style.cssText="width:auto;font-size:12px;padding:6px 12px";
     actBtn.textContent="Attiva";
