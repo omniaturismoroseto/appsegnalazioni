@@ -10,10 +10,14 @@
   crossorigin="anonymous"
 ></script>
 <script>
-// Identificativo di versione da incrementare a ogni pubblicazione (come
-// CACHE_VERSION in sw.js): permette a Sentry di dire "questo errore è
+// Identificativo di versione: permette a Sentry di dire "questo errore è
 // comparso DOPO la modifica X" invece di mescolare tutto insieme.
-var SENTRY_RELEASE="omnia-2026-08-27a";
+// Non si scrive più a mano. C'era una costante da incrementare a ogni
+// pubblicazione, ed è rimasta ferma tre settimane: nel frattempo in Sentry
+// tutto finiva sotto la stessa etichetta, cioè proprio quando serviva sapere
+// dopo quale modifica fosse comparso un errore la risposta non c'era.
+// Il segnaposto qui sotto lo riempie la build (vedi vite.config.js).
+var SENTRY_RELEASE="__VERSIONE_SENTRY__";
 // Manda a Sentry anche tutti i console.error() già sparsi nel codice
 // (invece di modificarli uno per uno), così restano visibili anche i
 // fallimenti che oggi finivano solo in una console che nessuno guardava.
@@ -80,11 +84,11 @@ window.addEventListener("error",function(e){
 });
 </script>
 <script src="stations-data.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-check-compat.js" crossorigin="anonymous"></script>
 <!-- Twemoji (ospitato da noi, con controllo d'integrità SRI): rende le emoji dei
      contenuti (🚨 ⚠️ 📞 🔴 🟢 📍 …) come piccole immagini colorate identiche su ogni
      dispositivo (iPhone/Android/Windows), invece delle emoji di sistema. Stesso

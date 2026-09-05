@@ -760,6 +760,32 @@ setInterval(function(){
 // Su window come window.reportsData: e' un dato che le schermate leggono, non
 // un pezzo di logica condivisa fra moduli.
 var _turniAscolto=null;
+// ---- Un rifiuto del database non deve piu' essere muto ----
+//
+// Le regole possono dire di no a una lettura - per esempio a un dispositivo il
+// cui token ha perso il claim "station". Senza una callback d'errore l'SDK di
+// Firebase si limita a un console.warn, e Sentry raccoglie solo i console.error:
+// il dispositivo resta zitto, e da fuori sembra soltanto che non arrivi niente.
+//
+// E' successo davvero: chat vuota e invio bloccato su un telefono, e in Sentry
+// nemmeno una riga in quattordici giorni. Il silenzio non voleva dire che il
+// dispositivo stesse bene, voleva dire che nessuno stava ascoltando.
+//
+// I tag "role" e "station" li mette gia' _activateStationMode, quindi in Sentry
+// l'errore arriva con scritto sopra di quale postazione si tratta.
+function _rifiutoLettura(nome){
+  return function(e){
+    console.error("Lettura rifiutata dal database ("+nome+"):",(e&&e.message)||e);
+  };
+}
+
+// Registra un ascolto dandogli sempre la callback d'errore. Si passa di qui
+// invece di scrivere .on("value", ...) a mano, cosi' non si puo' dimenticare:
+// erano dieci ascolti, e tutti e dieci erano muti.
+export function _ascolta(ref,nome,callback){
+  ref.on("value",callback,_rifiutoLettura(nome));
+}
+
 export function _ascoltaTurni(){
   var percorso=stationMode
     ? "postazioni/"+String(stationMode)
@@ -767,7 +793,7 @@ export function _ascoltaTurni(){
   if(percorso===null||_turniAscolto===percorso)return;
   _turniAscolto=percorso;
   var ref=percorso?turniOggiRef.child(percorso):turniOggiRef;
-  ref.on("value",function(snap){
+  _ascolta(ref,"turni",function(snap){
     var v=snap.val()||null;
     // Il tablet riceve solo la propria riga: la si incarta nella stessa forma
     // che vede il centro operativo, cosi' chi legge non deve sapere da quale
@@ -781,7 +807,7 @@ export function _ascoltaTurni(){
 }
 function _unaRiga(num,v){var o={};o[num]=v;return o;}
 
-stationNotesRef.on("value",function(snap){
+_ascolta(stationNotesRef,"note di postazione",function(snap){
   var raw=snap.val()||{};
   stationNotesData={};
   Object.keys(raw).forEach(function(k){stationNotesData[k]=raw[k];});
@@ -793,7 +819,7 @@ stationNotesRef.on("value",function(snap){
   if(currentScreen==="dashboard"&&window.activeDashTab==="note")_refreshNotePanel();
 });
 
-flagsRef.on("value",snap=>{
+_ascolta(flagsRef,"bandiere",snap=>{
   const fsnap=snap.val()||{};
   flagsData={};
   STATIONS.forEach(s=>{flagsData[s.num]=fsnap[String(s.num)]||fsnap[s.num]||"verde";});
@@ -846,7 +872,7 @@ function _onReportsSnapshot(snap){
 // Copia pubblica ripulita (solo type/zone/status): SEMPRE leggibile, alimenta
 // la mappa dei visitatori non autenticati. Per operatore/postazione la mappa
 // usa invece i dati completi di window.reportsData (vedi map.js).
-reportsPublicRef.on("value",function(snap){
+_ascolta(reportsPublicRef,"segnalazioni pubbliche",function(snap){
   window.reportsPublicData=snap.val()||{};
   window.fbReady=true;
   refreshMarkers();
@@ -855,7 +881,7 @@ reportsPublicRef.on("value",function(snap){
 
 export let chatMessages={};
 var _seenChatIds=null; // null finche' non arriva il primo snapshot: evita di "riprodurre" tutto lo storico al caricamento
-chatRef.limitToLast(200).on("value",function(snap){
+_ascolta(chatRef.limitToLast(200),"chat",function(snap){
   const val=snap.val()||{};
   const ids=Object.keys(val);
   if(_seenChatIds===null){
@@ -893,7 +919,7 @@ chatRef.limitToLast(200).on("value",function(snap){
 // ma di default se ne mostrano solo quelli successivi a questo momento.
 export const chatResetAtRef=_realDb.ref("chat/resetAt");
 export let chatResetAt=0;
-chatResetAtRef.on("value",function(snap){
+_ascolta(chatResetAtRef,"azzeramento chat",function(snap){
   chatResetAt=snap.val()||0;
   const chatVisible=(currentScreen==="dashboard"&&window.activeDashTab==="chat")
     ||(currentScreen==="station"&&window._stationChatOpen);
@@ -905,13 +931,13 @@ chatResetAtRef.on("value",function(snap){
 // Per postazioni/operatori normali questi listener falliscono in silenzio
 // (permission_denied, vedi database.rules.json) - non hanno mai accesso.
 export let chatEsternaMessages={};
-chatEsternaRef.limitToLast(200).on("value",function(snap){
+_ascolta(chatEsternaRef.limitToLast(200),"chat esterna",function(snap){
   chatEsternaMessages=snap.val()||{};
   if(currentScreen==="dashboard"&&window.activeDashTab==="chatEsterna")renderPage();
 });
 export const chatEsternaResetAtRef=_realDb.ref("chatEsterna/resetAt");
 export let chatEsternaResetAt=0;
-chatEsternaResetAtRef.on("value",function(snap){
+_ascolta(chatEsternaResetAtRef,"azzeramento chat esterna",function(snap){
   chatEsternaResetAt=snap.val()||0;
   if(currentScreen==="dashboard"&&window.activeDashTab==="chatEsterna")renderPage();
 });
@@ -939,8 +965,8 @@ chatEsternaResetAtRef.on("value",function(snap){
         reportsRef.off();
         if(user){
           window._reportsPrimed=false; // nuova sessione: non contare come "nuove" le segnalazioni gia' aperte
-          reportsRef.on("value",_onReportsSnapshot);
-          stationDevicesRef.on("value",function(snap){
+          _ascolta(reportsRef,"segnalazioni",_onReportsSnapshot);
+          _ascolta(stationDevicesRef,"dispositivi di postazione",function(snap){
             stationDevicesData=snap.val()||{};
             if(currentScreen==="dashboard"&&window.activeDashTab==="dispositivi")renderPage();
           });

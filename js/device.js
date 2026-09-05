@@ -3,7 +3,7 @@
 // l'app dedicata alle postazioni. Tenerlo in pages-public.js costringeva
 // quest'ultima a caricarsi tutte le pagine pubbliche - oltre 120 KB - solo per
 // mostrare un pulsante di richiesta attivazione.
-import { _activateStationMode, stationDevicesRef } from "./core.js";
+import { _activateStationMode, _ascolta, stationDevicesRef } from "./core.js";
 
 // Genera/recupera un identificativo persistente per questo dispositivo (nessun account, nessuna password)
 export function _getDeviceId(){
@@ -49,7 +49,7 @@ export function _renderDeviceActivation(wrap,onRef){
 
   const ref=stationDevicesRef.child(deviceId);
   if(onRef)onRef(ref);
-  ref.on("value",function(snap){
+  _ascolta(ref,"abilitazione di questo dispositivo",function(snap){
     const data=snap.val();
     box.innerHTML="";
     if(data&&data.enabled&&data.station){

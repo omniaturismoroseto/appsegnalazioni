@@ -387,6 +387,10 @@ function _sendChatEntry(cfg,channel,fields,onDone){
   cfg.getRef().push(Object.assign(base,fields)).then(function(){
     onDone(null);
   }).catch(function(e){
+    // Anche l'invio rifiutato dalle regole va detto ad alta voce: finiva solo
+    // nell'interfaccia di chi stava scrivendo, e da fuori era indistinguibile
+    // da "non ha ancora scritto niente".
+    console.error("Invio in chat rifiutato:",(e&&e.message)||e);
     onDone(e);
   });
 }
