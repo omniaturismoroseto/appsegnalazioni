@@ -20,7 +20,11 @@ const ICONE = {
   radio: '<rect x="9" y="2.6" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.2"/><path d="M8.2 21.4h7.6"/>',
   nota: '<path d="M5 3.5h9.5L19 8v12.5H5z"/><path d="M14 3.5V8h5"/><path d="M8.5 12.5h7"/><path d="M8.5 16.5h4.5"/>',
   meteo: '<circle cx="9" cy="7.4" r="3.3"/><path d="M9 1.4v1.3M9 12.1v1.3M3 7.4h1.3M13.7 7.4h1.3M4.8 3.2l.9.9M12.3 10.7l.9.9M13.2 3.2l-.9.9M5.7 10.7l-.9.9"/><path d="M2.6 17.4c1.6 0 1.6-1.3 3.2-1.3s1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3 1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3"/><path d="M2.6 21.2c1.6 0 1.6-1.3 3.2-1.3s1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3 1.6 1.3 3.2 1.3 1.6-1.3 3.2-1.3"/>',
-  emergenza: '<path d="M12 3.4a4.6 4.6 0 0 0-4.6 4.6v5.4h9.2V8A4.6 4.6 0 0 0 12 3.4Z"/><path d="M4.4 16.6h15.2"/><path d="M6.4 20.2h11.2"/><path d="M2.6 8.4h1.6"/><path d="M19.8 8.4h1.6"/><path d="M5 4.1l1.1 1.1"/><path d="M19 4.1l-1.1 1.1"/>',
+  // Il salvagente, non una sirena: la sirena a quella misura si leggeva come
+  // una lampada su un piedistallo. Questo e' il simbolo del mestiere, e sta
+  // ai due lati della scritta - simmetrico, cosi' il testo va al centro su
+  // due righe e non serve piu' il trattino che le teneva insieme.
+  emergenza: '<circle cx="12" cy="12" r="9.2"/><circle cx="12" cy="12" r="4"/><path d="M5.5 5.5 9.2 9.2M18.5 5.5 14.8 9.2M5.5 18.5 9.2 14.8M18.5 18.5 14.8 14.8"/>',
 };
 
 // Un contenitore con dentro l'SVG, non l'SVG nudo: la misura la decide il
@@ -377,34 +381,52 @@ export function renderStationPanel(page){
   emBar.innerHTML="";
   const emBtn=document.createElement("button");emBtn.type="button";emBtn.className="st-em__btn";
   const emFill=document.createElement("div");emFill.className="st-em__fill";
-  const emIco=_icona("emergenza","st-em__ico");
-  const emLabel=document.createElement("span");emLabel.className="st-em__label";emLabel.textContent="EMERGENZA — tieni premuto";
-  emBtn.appendChild(emFill);emBtn.appendChild(emIco);emBtn.appendChild(emLabel);
+  const emLabel=document.createElement("span");emLabel.className="st-em__label";
+  const emParola=_riga("st-em__parola","EMERGENZA");
+  const emHint=_riga("st-em__hint","tieni premuto");
+  emLabel.appendChild(emParola);emLabel.appendChild(emHint);
+  emBtn.appendChild(emFill);
+  emBtn.appendChild(_icona("emergenza","st-em__ico"));
+  emBtn.appendChild(emLabel);
+  emBtn.appendChild(_icona("emergenza","st-em__ico"));
   emBar.appendChild(emBtn);
+
+  // Le due righe si scrivono separatamente. Prima la scritta era una sola e si
+  // sostituiva con textContent: con due righe quello le cancellerebbe entrambe,
+  // portandosi via anche la struttura.
+  // "esito" e' lo stato di quattro secondi dopo l'invio: la scritta diventa il
+  // resoconto e le icone si tolgono per farle posto.
+  function emDici(parola,hint,esito){
+    emParola.textContent=parola;
+    emHint.textContent=hint;
+    emBtn.classList.toggle("is-esito",!!esito);
+  }
 
   const HOLD_MS=1500;
   let holdTimer=null,holdStart=0,sent=false;
   function holdCancel(){
     if(holdTimer){clearTimeout(holdTimer);holdTimer=null;}
     emFill.style.transition="width .15s linear";emFill.style.width="0%";
-    emLabel.textContent="EMERGENZA — tieni premuto";
+    emDici("EMERGENZA","tieni premuto");
   }
   function holdStart_(){
     if(sent)return;
     holdStart=Date.now();
     emFill.style.transition="width "+HOLD_MS+"ms linear";
     requestAnimationFrame(function(){emFill.style.width="100%";});
-    emLabel.textContent="Rilascia per annullare…";
+    emDici("EMERGENZA","rilascia per annullare…");
     holdTimer=setTimeout(function(){
       sent=true;
-      emLabel.textContent="Invio in corso…";
+      emDici("EMERGENZA","invio in corso…");
       const {north,south}=_stationNeighborsClient(num);
       _sendStationEmergency(num,zoneStr).then(function(){
         const names=function(arr){return arr.map(function(s){return "P."+s.num;}).join(", ")||"nessuna";};
-        emLabel.textContent="✅ Allarme inviato — nord: "+names(north)+" · sud: "+names(south)+" + admin/coordinatore";
+        // A cose fatte la parola grande cambia: "EMERGENZA" sopra un elenco di
+        // postazioni avvisate direbbe che sta ancora per succedere qualcosa.
+        emDici("✅ ALLARME INVIATO","nord: "+names(north)+" · sud: "+names(south)+" · centro operativo",true);
         setTimeout(function(){sent=false;holdCancel();},4000);
       }).catch(function(e){
-        emLabel.textContent="Errore invio: "+e.message;
+        emDici("ERRORE","allarme non inviato: "+e.message,true);
         setTimeout(function(){sent=false;holdCancel();},4000);
       });
     },HOLD_MS);

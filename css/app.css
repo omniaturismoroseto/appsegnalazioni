@@ -404,7 +404,7 @@ body.postazione #pie-pagina{display:none}
    diversi, un numero solo. Quando erano tre numeri si sono slegati davvero:
    in orizzontale la chat lasciava una striscia vuota, e prima ancora due
    riquadri finivano sotto la barra, a schermo ma non premibili. */
-:root{--st-em-alt:140px;--st-em-riserva:170px}
+:root{--st-em-alt:140px;--st-em-riserva:170px;--st-em-ico:56px;--st-em-parola:26px}
 
 /* ---- Pannello di postazione ----
    Le misure non stanno piu' sparse regola per regola: stanno in variabili sul
@@ -568,24 +568,39 @@ button.st-striscia{cursor:pointer}
    variabile che la riserva in fondo al pannello deve superare. */
 .st-em{position:fixed;left:0;right:0;bottom:0;z-index:500;background:#0b0b0b;
   padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
-.st-em__btn{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:12px;
+.st-em__btn{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:14px;
   width:100%;min-height:var(--st-em-alt);
-  background:#a5140a;color:#fff;text-align:center;padding:16px 18px;border:none;border-radius:14px;
+  background:#a5140a;color:#fff;text-align:center;padding:14px 16px;border:none;border-radius:14px;
   box-shadow:inset 0 0 0 2px rgba(255,255,255,.16);
-  font-family:inherit;font-weight:800;font-size:22px;letter-spacing:.03em;cursor:pointer;
+  font-family:inherit;font-weight:800;cursor:pointer;
   -webkit-user-select:none;user-select:none}
 .st-em__btn:hover,.st-em__btn:active{background:#a5140a}
 .st-em__fill{position:absolute;left:0;top:0;bottom:0;width:0%;background:rgba(255,255,255,.35);transition:width linear}
-.st-em__ico{position:relative;width:38px;height:38px;flex:none}
+/* Due salvagenti, uno per lato. Simmetrici, cosi' la scritta sta al centro su
+   due righe e sparisce il trattino che prima teneva insieme "EMERGENZA" e
+   "tieni premuto" su una riga sola. La misura segue gli scaglioni di schermo
+   come tutto il resto della pagina: e' il bersaglio piu' grande che c'e', e a
+   38px fissi era la cosa piu' piccola dentro il piu' grande dei pulsanti. */
+.st-em__ico{position:relative;width:var(--st-em-ico);height:var(--st-em-ico);flex:none}
 .st-em__ico svg{width:100%;height:100%;display:block}
-.st-em__label{position:relative;line-height:1.15}
+.st-em__label{position:relative;display:flex;flex-direction:column;align-items:center;
+  gap:2px;line-height:1.1;min-width:0;flex:1 1 auto}
+/* A invio fatto i due salvagenti si tolgono di mezzo: hanno gia' detto quello
+   che dovevano, e l'elenco delle postazioni avvisate ha bisogno di tutta la
+   riga. Su un telefono stretto, con le icone al loro posto, quel messaggio
+   andava a tre righe e veniva tagliato dal bordo del pulsante. */
+.st-em__btn.is-esito .st-em__ico{display:none}
+.st-em__parola{font-size:var(--st-em-parola);font-weight:800;letter-spacing:.04em}
+/* Il secondo rigo dice cosa fare, e durante la pressione dice cosa sta
+   succedendo: e' l'unico dei due che cambia. */
+.st-em__hint{font-size:calc(var(--st-em-parola) * .62);font-weight:600;opacity:.88;letter-spacing:.02em}
 
 /* ---- Schermi bassi (tablet in orizzontale) ----
    Si cede spazio in ordine: prima l'intestazione e la barra EMERGENZA, che
    sono righe fisse e sanno stringersi senza perdere niente; i riquadri per
    ultimi, perche' sono quello che si preme. */
 @media(max-height:700px){
-  :root{--st-em-alt:110px;--st-em-riserva:134px}
+  :root{--st-em-alt:110px;--st-em-riserva:134px;--st-em-ico:46px;--st-em-parola:23px}
   .st-wrap{--st-gap:6px;--st-ico:23px;--st-label:12.5px;--st-big:24px;--st-sub:13px}
   .st-hdr{padding:8px 13px;row-gap:6px}
   .st-hdr__num{font-size:20px}
@@ -593,7 +608,7 @@ button.st-striscia{cursor:pointer}
   .st-turno{padding-top:6px}
   .st-turno__nome{font-size:15.5px}
   .st-striscia{min-height:48px}
-  .st-em__btn{font-size:21px;padding:12px 16px}
+  .st-em__btn{padding:12px 16px}
   .st-tile__filigrana{width:80px;height:80px;right:-16px}
   /* In orizzontale la riga della bandiera e' alta un centinaio di pixel: la
      targa si mette in riga e lascia cadere il suggerimento, che a schermo
@@ -607,7 +622,7 @@ button.st-striscia{cursor:pointer}
    bersaglio enorme anche a 84px - piu' alto di un riquadro - e quello che si
    libera torna alla griglia. */
 @media(max-height:560px){
-  :root{--st-em-alt:84px;--st-em-riserva:104px}
+  :root{--st-em-alt:84px;--st-em-riserva:104px;--st-em-ico:36px;--st-em-parola:19px}
   .st-wrap{--st-gap:5px;--st-ico:20px;--st-label:11.5px;--st-big:20px;--st-sub:12px}
   .st-em{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
   .st-hdr{padding:6px 12px;row-gap:5px}
@@ -618,8 +633,7 @@ button.st-striscia{cursor:pointer}
   .st-turno__nome{font-size:14px}
   .st-striscia{min-height:42px;padding:6px 12px}
   .st-striscia__val{font-size:13px}
-  .st-em__btn{font-size:18px;padding:10px 14px;gap:10px}
-  .st-em__ico{width:30px;height:30px}
+  .st-em__btn{padding:10px 14px;gap:10px}
   .st-tile__filigrana{width:64px;height:64px;right:-12px}
   /* Su un riquadro alto una settantina di pixel l'anteprima non ci sta: gli
      altri testi si schiacciavano per farle posto e non si leggeva piu' nessuno
@@ -631,6 +645,7 @@ button.st-striscia{cursor:pointer}
 
 /* ---- Schermi ampi: si legge da lontano ---- */
 @media(min-width:820px) and (min-height:701px){
+  :root{--st-em-ico:64px;--st-em-parola:30px}
   .st-wrap{--st-gap:10px;--st-ico:32px;--st-label:15px;--st-big:36px;--st-sub:15.5px}
   .st-hdr__num{font-size:28px}
   .st-hdr__nome{font-size:19px}

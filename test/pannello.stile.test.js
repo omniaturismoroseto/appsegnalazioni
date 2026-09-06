@@ -55,6 +55,21 @@ describe("stile del pannello di postazione", () => {
     expect(bar.querySelector(".st-em__fill")).not.toBeNull();
   });
 
+  it("la barra ha un salvagente per lato e la scritta su due righe", () => {
+    // Le due righe sono due elementi, non una stringa sola: il testo cambia
+    // mentre si tiene premuto e a invio fatto, e con una stringa sola quel
+    // cambio si portava via anche la struttura. Le icone sono due perche' la
+    // scritta sta in mezzo - e' cosi' che si e' tolto il trattino che teneva
+    // insieme "EMERGENZA" e "tieni premuto" su una riga sola.
+    pannello();
+    const btn = document.getElementById("_stEmergencyBar").querySelector(".st-em__btn");
+    expect(btn.querySelectorAll(".st-em__ico").length).toBe(2);
+    expect(btn.querySelector(".st-em__parola").textContent).toBe("EMERGENZA");
+    expect(btn.querySelector(".st-em__hint").textContent).toBe("tieni premuto");
+    // Nessun trattino: le due righe non vanno piu' incollate.
+    expect(btn.textContent).not.toMatch(/—/);
+  });
+
   it("nella griglia ci sono solo cose che si premono; nota e meteo stanno fuori", () => {
     // Nota e meteo sono due righe da leggere, non bersagli da premere in fretta.
     // Dentro la griglia si prendevano una riga intera - un quarto dello schermo -
