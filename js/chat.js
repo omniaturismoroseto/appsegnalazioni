@@ -39,6 +39,7 @@
 // gia' usato per le foto delle segnalazioni (vedi addReport in core.js),
 // invece di introdurre Firebase Storage. Durata massima 60s per restare
 // ben sotto il limite di dimensione (vedi database.rules.json).
+import { icona } from "./icone.js";
 import { IS_NATIVE_APP, ROLE_LABELS, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode, zonaPostazione } from "./core.js";
 
 
@@ -99,7 +100,7 @@ const CHANNELS={
     supportsAudio:true,
     supportsPhoto:true,
     emptyToday:"Nessun messaggio ancora oggi. Scrivi il primo!",
-    headerLabel:"💬 Chat interna — tutte le postazioni"
+    headerLabel:"Chat interna — tutte le postazioni"
   },
   external:{
     getRef:()=>chatEsternaRef,
@@ -107,7 +108,7 @@ const CHANNELS={
     getResetAt:()=>chatEsternaResetAt,
     supportsAudio:false,
     emptyToday:"Nessun messaggio ancora oggi.",
-    headerLabel:"🌐 Chat esterna — admin, coordinatore, CP, forze dell'ordine"
+    headerLabel:"Chat esterna — admin, coordinatore, CP, forze dell'ordine"
   }
 };
 
@@ -524,16 +525,25 @@ export function renderChatPanel(page,opts){
   wrap.className="chat-wrap";
 
   const header=document.createElement("div");
-  header.style.cssText="padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px";
+  header.className="chat-testata";
   const headerTop=document.createElement("div");
-  headerTop.style.cssText="display:flex;align-items:center;justify-content:space-between;gap:8px";
-  headerTop.innerHTML='<span style="font-size:12px;font-weight:700;color:var(--text2)">'+cfg.headerLabel+'</span>'
-    +(window.isAdmin?'<span style="font-size:10px;color:var(--text3)">storico completo, mai azzerato</span>':'');
+  headerTop.className="chat-testata__riga";
+  const titolo=document.createElement("span");
+  titolo.className="chat-testata__titolo";
+  titolo.appendChild(icona("chat","chat-testata__ico"));
+  titolo.appendChild(document.createTextNode(cfg.headerLabel));
+  headerTop.appendChild(titolo);
+  if(window.isAdmin){
+    const nota=document.createElement("span");
+    nota.className="chat-testata__nota";
+    nota.textContent="storico completo, mai azzerato";
+    headerTop.appendChild(nota);
+  }
   header.appendChild(headerTop);
   wrap.appendChild(header);
 
   const list=document.createElement("div");
-  list.style.cssText="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px";
+  list.className="chat-lista";
   wrap.appendChild(list);
 
   if(opts.isStation){
@@ -614,7 +624,8 @@ export function renderChatPanel(page,opts){
   if(cfg.supportsAudio){
     micBtn=document.createElement("button");micBtn.type="button";
     micBtn.title="Registra messaggio vocale";
-    micBtn.innerHTML='<span class="chat-azioni__icona">🎙️</span><span>Vocale</span>';
+    micBtn.appendChild(icona("radio","chat-azioni__icona"));
+    micBtn.appendChild(document.createElement("span")).textContent="Vocale";
     azioniRow.appendChild(micBtn);
   }
 
@@ -629,7 +640,8 @@ export function renderChatPanel(page,opts){
     camInput.style.display="none";
     const camBtn=document.createElement("button");camBtn.type="button";
     camBtn.title="Scatta una foto";
-    camBtn.innerHTML='<span class="chat-azioni__icona">📷</span><span>Foto</span>';
+    camBtn.appendChild(icona("fotocamera","chat-azioni__icona"));
+    camBtn.appendChild(document.createElement("span")).textContent="Foto";
     camInput.addEventListener("change",function(){
       const f=camInput.files&&camInput.files[0];
       camInput.value="";
@@ -654,7 +666,8 @@ export function renderChatPanel(page,opts){
 
   const sendBtn=document.createElement("button");
   sendBtn.className="btn-primary";
-  sendBtn.innerHTML='<span class="chat-azioni__icona">➤</span><span>Invia</span>';
+  sendBtn.appendChild(icona("invia","chat-azioni__icona"));
+  sendBtn.appendChild(document.createElement("span")).textContent="Invia";
   azioniRow.appendChild(sendBtn);
   wrap.appendChild(inputRow);
   wrap.appendChild(azioniRow);
@@ -690,10 +703,12 @@ export function renderChatPanel(page,opts){
   recTimer.textContent="0:00";
   const cancelRecBtn=document.createElement("button");cancelRecBtn.type="button";
   cancelRecBtn.className="chat-rec__annulla";
-  cancelRecBtn.innerHTML='<span class="chat-azioni__icona">✕</span><span>Annulla</span>';
+  cancelRecBtn.appendChild(icona("chiudi","chat-azioni__icona"));
+  cancelRecBtn.appendChild(document.createElement("span")).textContent="Annulla";
   const stopRecBtn=document.createElement("button");stopRecBtn.type="button";
   stopRecBtn.className="btn-primary chat-rec__invia";
-  stopRecBtn.innerHTML='<span class="chat-azioni__icona">⏹</span><span>Invia</span>';
+  stopRecBtn.appendChild(icona("stop","chat-azioni__icona"));
+  stopRecBtn.appendChild(document.createElement("span")).textContent="Invia";
   recRow.appendChild(recDot);recRow.appendChild(recTimer);recRow.appendChild(cancelRecBtn);recRow.appendChild(stopRecBtn);
   wrap.appendChild(recRow);
 

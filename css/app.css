@@ -758,16 +758,38 @@ button.st-striscia{cursor:pointer}
    Si leggono in piedi, alla luce del sole, tenendo il tablet a un braccio di
    distanza: testo piu' grande del solito e colori scuri e pieni, non i grigi
    tenui che stanno bene su un monitor al chiuso. */
+/* ---- Testata e lista ----
+   Erano stili scritti dentro il JavaScript. Il titolo stava a 12px grigio: su
+   un tablet al sole non si leggeva, ed e' l'unica riga che dice in quale delle
+   due chat si sta scrivendo - sbagliare canale qui significa mandare un
+   messaggio a chi non deve leggerlo. */
+.chat-testata{padding:9px 13px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px}
+.chat-testata__riga{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chat-testata__titolo{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:800;color:#374151}
+.chat-testata__ico{width:18px;height:18px;flex:none}
+.chat-testata__ico svg{width:100%;height:100%;display:block}
+.chat-testata__nota{font-size:11px;color:var(--text3);white-space:nowrap}
+.chat-lista{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+
 .chat-bolla{align-self:flex-start;max-width:85%;background:#f1f3f5;border-radius:12px;padding:10px 13px}
 .chat-bolla--postazione{background:#dbeafe}
 .chat-bolla--diretto{border-left:4px solid #b45309}
-.chat-autore{font-size:14px;font-weight:800;color:#374151;margin-bottom:3px}
+.chat-autore{font-size:15px;font-weight:800;color:#374151;margin-bottom:3px}
 .chat-autore--postazione{color:#1e40af}
 .chat-testo{font-size:17px;line-height:1.35;color:#111827;white-space:pre-wrap;word-break:break-word}
-.chat-ora{font-size:12.5px;color:#4b5563;margin-top:4px;text-align:right}
+.chat-ora{font-size:13.5px;color:#4b5563;margin-top:4px;text-align:right;font-variant-numeric:tabular-nums}
 .chat-badge{font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:6px;padding:2px 6px;margin-left:6px;white-space:nowrap}
-.chat-audio{display:flex;align-items:center;gap:8px;margin-top:4px}
-.chat-audio audio{width:230px;max-width:100%;height:38px}
+/* Il vocale e' il canale piu' usato dopo l'emergenza, e i comandi del lettore
+   sono quelli di sistema: non si possono ridisegnare, ma si possono fare
+   grandi. A 230px in un angolo della bolla il tasto play era un bersaglio da
+   centrare con l'unghia. */
+.chat-audio{display:flex;align-items:center;gap:10px;margin-top:6px}
+/* flex:1 con min-width:0 lo faceva collassare a larghezza zero: la bolla si
+   stringe sul contenuto, e un elemento che puo' ridursi a niente lo fa. Il
+   lettore spariva del tutto e il vocale diventava inascoltabile. Qui cresce se
+   c'e' spazio ma non scende sotto una misura in cui il tasto play si preme. */
+.chat-audio audio{flex:1 1 240px;min-width:190px;max-width:100%;height:46px}
 .chat-durata{font-size:13.5px;font-weight:700;color:#374151;white-space:nowrap}
 .chat-foto{max-width:260px;width:100%;border-radius:10px;display:block;margin-top:4px}
 
@@ -784,11 +806,28 @@ button.st-striscia{cursor:pointer}
    forte di .btn-primary e gli sbiancava lo sfondo, lasciando scritta bianca su
    fondo chiaro - il pulsante spariva. */
 .chat-azioni button:not(.btn-primary){background:var(--bg2)}
-.chat-azioni__icona{font-size:22px;line-height:1}
+.chat-azioni__icona{width:24px;height:24px;flex:none}
+.chat-azioni__icona svg{width:100%;height:100%;display:block}
 @media(max-height:700px){
   .chat-azioni button{min-height:54px;font-size:14px}
-  .chat-azioni__icona{font-size:19px}
+  .chat-azioni__icona{width:21px;height:21px}
   .chat-input{padding:11px 12px;font-size:16px}
+  .chat-testata{padding:7px 12px}
+  .chat-testata__titolo{font-size:13.5px}
+  .chat-audio audio{height:42px}
+}
+/* Tablet bassi in orizzontale: qui la riga di scrittura si prendeva quasi lo
+   stesso spazio dei messaggi. Si stringe lei, perche' i messaggi sono il
+   motivo per cui la schermata esiste - e un pulsante da 46px resta comunque
+   piu' alto del dito che lo preme. */
+@media(max-height:560px){
+  .chat-azioni{gap:6px;padding:6px 10px 8px}
+  .chat-azioni button{min-height:46px;font-size:13px;gap:3px}
+  .chat-azioni__icona{width:18px;height:18px}
+  .chat-inputrow{padding:8px 10px 0}
+  .chat-input{padding:9px 11px;font-size:15px}
+  .chat-lista{padding:9px}
+  .chat-audio audio{height:38px}
 }
 
 /* ---- Registrazione di un vocale in corso ----

@@ -26,6 +26,10 @@ export const ICONE = {
   occhio: '<path d="M1.9 12S5.5 5.6 12 5.6 22.1 12 22.1 12 18.5 18.4 12 18.4 1.9 12 1.9 12Z"/><circle cx="12" cy="12" r="3.1"/>',
   spunta: '<path d="M4.6 12.7 9.5 17.6 19.4 6.8"/>',
   indietro: '<path d="M19.4 12H5.2"/><path d="M11.2 5.8 5 12l6.2 6.2"/>',
+  fotocamera: '<path d="M3 7.6h3.6l1.7-2.4h7.4l1.7 2.4H21v11.2H3z"/><circle cx="12" cy="13" r="3.7"/>',
+  invia: '<path d="M3.2 11.9 20.6 4.2l-7.7 17.4-1.9-7.8z"/><path d="M11 13.8 20.6 4.2"/>',
+  stop: '<rect x="6.2" y="6.2" width="11.6" height="11.6" rx="2"/>',
+  chiudi: '<path d="M6 6l12 12M18 6 6 18"/>',
 };
 
 // Un contenitore con dentro l'SVG, non l'SVG nudo: la misura la decide il
