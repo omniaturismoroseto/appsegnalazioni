@@ -12,6 +12,7 @@
 // finestrella di sistema, che su un tablet ha pulsanti minuscoli - perche'
 // chiudere per sbaglio un'emergenza in corso e' l'errore che costa di piu'.
 import { fmt, render, resolveReport, takeReport, zonaPostazione } from "./core.js";
+import { icona } from "./icone.js";
 
 // Le segnalazioni aperte di questa postazione, dalla piu' recente. E' la stessa
 // selezione che fa il pannello: se cambia una, deve cambiare l'altra.
@@ -30,7 +31,8 @@ export function renderSegnalazioniAperte(page) {
   const indietro = document.createElement("button");
   indietro.type = "button";
   indietro.className = "seg-indietro";
-  indietro.textContent = "← Torna al pannello";
+  indietro.appendChild(icona("indietro", "seg-indietro__ico"));
+  indietro.appendChild(document.createTextNode("Torna al pannello"));
   indietro.addEventListener("click", function () { render("station"); });
   wrap.appendChild(indietro);
 
@@ -58,20 +60,29 @@ function _scheda(r) {
   const card = document.createElement("div");
   card.className = "sr-card sr-card--" + (r.type === "emergenza" ? "emergenza" : "pericolo");
 
-  const gravita = document.createElement("div");
-  gravita.className = "sr-card__gravita";
-  gravita.textContent = r.type === "emergenza" ? "EMERGENZA" : "PERICOLO";
-  card.appendChild(gravita);
+  // La gravita' era una paroletta colorata sopra al titolo: da lontano le due
+  // schede si somigliavano, e a distinguerle restava un filo di bordo a
+  // sinistra. Ora e' un blocco pieno, con l'icona dentro, e l'ora gli sta
+  // accanto invece che su una riga tutta sua.
+  const testata = document.createElement("div");
+  testata.className = "sr-card__testata";
+
+  const badge = document.createElement("span");
+  badge.className = "sr-badge";
+  badge.appendChild(icona("segnala", "sr-badge__ico"));
+  badge.appendChild(document.createTextNode(r.type === "emergenza" ? "EMERGENZA" : "PERICOLO"));
+  testata.appendChild(badge);
+
+  const quando = document.createElement("span");
+  quando.className = "sr-card__quando";
+  quando.textContent = fmt(r.ts);
+  testata.appendChild(quando);
+  card.appendChild(testata);
 
   const sub = document.createElement("div");
   sub.className = "sr-card__sub";
   sub.textContent = r.sub || "Segnalazione";
   card.appendChild(sub);
-
-  const quando = document.createElement("div");
-  quando.className = "sr-card__quando";
-  quando.textContent = fmt(r.ts);
-  card.appendChild(quando);
 
   if (r.notes) {
     const note = document.createElement("p");
@@ -105,20 +116,29 @@ function _presaInCarico(r) {
   if (r.presaInCarico) {
     box.classList.add("sr-presa--fatta");
     const chi = r.presaInCarico.da ? " · " + r.presaInCarico.da : "";
-    box.textContent = "👁 Presa in carico" + chi;
+    box.appendChild(icona("occhio", "sr-presa__ico"));
+    box.appendChild(document.createTextNode("Presa in carico" + chi));
     return box;
   }
 
   const b = document.createElement("button");
   b.type = "button";
   b.className = "sr-presa__btn";
-  b.innerHTML = "<span class=\"sr-presa__segno\">👁</span><span>L'ho vista, me ne occupo</span>";
+  // Il contenuto si ricostruisce con una funzione perche' va rimesso identico
+  // dopo un errore: scritto due volte a mano, prima o poi le due copie
+  // divergono.
+  function facciaPresa() {
+    b.textContent = "";
+    b.appendChild(icona("occhio", "sr-presa__ico"));
+    b.appendChild(document.createTextNode("L'ho vista, me ne occupo"));
+  }
+  facciaPresa();
   b.addEventListener("click", function () {
     b.disabled = true;
     b.textContent = "…";
     takeReport(r._key, zonaPostazione()).catch(function (e) {
       b.disabled = false;
-      b.innerHTML = "<span class=\"sr-presa__segno\">👁</span><span>L'ho vista, me ne occupo</span>";
+      facciaPresa();
       alert("Non sono riuscito a segnarla: " + e.message);
     });
   });
@@ -137,7 +157,8 @@ function _chiusura(r, card) {
   const avvia = document.createElement("button");
   avvia.type = "button";
   avvia.className = "sr-chiudi__btn";
-  avvia.innerHTML = '<span class="sr-chiudi__segno">✓</span><span>Chiudi segnalazione</span>';
+  avvia.appendChild(icona("spunta", "sr-chiudi__ico"));
+  avvia.appendChild(document.createTextNode("Chiudi segnalazione"));
 
   const conferma = document.createElement("div");
   conferma.className = "sr-conferma";
