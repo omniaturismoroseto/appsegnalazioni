@@ -76,9 +76,17 @@ window.addEventListener("error",function(e){
 <script>
 // Loader ufficiale Google Maps (bootstrap dinamico da Google Cloud):
 // carica l'API in modo asincrono e mette a disposizione google.maps.importLibrary().
+// Unica modifica nostra al frammento di Google: a.crossOrigin="anonymous".
+// Senza, qualunque errore lanciato dentro il codice di Maps arriva a Sentry
+// come "Script error." e basta - 94 eventi cosi' in sedici giorni, tutti
+// illeggibili. Verificato dall'origine di produzione che maps.googleapis.com
+// risponda a una richiesta CORS (status 200, type cors) prima di aggiungerlo:
+// se non lo facesse, l'attributo impedirebbe il caricamento della mappa.
+// Attenzione: i moduli che Maps carica poi da solo (importLibrary) se li crea
+// lui, senza crossorigin, quindi quelli restano opachi.
 // PRIMA DI PUBBLICARE: sostituisci la chiave qui sotto con la tua API key
 // di Google Cloud (Maps JavaScript API abilitata + billing attivo).
-(function(g){var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=function(){return h||(h=new Promise(async function(f,n){await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}))};d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+(function(g){var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=function(){return h||(h=new Promise(async function(f,n){await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;a.crossOrigin="anonymous";d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}))};d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
   key:"AIzaSyDcLeex_9o0BqgAs2lEEXTiVYG_zRSiXQA",
   v:"weekly"
 });
