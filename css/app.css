@@ -722,6 +722,35 @@ button.st-striscia{cursor:pointer}
    vuota prima ancora che una foto sia stata scattata. */
 .sr-chiudi__btn[hidden],.sr-conferma[hidden],.seg-anteprima[hidden],.seg-foto-btn[hidden]{display:none}
 
+/* ---- Attivazione del dispositivo di postazione ----
+   E' la prima schermata che un apparato mostra, e quella che si fissa mentre
+   ci si chiede se ha funzionato - spesso in spiaggia, su un tablet appena
+   montato. Era scritta a 12-13px: qui i testi si leggono.
+
+   I tre stati (da richiedere, in attesa, attivato) sono classi, non un
+   attributo style riscritto da capo ogni volta: cosi' stanno uno accanto
+   all'altro e si possono confrontare. */
+.att-wrap{max-width:560px;margin:0 auto;padding:18px 4px}
+.att-titolo{display:flex;align-items:center;gap:10px;font-size:21px;font-weight:800;color:#111827;margin:0 0 8px}
+.att-titolo__ico{width:24px;height:24px;flex:none;color:#374151}
+.att-titolo__ico svg{width:100%;height:100%;display:block}
+.att-sottotitolo{font-size:15px;color:#374151;line-height:1.5;margin:0 0 16px}
+.att-stato{display:flex;align-items:flex-start;gap:11px;
+  padding:14px 16px;border-radius:var(--radius-lg);
+  background:var(--bg2);border:1px solid var(--border);
+  font-size:15px;line-height:1.45;color:var(--text)}
+.att-stato__ico{width:22px;height:22px;flex:none;margin-top:1px}
+.att-stato__ico svg{width:100%;height:100%;display:block}
+.att-stato--richiesta{display:block}
+.att-stato--attesa{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text);font-weight:600}
+.att-stato--attivato{background:#f0fdf4;border-color:#bbf7d0;color:#166534;font-weight:700}
+.att-invito{font-size:15px;color:#374151;line-height:1.5;margin:0 0 12px}
+/* Un bersaglio da tablet, non un pulsantino: lo si preme una volta sola nella
+   vita di un apparato, ma spesso con le mani occupate e al sole. */
+.att-richiedi{min-height:56px;font-size:16px}
+.att-kiosk{font-size:13px;color:var(--text2);margin-top:10px;line-height:1.45}
+.att-errore{font-size:14.5px;color:var(--danger-text);line-height:1.45}
+
 /* ---- Pulsanti del popup del vocale ----
    Stessa filosofia dei riquadri: bersagli grandi, non pulsantini in fila. */
 .popup-azioni{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}

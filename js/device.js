@@ -4,6 +4,7 @@
 // quest'ultima a caricarsi tutte le pagine pubbliche - oltre 120 KB - solo per
 // mostrare un pulsante di richiesta attivazione.
 import { _activateStationMode, _ascolta, stationDevicesRef } from "./core.js";
+import { icona } from "./icone.js";
 
 // Genera/recupera un identificativo persistente per questo dispositivo (nessun account, nessuna password)
 export function _getDeviceId(){
@@ -22,12 +23,16 @@ export function _renderDeviceActivation(wrap,onRef){
   wrap.innerHTML="";
   const deviceId=_getDeviceId();
   if(!deviceId){
-    const p=document.createElement("p");p.style.cssText="font-size:12.5px;color:var(--danger-text)";
+    const p=document.createElement("p");p.className="att-errore";
     p.textContent="Impossibile identificare questo dispositivo (memoria locale non disponibile).";
     wrap.appendChild(p);return;
   }
+  // Lo stato e' una classe, non un attributo style riscritto da capo a ogni
+  // cambiamento: cosi' le tre facce di questo riquadro stanno nel foglio di
+  // stile una accanto all'altra, invece che in tre stringhe sparse nel codice
+  // che nessuno puo' confrontare.
   const box=document.createElement("div");
-  box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:var(--bg2);border:1px solid var(--border);font-size:13px;line-height:1.5";
+  box.className="att-stato";
   box.textContent="Verifica dello stato del dispositivo…";
   wrap.appendChild(box);
 
@@ -38,7 +43,7 @@ export function _renderDeviceActivation(wrap,onRef){
   // Senza questa riga, un'identita' che non arriva e' indistinguibile da un
   // dispositivo non amministrato - e sono due cose molto diverse da cercare.
   const stato=document.createElement("div");
-  stato.style.cssText="font-size:11.5px;color:var(--text2);margin-top:8px";
+  stato.className="att-kiosk";
   const _l=window._omniaLettura;
   stato.textContent = !_l ? "Kiosk: non ancora letto"
     : _l.assente ? "Kiosk: assente su questo dispositivo"
@@ -53,18 +58,22 @@ export function _renderDeviceActivation(wrap,onRef){
     const data=snap.val();
     box.innerHTML="";
     if(data&&data.enabled&&data.station){
-      box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:13px;line-height:1.5;font-weight:600";
-      box.textContent="✅ Dispositivo attivato per la postazione "+data.station+" — apertura del pannello…";
+      box.className="att-stato att-stato--attivato";
+      box.appendChild(icona("spunta","att-stato__ico"));
+      box.appendChild(document.createElement("span")).textContent=
+        "Dispositivo attivato per la postazione "+data.station+" — apertura del pannello…";
       ref.off();
       _activateStationMode(deviceId,String(data.station));
     }else if(data){
-      box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning-text);font-size:13px;line-height:1.5";
-      box.textContent="⏳ Richiesta inviata. In attesa che il centro operativo attivi questo dispositivo per una postazione.";
+      box.className="att-stato att-stato--attesa";
+      box.appendChild(icona("attesa","att-stato__ico"));
+      box.appendChild(document.createElement("span")).textContent=
+        "Richiesta inviata. In attesa che il centro operativo attivi questo dispositivo per una postazione.";
     }else{
       const txt=document.createElement("p");
-      txt.style.cssText="font-size:12.5px;color:var(--text2);line-height:1.5;margin-bottom:10px";
+      txt.className="att-invito";
       txt.textContent="Richiedi l'attivazione di questo dispositivo come pannello dedicato di una postazione. Un operatore dovrà approvarla dal centro operativo.";
-      const reqBtn=document.createElement("button");reqBtn.className="btn-primary";
+      const reqBtn=document.createElement("button");reqBtn.className="btn-primary att-richiedi";
       reqBtn.textContent="Richiedi attivazione";
       reqBtn.addEventListener("click",function(){
         reqBtn.disabled=true;reqBtn.textContent="Invio richiesta…";
@@ -79,7 +88,7 @@ export function _renderDeviceActivation(wrap,onRef){
           console.error("Errore richiesta attivazione dispositivo:",e);
         });
       });
-      box.style.cssText="padding:13px 15px;border-radius:var(--radius-lg);background:var(--bg2);border:1px solid var(--border)";
+      box.className="att-stato att-stato--richiesta";
       box.appendChild(txt);box.appendChild(reqBtn);
     }
   });

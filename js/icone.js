@@ -30,6 +30,8 @@ export const ICONE = {
   invia: '<path d="M3.2 11.9 20.6 4.2l-7.7 17.4-1.9-7.8z"/><path d="M11 13.8 20.6 4.2"/>',
   stop: '<rect x="6.2" y="6.2" width="11.6" height="11.6" rx="2"/>',
   chiudi: '<path d="M6 6l12 12M18 6 6 18"/>',
+  attesa: '<circle cx="12" cy="12" r="9.2"/><path d="M12 6.6V12l3.6 2.2"/>',
+  dispositivo: '<rect x="6.4" y="2.6" width="11.2" height="18.8" rx="2.4"/><path d="M10.4 18.4h3.2"/>',
 };
 
 // Un contenitore con dentro l'SVG, non l'SVG nudo: la misura la decide il

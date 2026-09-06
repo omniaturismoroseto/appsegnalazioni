@@ -89,15 +89,16 @@ import { _renderDeviceActivation } from "./device.js";
 // la logica di richiesta e attesa vive in un posto solo.
 export function renderAttivazione(page){
   const wrap=document.createElement("div");
-  wrap.style.cssText="max-width:520px;margin:0 auto;padding:18px 4px";
+  wrap.className="att-wrap";
 
   const title=document.createElement("h2");
-  title.style.cssText="font-size:19px;margin:0 0 6px";
-  title.textContent="Dispositivo di postazione";
+  title.className="att-titolo";
+  title.appendChild(_icona("dispositivo","att-titolo__ico"));
+  title.appendChild(document.createTextNode("Dispositivo di postazione"));
   wrap.appendChild(title);
 
   const sub=document.createElement("p");
-  sub.style.cssText="font-size:13px;color:var(--text2);line-height:1.5;margin:0 0 16px";
+  sub.className="att-sottotitolo";
   sub.textContent="Questo apparato non è ancora assegnato a una postazione. Invia la richiesta: il centro operativo la approva e il pannello si apre da solo, senza riavviare l'app.";
   wrap.appendChild(sub);
 
