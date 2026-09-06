@@ -775,7 +775,24 @@ var _turniAscolto=null;
 // l'errore arriva con scritto sopra di quale postazione si tratta.
 function _rifiutoLettura(nome){
   return function(e){
-    console.error("Lettura rifiutata dal database ("+nome+"):",(e&&e.message)||e);
+    const testo="Lettura rifiutata dal database ("+nome+"): "+((e&&e.message)||e);
+    // Un rifiuto ATTESO non e' un guasto. Gli ascolti partono per tutti, anche
+    // sull'app pubblica, e a chi non ha un ruolo il database dice giustamente
+    // di no: era cosi' anche prima, in silenzio. Segnalarli tutti come errori
+    // ha riempito Sentry di quattro righe per ogni bagnante che apriva la
+    // pagina - un rumore che avrebbe sepolto proprio i guasti veri che questa
+    // callback esiste per far vedere.
+    //
+    // Si alza la voce solo quando l'accesso ci si aspettava di averlo: un
+    // dispositivo di postazione, o chi ha fatto l'accesso come operatore.
+    // Li' un permission_denied e' un guasto, ed e' esattamente il caso da
+    // scoprire.
+    const dovrebbeAvereAccesso = !!stationMode
+      || window.userRole === "admin"
+      || window.userRole === "coordinator"
+      || window.currentRole === "operator";
+    if(dovrebbeAvereAccesso) console.error(testo);
+    else console.warn(testo);
   };
 }
 
