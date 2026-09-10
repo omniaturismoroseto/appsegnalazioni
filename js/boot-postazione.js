@@ -55,14 +55,18 @@ function _identitaDalKiosk() {
     var plugin = _componente();
     if (!plugin) { window._omniaLettura = { assente: true }; return Promise.resolve(); }
 
-    // Due secondi e non uno di piu'.
+    // Un tetto complessivo, perche' l'app deve comunque partire: se la lettura
+    // restasse appesa, il pannello di postazione non si aprirebbe mai, e avere
+    // l'app conta piu' che sapere quale postazione siamo.
     //
-    // Da qui in poi c'e' l'avvio dell'app, e un'attesa senza scadenza
-    // significa un pannello di postazione che non si apre mai perche' una
-    // lettura di configurazione e' rimasta appesa. Sapere quale postazione
-    // siamo e' comodo; avere l'app e' indispensabile.
-    var scadenza = new Promise(function (ok) { setTimeout(ok, 2000); });
-    return Promise.race([_leggi(plugin), scadenza]);
+    // Entro quel tetto pero' si **insiste**. La prima lettura, su un dispositivo
+    // appena provisionato e non ancora abilitato, torna senza identita': il
+    // kiosk la consegna, ma un istante dopo. Prima ci si arrendeva subito e
+    // l'app si dava un id a caso - il doppione. Ora si riprova qualche volta:
+    // appena il kiosk consegna, la si prende, e nessun id a caso nasce. Un
+    // dispositivo gia' a posto risponde al primo colpo e non aspetta nulla.
+    var scadenza = new Promise(function (ok) { setTimeout(ok, 10000); });
+    return Promise.race([_leggi(plugin, 6), scadenza]);
   } catch (e) {
     return Promise.resolve();
   }
@@ -86,18 +90,27 @@ function _componente() {
   return null;
 }
 
-function _leggi(plugin) {
+function _leggi(plugin, tentativi) {
   try {
     return plugin.leggi().then(function (v) {
       window._omniaLettura = v || {};
-      if (!v) return;
-      if (v.postazione) window._omniaPostazioneGestita = String(v.postazione);
-      if (!v.deviceId) return;
-      try {
-        if (localStorage.getItem("omnia_device_id") !== v.deviceId) {
-          localStorage.setItem("omnia_device_id", v.deviceId);
-        }
-      } catch (e) { /* memoria locale non disponibile */ }
+      if (v && v.postazione) window._omniaPostazioneGestita = String(v.postazione);
+      if (v && v.deviceId) {
+        try {
+          if (localStorage.getItem("omnia_device_id") !== v.deviceId) {
+            localStorage.setItem("omnia_device_id", v.deviceId);
+          }
+        } catch (e) { /* memoria locale non disponibile */ }
+        return;
+      }
+      // Il plugin ha risposto: siamo su un dispositivo amministrato. Ma il kiosk
+      // non ci ha ancora detto chi siamo - appena provisionato, non ancora
+      // abilitato. Si aspetta e si riprova, invece di proseguire e lasciare che
+      // l'app si dia un id a caso: e' proprio quell'id a caso a creare i doppioni.
+      if (tentativi > 0) {
+        return new Promise(function (ok) { setTimeout(ok, 1500); })
+          .then(function () { return _leggi(plugin, tentativi - 1); });
+      }
     }).catch(function () { /* nessun amministratore: si prosegue come sempre */ });
   } catch (e) {
     return Promise.resolve();

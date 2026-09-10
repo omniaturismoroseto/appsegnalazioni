@@ -11,6 +11,15 @@ export function _getDeviceId(){
   try{
     var id=localStorage.getItem("omnia_device_id");
     if(id)return id;
+    // Su un dispositivo amministrato dal kiosk l'identita' la consegna lui, e
+    // solo lui: e' l'unico posto dove quel numero e' stato scelto. Finche' non
+    // e' arrivata NON ce ne inventiamo una a caso - nasceva un doppione che
+    // restava a sporcare l'elenco dei dispositivi. Si aspetta (id nullo);
+    // arrivera' al giro dopo. Un tablet normale, senza kiosk, se la genera come
+    // sempre: lo distingue _omniaLettura, che l'avvio della postazione riempie
+    // ("assente" quando non c'e' nessun kiosk, i dati del kiosk quando c'e').
+    var l=window._omniaLettura;
+    if(l&&!l.assente)return null;
     id=(crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
       var r=Math.random()*16|0,v=c==="x"?r:(r&0x3|0x8);return v.toString(16);
     });
