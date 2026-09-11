@@ -41,6 +41,23 @@ export default defineConfig({
   plugins: [versione],
   build: {
     outDir: "dist",
+    // Fin dove deve arrivare il codice pubblicato.
+    //
+    // Senza questa riga Vite comprime pensando ai browser di oggi, e il
+    // compressore si prende una liberta' che sembra innocua: riscrive
+    // "n = n || {}" in "n ||= {}". E' la stessa cosa, ma detta con una
+    // grammatica del 2021. Su una WebView vecchia - i tablet di postazione
+    // sono dispositivi amministrati, la loro WebView resta indietro per anni -
+    // quel "||=" non e' codice: e' un errore di sintassi, e un errore di
+    // sintassi non sbaglia una funzione, impedisce di leggere l'intero
+    // pacchetto. Schermo bianco (Sentry: "SyntaxError: Unexpected token '='"
+    // su postazione.html, WebView 83).
+    //
+    // Il minimo che la app chiede e' Android 7 (vedi minSdkVersion), e sulla
+    // pagina ci sono comunque gli SDK Firebase e Sentry: es2017 sta sotto a
+    // entrambi, quindi il limite lo mettono loro, non noi. I sorgenti restano
+    // scritti come si vuole - e' la build che li traduce.
+    target: "es2017",
     rollupOptions: {
       // Due pagine, due pacchetti: l app segnalazioni e l app dei dispositivi
       // di postazione. La seconda importa solo il proprio punto di avvio,
