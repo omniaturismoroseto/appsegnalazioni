@@ -1,0 +1,42 @@
+name: Test automatici
+
+# I test su ogni pull request verso main.
+#
+# Il repository ha un controllo che costruisce il sito e prova a *leggere*
+# quello che esce (test/build.sintassi.test.js): serve a fermare, prima della
+# pubblicazione, il codice che le WebView vecchie dei tablet di postazione non
+# saprebbero leggere. Ma un controllo che gira solo dopo il merge arriva
+# sempre un momento troppo tardi - a quel punto il pacchetto rotto e' gia'
+# pubblicato, o la pubblicazione si e' fermata a meta'.
+#
+# Su main i test girano gia' dentro "Build e pubblica" (deploy-pages.yml),
+# subito prima del build: quello resta l'ultimo cancello. Questo e' il primo.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Un secondo push sulla stessa pull request annulla il controllo del primo:
+# l'unica risposta che interessa e' quella sull'ultima versione.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Imposta Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Installa dipendenze
+        run: npm ci
+
+      - name: Test automatici
+        run: npm test
