@@ -12,7 +12,7 @@
 // eliminazione porterebbe via anche il filo che lega il suo numero a
 // bandiere, note, tablet e turni; la sospensione la toglie di mezzo per quei
 // giorni e la rimette identica alla riapertura.
-import { POSTAZIONI, _escapeHtml, haversine, inStagione, postazioniDaDb, postazioniRef, romeNow, sospesaIl, stagioneData, stagioneRef } from "./core.js";
+import { POSTAZIONI, _escapeHtml, haversine, inStagione, postazioniDaDb, postazioniInServizio, postazioniRef, romeNow, stagioneData, stagioneRef } from "./core.js";
 
 // Oltre questa distanza dalle altre postazioni una coordinata e' quasi
 // certamente sbagliata (tipico: latitudine e longitudine scambiate, che
@@ -156,8 +156,8 @@ function _renderStagione(wrap){
   const s=stagioneData||{};
   box.insertAdjacentHTML("beforeend",
     '<p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.45">'
-    +'Prima dell\'inizio e dopo la fine la home dell\'app mostra un banner di saluti e ringraziamenti per la stagione conclusa, '
-    +'il servizio risulta non attivo e le bandiere automatiche delle 09:00 restano rosse.</p>');
+    +'Prima dell\'inizio e dopo la fine le postazioni spariscono da mappa, elenchi e segnalazioni, la home mostra un banner di saluti '
+    +'e ringraziamenti per la stagione conclusa, il servizio risulta non attivo e le bandiere automatiche delle 09:00 restano rosse.</p>');
   const riga=document.createElement("div");
   riga.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px";
   riga.innerHTML='<div><label style="margin-top:0">Inizio</label><input type="date" data-k="inizio"></div>'
@@ -175,7 +175,9 @@ function _renderStagione(wrap){
   function aggiornaStato(){
     const oggi=romeNow().date;
     const att=inStagione({inizio:inizio.value,fine:fine.value},oggi);
-    stato.textContent=att?"🟢 Oggi la stagione è attiva: il banner non si vede.":"🔴 Oggi è fuori stagione: il banner di fine stagione è visibile.";
+    stato.textContent=att
+      ?"🟢 Oggi la stagione è attiva: le postazioni si vedono nell'app e il banner no."
+      :"🔴 Oggi è fuori stagione: nell'app non compare nessuna postazione e si vede il banner di fine stagione.";
     stato.style.color=att?"var(--success-text)":"var(--danger-text)";
   }
   inizio.addEventListener("input",aggiornaStato);fine.addEventListener("input",aggiornaStato);
@@ -232,7 +234,7 @@ function _renderNuova(wrap,ridisegna){
 function _renderElenco(wrap,ridisegna){
   const oggi=romeNow().date;
   const tutte=POSTAZIONI.slice().sort(function(a,b){return a.num-b.num;});
-  const inServizio=tutte.filter(function(s){return !sospesaIl(s,oggi);}).length;
+  const inServizio=postazioniInServizio(tutte,stagioneData,oggi).length;
   const box=_box("📍 Postazioni ("+inServizio+" in servizio su "+tutte.length+")");
   if(!postazioniDaDb){
     box.insertAdjacentHTML("beforeend",

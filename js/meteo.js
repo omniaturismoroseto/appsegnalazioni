@@ -118,9 +118,18 @@ export function renderMeteoCard(page){
     else if(counts.gialla>=counts.verde) displayFlag="gialla";
     else displayFlag="verde";
     var tot=STATIONS.length;
-    var pct=Math.round((counts[displayFlag]/tot)*100);
-    displaySource="📊 Bandiera prevalente a Roseto ("+pct+"% postazioni)";
-    displaySub="⚠️ Attiva il GPS per vedere la bandiera della postazione più vicina a te";
+    if(!tot){
+      // Fuori dal periodo di balneazione (o con tutte le postazioni sospese)
+      // non c'e' nessuna bandiera da riassumere: dividere per zero darebbe
+      // un "NaN% postazioni" al posto dell'unica cosa vera da dire.
+      displayFlag="rossa";
+      displaySource="🏴 Servizio di salvataggio non attivo";
+      displaySub="Per emergenze chiama il 112";
+    }else{
+      var pct=Math.round((counts[displayFlag]/tot)*100);
+      displaySource="📊 Bandiera prevalente a Roseto ("+pct+"% postazioni)";
+      displaySub="⚠️ Attiva il GPS per vedere la bandiera della postazione più vicina a te";
+    }
   }
 
   const risk={flag:displayFlag,level:"",text:displaySource};

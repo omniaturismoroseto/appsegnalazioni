@@ -530,27 +530,6 @@ export function sospesaIl(postazione,data){
     return true;
   });
 }
-export function postazioniAttive(lista,data){
-  return lista.filter(function(s){return !sospesaIl(s,data);});
-}
-
-function _applicaPostazioni(lista){
-  const copia=lista.slice();
-  POSTAZIONI.length=0;
-  copia.forEach(function(s){POSTAZIONI.push(s);});
-  STATIONS.length=0;
-  postazioniAttive(copia,romeNow().date).forEach(function(s){STATIONS.push(s);});
-  ZONES.length=0;
-  STATIONS.forEach(function(s){ZONES.push(`P.${s.num} \u2013 ${s.name}`);});
-  ZONES.push("Spiaggia libera / Area non concessionata");
-}
-(function(){
-  var cache=null;
-  try{cache=postazioniDaNodo(JSON.parse(localStorage.getItem("fb_postazioni")||"null"));}catch(e){}
-  if(cache&&cache.length){_applicaPostazioni(cache);postazioniDaDb=true;}
-  else _applicaPostazioni(_STATIONS_FILE);
-})();
-
 // Periodo di attivazione del servizio: {inizio:"AAAA-MM-GG", fine:"AAAA-MM-GG",
 // messaggio?}. Fuori dal periodo la home mostra il banner di fine stagione e
 // il servizio risulta non attivo. Senza periodo impostato la stagione e'
@@ -563,6 +542,38 @@ export function inStagione(stagione,data){
   if(stagione.fine&&data>stagione.fine)return false;
   return true;
 }
+
+export function postazioniAttive(lista,data){
+  return lista.filter(function(s){return !sospesaIl(s,data);});
+}
+
+// Chi e' in servizio oggi: nessuno fuori dal periodo di balneazione, altrimenti
+// tutte tranne le sospese. Fuori stagione le postazioni non esistono per
+// nessuno - niente segnaposti sulla mappa, niente zone da scegliere, niente
+// postazione piu' vicina: sulla spiaggia non c'e' nessuno, e mostrarle
+// lascerebbe credere il contrario.
+export function postazioniInServizio(lista,stagione,data){
+  if(!inStagione(stagione,data))return [];
+  return postazioniAttive(lista,data);
+}
+
+function _applicaPostazioni(lista){
+  const copia=lista.slice();
+  POSTAZIONI.length=0;
+  copia.forEach(function(s){POSTAZIONI.push(s);});
+  STATIONS.length=0;
+  postazioniInServizio(copia,stagioneData,romeNow().date).forEach(function(s){STATIONS.push(s);});
+  ZONES.length=0;
+  STATIONS.forEach(function(s){ZONES.push(`P.${s.num} \u2013 ${s.name}`);});
+  ZONES.push("Spiaggia libera / Area non concessionata");
+}
+(function(){
+  var cache=null;
+  try{cache=postazioniDaNodo(JSON.parse(localStorage.getItem("fb_postazioni")||"null"));}catch(e){}
+  if(cache&&cache.length){_applicaPostazioni(cache);postazioniDaDb=true;}
+  else _applicaPostazioni(_STATIONS_FILE);
+})();
+
 export const TYPES={
   emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio","Malore in spiaggia"]},
   pericolo: {label:"Pericolo", sub:["Vento Forte","Correnti pericolose","Mare molto mosso","Cane libero senza padrone","Oggetti pericolosi in acqua o spiaggia"]},
@@ -983,7 +994,13 @@ _ascolta(stagioneRef,"stagione",function(snap){
     if(stagioneData)localStorage.setItem("fb_stagione",JSON.stringify(stagioneData));
     else localStorage.removeItem("fb_stagione");
   }catch(e){}
-  if(currentScreen==="home")renderPage();
+  // Il periodo decide anche chi e' in servizio: cambiarlo dal pannello admin
+  // fa sparire (o ricomparire) le postazioni senza ricaricare niente.
+  _applicaPostazioni(POSTAZIONI);
+  _ricalcolaBandiere();
+  refreshMarkers();
+  if(currentScreen==="dashboard"&&window.activeDashTab==="postazioni")return;
+  renderPage();
 });
 
 // Segnalazioni COMPLETE (con dati personali): leggibili solo da operatori/

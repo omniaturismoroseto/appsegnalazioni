@@ -1,4 +1,4 @@
-import { FLAG_COLORS, STATIONS, postazionePerNumero, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
+import { FLAG_COLORS, STATIONS, isStagioneAttiva, postazionePerNumero, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
 import { refreshMarkers } from "./map.js";
 import { CHILD_ESCALATE_MIN } from "./pages-public.js";
 import { renderChatPanel } from "./chat.js";
@@ -206,7 +206,22 @@ export function renderDashboard(page){
   page.appendChild(list);
 }
 
+// Fuori dal periodo di balneazione le postazioni non sono in servizio e
+// spariscono da tutta l'app: in dashboard va detto, altrimenti bandiere e
+// note sembrano un pannello rotto.
+function _avvisoNessunaPostazione(page){
+  if(STATIONS.length)return false;
+  const box=document.createElement("div");
+  box.style.cssText="background:var(--warning-bg);color:var(--warning-text);border-radius:var(--radius-lg);padding:14px;font-size:13px;line-height:1.5";
+  box.textContent=isStagioneAttiva()
+    ?"Nessuna postazione in servizio: sono tutte sospese. Il periodo di sospensione si cambia nel tab Postazioni."
+    :"Fuori dal periodo di balneazione: nessuna postazione è in servizio e nessuna compare nell'app. Il periodo si imposta nel tab Postazioni.";
+  page.appendChild(box);
+  return true;
+}
+
 export function renderNote(page){
+  if(_avvisoNessunaPostazione(page))return;
   var panel=document.createElement("div");panel.className="bandiere-panel";
   panel.id="_notePanelRows";
   var hdr=document.createElement("div");hdr.className="bandiere-header";
@@ -438,6 +453,7 @@ export function renderDispositivi(page){
 
 // PANNELLO DI POSTAZIONE (dispositivo dedicato, nessun accesso alla dashboard generale)
 export function renderBandiere(page){
+  if(_avvisoNessunaPostazione(page))return;
   const flags=getFlags();
   const panel=document.createElement("div");panel.className="bandiere-panel";
   const hdr=document.createElement("div");hdr.className="bandiere-header";

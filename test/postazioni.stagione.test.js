@@ -6,7 +6,7 @@
 // stagione decide cosa vede chi apre l'app a ottobre: i saluti, non un
 // servizio che non c'e'.
 import { describe, it, expect } from "vitest";
-import { inStagione, postazioniAttive, postazioniDaNodo, sospesaIl } from "../js/core.js";
+import { inStagione, postazioniAttive, postazioniDaNodo, postazioniInServizio, sospesaIl } from "../js/core.js";
 import { leggiCoordinate, statoPostazione, validaPostazione, validaSospensione } from "../js/admin-postazioni.js";
 import { _bannerFineStagione } from "../js/pages-public.js";
 
@@ -196,5 +196,28 @@ describe("statoPostazione", () => {
     expect(statoPostazione({ num: 1, sospensioni: [{ id: "b", dal: "2026-09-01", al: null }] }, "2026-09-02").testo).toBe(
       "SOSPESA a tempo indeterminato",
     );
+  });
+});
+
+// Fuori dal periodo di balneazione in spiaggia non c'e' nessuno: le
+// postazioni non devono comparire da nessuna parte, non "comparire spente".
+// E' lo stesso elenco che alimenta mappa, zone di segnalazione, postazione
+// piu' vicina e destinatari della chat, quindi basta svuotarlo qui.
+describe("postazioniInServizio", () => {
+  const stagione = { inizio: "2026-05-23", fine: "2026-09-20" };
+  const lista = [
+    { num: 10, name: "A", lat: 42.6, lng: 14, sospensioni: [] },
+    { num: 11, name: "B", lat: 42.6, lng: 14, sospensioni: [{ id: "x", dal: "2026-07-01", al: "2026-07-10" }] },
+  ];
+  it("in stagione: tutte tranne quelle sospese quel giorno", () => {
+    expect(postazioniInServizio(lista, stagione, "2026-07-05").map((s) => s.num)).toEqual([10]);
+    expect(postazioniInServizio(lista, stagione, "2026-08-05").map((s) => s.num)).toEqual([10, 11]);
+  });
+  it("fuori stagione: nessuna, nemmeno quelle senza sospensioni", () => {
+    expect(postazioniInServizio(lista, stagione, "2026-09-21")).toEqual([]);
+    expect(postazioniInServizio(lista, stagione, "2026-05-22")).toEqual([]);
+  });
+  it("senza periodo impostato restano in servizio, come prima che il periodo esistesse", () => {
+    expect(postazioniInServizio(lista, null, "2026-12-25").map((s) => s.num)).toEqual([10, 11]);
   });
 });

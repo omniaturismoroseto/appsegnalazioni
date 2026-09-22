@@ -240,6 +240,11 @@ export function renderHome(page){
 
 
   (function(){
+    // Fuori dal periodo di balneazione non esiste una "postazione piu' vicina"
+    // e il riquadro non ha niente di vero da dire: senza postazioni in
+    // servizio resterebbe fermo su "ricerca posizione in corso" anche con il
+    // GPS gia' agganciato. Lo dice gia' il banner di fine stagione.
+    if(!isStagioneAttiva())return;
     var ns=document.createElement("div");
     if(nearestStation){
       var fc2=FLAG_COLORS[flagsData[nearestStation.num]||"verde"];
