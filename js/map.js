@@ -580,44 +580,108 @@ export function addCorridoiLancio(){
 
 
 export var _limitLines=[];
-export function addLimitLine(){
-  if(!window.mapObj)return;
-  // Layer statico: se già creato non ricrearlo (la rimozione chiuderebbe il tooltip aperto ad ogni refresh)
-  if(_limitLines.length>0)return;
+// LA BATTIGIA: dove finisce la sabbia e comincia il mare, da Foce Vomano
+// (a sud) a Foce Tordino (a nord). Sono i dati della linea di costa di
+// OpenStreetMap (ODbL), ripuliti dai dentini dei pennelli con una media
+// mobile e ridotti ai punti che contano: sotto i 25 metri di scarto la
+// differenza non si vede a nessuno zoom utile.
+//
+// Prima il limite dei 300 metri si appoggiava alle POSTAZIONI, che stanno
+// sulla sabbia e non sul bagnasciuga, e le saltava tutte con una direzione
+// media sola: ne usciva una retta parallela alla corda tra il primo e
+// l'ultimo punto, che dove la costa piega entrava in spiaggia da una parte e
+// usciva in mare dall'altra. Peggio ancora fuori stagione, quando le
+// postazioni in servizio erano zero e restavano solo i due capi: un unico
+// segmento dritto attraverso il mare.
+//
+// La costa non dipende da chi e' in servizio: e' la stessa a gennaio e a
+// luglio, con le postazioni sospese o aperte.
+export const BATTIGIA=[
+  {lat:42.6577,lng:14.03564},
+  {lat:42.65902,lng:14.03495},
+  {lat:42.65911,lng:14.03407},
+  {lat:42.66023,lng:14.03271},
+  {lat:42.66126,lng:14.03211},
+  {lat:42.66173,lng:14.03117},
+  {lat:42.66645,lng:14.0268},
+  {lat:42.67072,lng:14.02422},
+  {lat:42.67105,lng:14.0233},
+  {lat:42.67479,lng:14.0211},
+  {lat:42.67881,lng:14.01763},
+  {lat:42.69097,lng:14.00873},
+  {lat:42.69664,lng:14.00387},
+  {lat:42.69894,lng:14.00232},
+  {lat:42.69956,lng:14.00285},
+  {lat:42.69948,lng:14.00214},
+  {lat:42.70093,lng:14.00093},
+  {lat:42.70436,lng:13.99942},
+  {lat:42.70707,lng:13.99691},
+  {lat:42.70984,lng:13.99528},
+  {lat:42.71058,lng:13.99528},
+  {lat:42.71401,lng:13.99283},
+  {lat:42.71636,lng:13.99164},
+  {lat:42.7182,lng:13.99127},
+  {lat:42.73199,lng:13.98361},
+  {lat:42.73598,lng:13.98203},
+  {lat:42.73711,lng:13.98204},
+  {lat:42.73774,lng:13.98143},
+];
 
-  // Calcola punto a 'dist' metri in direzione 'bearing' (gradi da nord)
-  function offsetPt(lat,lng,dist,bearing){
+// Il tracciato del limite: la battigia spostata di 300 metri verso il mare.
+//
+// Ogni punto si sposta perpendicolarmente alla costa COME GIRA LI', non a una
+// direzione media buona per tutti: con una direzione unica (com'era prima) il
+// limite restava una retta parallela alla corda tra il primo e l'ultimo punto,
+// e dove la costa piega - le due foci, la curva sotto il pontile - finiva a
+// tagliare il mare da una parte e la spiaggia dall'altra.
+//
+// La direzione locale di ogni punto e' quella tra il punto prima e quello
+// dopo, cosi' una curva viene seguita invece che raddrizzata. Puro, cosi' si
+// puo' provare senza mappa.
+export function puntiLimite300(battigia,distanza){
+  var dist=distanza||300;
+  // Punto a 'dist' metri in direzione 'bearing' (gradi da nord)
+  function offsetPt(lat,lng,d,bearing){
     var R=6371000,br=bearing*Math.PI/180;
     var lat1=lat*Math.PI/180,lng1=lng*Math.PI/180;
-    var lat2=Math.asin(Math.sin(lat1)*Math.cos(dist/R)+Math.cos(lat1)*Math.sin(dist/R)*Math.cos(br));
-    var lng2=lng1+Math.atan2(Math.sin(br)*Math.sin(dist/R)*Math.cos(lat1),Math.cos(dist/R)-Math.sin(lat1)*Math.sin(lat2));
+    var lat2=Math.asin(Math.sin(lat1)*Math.cos(d/R)+Math.cos(lat1)*Math.sin(d/R)*Math.cos(br));
+    var lng2=lng1+Math.atan2(Math.sin(br)*Math.sin(d/R)*Math.cos(lat1),Math.cos(d/R)-Math.sin(lat1)*Math.sin(lat2));
     return [lat2*180/Math.PI,lng2*180/Math.PI];
   }
+  // Direzione da un punto all'altro, in gradi da nord. I metri per grado
+  // valgono per questa latitudine: la costa e' lunga venti chilometri, non
+  // serve la sfera intera.
+  function direzione(a,b){
+    return Math.atan2((b.lng-a.lng)*81657,(b.lat-a.lat)*111111)*180/Math.PI;
+  }
+  var costa=battigia.slice().sort(function(a,b){return a.lat-b.lat;});
+  if(!costa.length)return [];
+  if(costa.length===1)return [{lat:costa[0].lat,lng:costa[0].lng}];
+  return costa.map(function(p,i){
+    // Estremi: la direzione e' quella dell'unico tratto che hanno.
+    var prima=costa[i>0?i-1:0];
+    var dopo=costa[i<costa.length-1?i+1:costa.length-1];
+    // Ordinati da sud a nord la costa punta a nord-ovest e il mare sta a
+    // destra di chi cammina: +90 gradi sulla direzione della costa.
+    var verso=direzione(prima,dopo)+90;
+    var q=offsetPt(p.lat,p.lng,dist,verso);
+    return {lat:q[0],lng:q[1]};
+  });
+}
+
+export function addLimitLine(){
+  if(!window.mapObj)return;
+  // Layer statico: la battigia non cambia mai, e ricrearlo ad ogni
+  // passaggio chiuderebbe il tooltip aperto.
+  if(_limitLines.length>0)return;
 
   var ttHtml='<div style="font-family:sans-serif;font-size:12px;font-weight:700;color:#f97316">'
     +'⚓ Limite 300 mt dalla battigia</div>'
-    +'<div style="font-size:11px;color:#333">Divieto navigazione, sosta e ancoraggio natanti (Ord. 29/2026)</div>';
+    +'<div style="font-size:11px;color:#333">Divieto navigazione, sosta e ancoraggio natanti (Ord. 29/2026)</div>'
+    +'<div style="font-size:10px;color:#888;margin-top:3px">Linea di costa: &copy; OpenStreetMap contributors (ODbL)</div>';
 
-  // Unica linea continua: tutte le postazioni ordinate per lat (sud→nord)
-  var allSt=STATIONS.slice().sort(function(a,b){return a.lat-b.lat;});
-  // Punto extra a sud: limite nord zona Foce Vomano
-  allSt.unshift({lat:42.6572,lng:14.0363,num:0,name:"Foce Vomano"});
-  // Punto extra a nord: limite sud zona Foce Tordino
-  allSt.push({lat:42.73836,lng:13.98111,num:0,name:"Foce Tordino"});
-
-  // Bearing seaward calcolato sull'intera linea costiera
-  function coastBearing(group){
-    var first=group[0],last=group[group.length-1];
-    var dlat=(last.lat-first.lat)*111111;
-    var dlng=(last.lng-first.lng)*81657;
-    return Math.atan2(dlng,dlat)*180/Math.PI+90;
-  }
-
-  var bearing=coastBearing(allSt);
-  var pts=allSt.map(function(s){return offsetPt(s.lat,s.lng,300,bearing);});
-  var path=pts.map(function(p){return {lat:p[0],lng:p[1]};});
   var line=new google.maps.Polyline({
-    path:path,strokeOpacity:0,strokeColor:"#f97316",
+    path:puntiLimite300(BATTIGIA),strokeOpacity:0,strokeColor:"#f97316",
     icons:[{icon:_dashIcon(2),offset:"0",repeat:"17px"}],
     map:window.mapObj,clickable:true,zIndex:4
   });
