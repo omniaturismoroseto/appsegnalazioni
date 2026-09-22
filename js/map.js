@@ -97,7 +97,16 @@ function _removeMarker(m){
 // automaticamente il popup precedente quando se ne apre uno nuovo.
 function _getSharedInfoWindow(){
   if(!window._sharedInfoWindow){
-    window._sharedInfoWindow=new google.maps.InfoWindow();
+    // disableAutoPan: e' QUESTA la mano che raddrizzava la mappa a ogni tocco
+    // su una postazione. Per far entrare il fumetto nello schermo, Google usa
+    // panToBounds, che sulle mappe vettoriali "resets tilt and heading to
+    // their default zero values" - lo stesso effetto documentato di
+    // fitBounds. Il guardiano su heading_changed non bastava: la rotazione
+    // veniva rimessa mentre l'animazione del pan era ancora in corso, e
+    // l'animazione la riportava a zero finendo in silenzio. Qui l'auto-pan si
+    // spegne e il rientro in vista lo facciamo noi con panBy (vedi
+    // _portaPopupInVista), che sposta di pixel senza toccare la camera.
+    window._sharedInfoWindow=new google.maps.InfoWindow({disableAutoPan:true});
     window._sharedInfoWindow.addListener("closeclick",function(){
       window._anyPopupOpen=false;
       if(window._refreshPending){setTimeout(function(){refreshMarkers();},50);}
@@ -105,10 +114,42 @@ function _getSharedInfoWindow(){
   }
   return window._sharedInfoWindow;
 }
+
+// Di quanti pixel spostare la mappa perche' il fumetto entri tutto nel
+// riquadro, lasciando un margine. Zero quando ci sta gia'. I segni sono
+// quelli di panBy: spostare la mappa di -dx porta il contenuto verso destra.
+export function _spostamentoPerVedere(popup,mappa,margine){
+  var m=margine||12,dx=0,dy=0;
+  if(popup.left<mappa.left+m)dx=popup.left-(mappa.left+m);
+  else if(popup.right>mappa.right-m)dx=popup.right-(mappa.right-m);
+  if(popup.top<mappa.top+m)dy=popup.top-(mappa.top+m);
+  else if(popup.bottom>mappa.bottom-m)dy=popup.bottom-(mappa.bottom-m);
+  // Un fumetto piu' grande del riquadro non si puo' far entrare tutto:
+  // meglio vederne l'inizio che inseguire il bordo di sotto.
+  if(popup.right-popup.left>mappa.right-mappa.left-2*m)dx=0;
+  if(popup.bottom-popup.top>mappa.bottom-mappa.top-2*m)dy=popup.top-(mappa.top+m);
+  return {dx:dx,dy:dy};
+}
+function _portaPopupInVista(iw){
+  google.maps.event.addListenerOnce(iw,"domready",function(){
+    // Il fumetto viene misurato dopo che il browser l'ha disegnato: prima ha
+    // dimensioni che non sono ancora quelle definitive.
+    setTimeout(function(){
+      try{
+        var el=document.getElementById("main-map");
+        var bolla=document.querySelector(".gm-style-iw-c")||document.querySelector(".gm-style-iw");
+        if(!el||!bolla||!window.mapObj)return;
+        var s=_spostamentoPerVedere(bolla.getBoundingClientRect(),el.getBoundingClientRect());
+        if(s.dx||s.dy)window.mapObj.panBy(s.dx,s.dy);
+      }catch(e){/* niente rientro in vista: il popup resta dov'e' */}
+    },60);
+  });
+}
 function _openSharedPopup(marker,html,maxWidth){
   var iw=_getSharedInfoWindow();
   iw.setContent(html);
   if(maxWidth)iw.setOptions({maxWidth:maxWidth});
+  _portaPopupInVista(iw);
   iw.open({map:window.mapObj,anchor:marker});
   window._anyPopupOpen=true;
 }
@@ -117,6 +158,7 @@ function _openSharedPopupAt(latLng,html,maxWidth){
   iw.setContent(html);
   if(maxWidth)iw.setOptions({maxWidth:maxWidth});
   iw.setPosition(latLng);
+  _portaPopupInVista(iw);
   iw.open({map:window.mapObj});
   window._anyPopupOpen=true;
 }
@@ -227,6 +269,11 @@ export async function initMap(){
     // l'opzione mapTypeControl viene accettata ma ignorata silenziosamente,
     // quindi ricreiamo un pulsante equivalente a mano.
     window.mapObj.addListener("heading_changed",applyHeadingPreference);
+    // Rete di sicurezza per i raddrizzamenti animati: heading_changed puo'
+    // scattare mentre la camera si sta ancora muovendo, e la rotazione che
+    // rimettiamo li' viene travolta dal resto dell'animazione. "idle" arriva
+    // quando la camera si e' fermata ed e' quindi l'ultima parola.
+    window.mapObj.addListener("idle",applyHeadingPreference);
     // core.js non importa map.js (sarebbe un giro circolare: e' map.js a
     // importare core.js), ma _syncUserMarker deve poter rimettere la rotazione
     // subito dopo il fitBounds che la azzera, prima che lo schermo la disegni.

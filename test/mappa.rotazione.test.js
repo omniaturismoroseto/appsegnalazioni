@@ -15,7 +15,7 @@
 // altro heading e' quindi da rimettere a posto, chiunque l'abbia cambiato.
 // Questi test fissano quella proprieta'.
 import { describe, it, expect, beforeEach } from "vitest";
-import { COAST_HEADING, applyHeadingPreference } from "../js/map.js";
+import { COAST_HEADING, _spostamentoPerVedere, applyHeadingPreference } from "../js/map.js";
 
 // Il localStorage di questo jsdom e' un oggetto senza metodi: map.js lo legge
 // dentro un try/catch e ripiegherebbe sempre sulla costa, cosi' il caso "ho
@@ -95,5 +95,35 @@ describe("rotazione della mappa", () => {
 
   it("non esplode se la mappa non c'e' ancora", () => {
     expect(() => applyHeadingPreference()).not.toThrow();
+  });
+});
+
+// Il caso visto in spiaggia dopo il GPS: a ogni tocco su una postazione la
+// mappa tornava col nord in alto. La causa non era la rotazione in se' ma il
+// fumetto: per farlo entrare nello schermo l'InfoWindow di Google chiama
+// panToBounds, che sulle mappe vettoriali azzera rotazione e inclinazione
+// esattamente come fitBounds. Ora l'auto-pan e' spento e il rientro in vista
+// lo calcola _spostamentoPerVedere, che finisce in panBy: pixel, non camera.
+describe("rientro in vista del fumetto, senza toccare la rotazione", () => {
+  const mappa = { left: 0, top: 0, right: 400, bottom: 300 };
+  const popup = (left, top, w, h) => ({ left, top, right: left + w, bottom: top + h });
+
+  it("non sposta niente quando il fumetto ci sta gia'", () => {
+    expect(_spostamentoPerVedere(popup(100, 100, 200, 120), mappa)).toEqual({ dx: 0, dy: 0 });
+  });
+  it("scopre il fumetto che sborda in alto", () => {
+    // 20px sopra il bordo, piu' i 12 di margine
+    expect(_spostamentoPerVedere(popup(100, -20, 200, 120), mappa).dy).toBe(-32);
+  });
+  it("scopre il fumetto che sborda a destra e in basso", () => {
+    const s = _spostamentoPerVedere(popup(260, 220, 200, 120), mappa);
+    expect(s.dx).toBe(72);
+    expect(s.dy).toBe(52);
+  });
+  it("un fumetto piu' largo del riquadro non si insegue di lato", () => {
+    expect(_spostamentoPerVedere(popup(-30, 100, 460, 120), mappa).dx).toBe(0);
+  });
+  it("un fumetto piu' alto del riquadro si allinea in cima", () => {
+    expect(_spostamentoPerVedere(popup(100, -50, 200, 400), mappa).dy).toBe(-62);
   });
 });
