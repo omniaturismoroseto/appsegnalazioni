@@ -264,7 +264,7 @@ async function sirenaPostazioniVicine(data, reportId) {
   const postazione = postazioneDellaSegnalazione(data);
   if (!postazione) return;
 
-  const { north, south } = stationNeighbors(postazione, await leggiPostazioni());
+  const { north, south } = stationNeighbors(postazione, await postazioniInServizio());
   const bersagli = [...north, ...south].map((s) => String(s.num));
   bersagli.push(String(postazione));
 
@@ -366,7 +366,7 @@ exports.repeatOpenAlerts = onSchedule(
 //    Scrive direttamente su /flags, indipendentemente da qualsiasi dispositivo.
 //      • 09:00 ora di Roma → tutte VERDI
 //      • 19:00 ora di Roma → tutte ROSSE
-//    Le postazioni sono quelle dell'elenco in uso (vedi leggiPostazioni):
+//    Le postazioni sono quelle in servizio oggi (vedi postazioniInServizio):
 //    una postazione aggiunta dall'admin riceve la sua bandiera come le altre.
 //    Fuori dal periodo di attivazione (config/stagione) alle 09:00 le
 //    bandiere restano ROSSE: il servizio non c'e'.
@@ -385,7 +385,7 @@ exports.bandiereVerdi = onSchedule(
   },
   async () => {
     try {
-      const stations = await leggiPostazioni();
+      const stations = await postazioniInServizio();
       if (!(await stagioneInCorso())) {
         await admin.database().ref("flags").set(buildFlags("rossa", stations));
         console.log("Fuori stagione: bandiere lasciate ROSSE (09:00 Roma)");
@@ -407,7 +407,7 @@ exports.bandiereRosse = onSchedule(
   },
   async () => {
     try {
-      await admin.database().ref("flags").set(buildFlags("rossa", await leggiPostazioni()));
+      await admin.database().ref("flags").set(buildFlags("rossa", await postazioniInServizio()));
       console.log("Bandiere impostate a ROSSO (19:00 Roma)");
     } catch (e) {
       await reportError(e, "bandiereRosse");
@@ -475,9 +475,33 @@ function postazioniDaNodo(raw) {
       const lat = Number(v.lat);
       const lng = Number(v.lng);
       if (!(num > 0) || typeof v.name !== "string" || !v.name || !isFinite(lat) || !isFinite(lng)) return null;
-      return { num, name: v.name, lat, lng };
+      const sospensioni = Object.values(v.sospensioni || {}).filter((p) => p && typeof p.dal === "string" && p.dal);
+      return { num, name: v.name, lat, lng, sospensioni };
     })
     .filter(Boolean);
+}
+
+// Data di oggi a Roma, nella stessa forma delle date scritte dall'admin.
+function oggiRoma() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+}
+
+// Una postazione sospesa non esiste per quei giorni: niente bandiera
+// automatica e niente sirena ai vicini, perche' li' non c'e' nessuno.
+// Il suo numero resta pero' nel database con tutto il suo (vedi il tab
+// Postazioni della dashboard admin).
+function sospesaIl(postazione, data) {
+  return (postazione.sospensioni || []).some((p) => {
+    if (data < p.dal) return false;
+    if (p.al && data > p.al) return false;
+    return true;
+  });
+}
+
+async function postazioniInServizio() {
+  const lista = await leggiPostazioni();
+  const oggi = oggiRoma();
+  return lista.filter((s) => !sospesaIl(s, oggi));
 }
 
 async function leggiPostazioni() {
@@ -499,7 +523,7 @@ async function stagioneInCorso() {
   try {
     const s = (await admin.database().ref("config/stagione").once("value")).val();
     if (!s) return true;
-    const oggi = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+    const oggi = oggiRoma();
     if (s.inizio && oggi < s.inizio) return false;
     if (s.fine && oggi > s.fine) return false;
     return true;
@@ -564,7 +588,7 @@ exports.sendStationEmergency = onValueCreated(
     const data = event.data.val();
     if (!data || !data.station) return null;
 
-    const { north, south } = stationNeighbors(data.station, await leggiPostazioni());
+    const { north, south } = stationNeighbors(data.station, await postazioniInServizio());
     const targetStations = [...north, ...south].map((s) => String(s.num));
 
     const devicesSnap = await admin.database().ref("stationDevices").once("value");

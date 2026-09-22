@@ -40,7 +40,7 @@
 // invece di introdurre Firebase Storage. Durata massima 60s per restare
 // ben sotto il limite di dimensione (vedi database.rules.json).
 import { icona } from "./icone.js";
-import { IS_NATIVE_APP, ROLE_LABELS, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode, zonaPostazione } from "./core.js";
+import { postazionePerNumero, IS_NATIVE_APP, ROLE_LABELS, STATIONS, _escapeHtml, resizeImg, chatEsternaMessages, chatEsternaRef, chatEsternaResetAt, chatMessages, chatRef, chatResetAt, render, stationMode, zonaPostazione } from "./core.js";
 
 
 const MAX_RECORDING_S=60;
@@ -79,7 +79,7 @@ function _chatMsgVisibleToMe(m){
 }
 
 function _stationLabel(num){
-  const st=STATIONS.find(function(s){return String(s.num)===String(num);});
+  const st=postazionePerNumero(num);
   return "P."+num+(st?" — "+st.name:"");
 }
 

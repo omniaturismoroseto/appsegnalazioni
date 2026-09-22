@@ -486,9 +486,19 @@ export const stagioneRef=_realDb.ref("config/stagione");
 // nel database l'intero elenco o solo la postazione toccata.
 export let postazioniDaDb=false;
 
-// Da {"10":{name,lat,lng}, ...} a [{num,name,lat,lng}, ...] ordinato per
-// numero. Le voci malformate si scartano: una riga sbagliata non deve
-// togliere la mappa a tutti.
+// Tutte le postazioni, comprese quelle sospese. STATIONS tiene solo quelle in
+// servizio oggi: una postazione sospesa sparisce da mappa, elenchi e
+// segnalazioni, ma il suo nome serve ancora a chi guarda indietro (una
+// segnalazione vecchia, un messaggio in chat, un tablet assegnato).
+export const POSTAZIONI=[];
+export function postazionePerNumero(num){
+  const n=String(num);
+  return POSTAZIONI.find(function(s){return String(s.num)===n;})||null;
+}
+
+// Da {"10":{name,lat,lng,sospensioni?}, ...} a [{num,name,lat,lng,sospensioni},
+// ...] ordinato per numero. Le voci malformate si scartano: una riga sbagliata
+// non deve togliere la mappa a tutti.
 export function postazioniDaNodo(raw){
   if(!raw||typeof raw!=="object")return [];
   return Object.keys(raw).map(function(k){
@@ -496,14 +506,40 @@ export function postazioniDaNodo(raw){
     const num=parseInt(k,10);
     const lat=Number(v.lat),lng=Number(v.lng);
     if(!(num>0)||typeof v.name!=="string"||!v.name||!isFinite(lat)||!isFinite(lng))return null;
-    return {num:num,name:v.name,lat:lat,lng:lng};
+    return {num:num,name:v.name,lat:lat,lng:lng,sospensioni:_sospensioniDaNodo(v.sospensioni)};
   }).filter(Boolean).sort(function(a,b){return a.num-b.num;});
+}
+function _sospensioniDaNodo(raw){
+  if(!raw||typeof raw!=="object")return [];
+  return Object.keys(raw).map(function(id){
+    const p=raw[id]||{};
+    if(typeof p.dal!=="string"||!p.dal)return null;
+    return {id:id,dal:p.dal,al:(typeof p.al==="string"&&p.al)?p.al:null};
+  }).filter(Boolean).sort(function(a,b){return a.dal<b.dal?-1:1;});
+}
+
+// Una postazione chiusa per un periodo non si cancella: si sospende. Cosi'
+// bandiere, note, tablet e turni restano legati al suo numero e tornano tali e
+// quali alla riapertura. Periodo senza fine = sospesa finche' l'admin non la
+// riattiva.
+export function sospesaIl(postazione,data){
+  const periodi=(postazione&&postazione.sospensioni)||[];
+  return periodi.some(function(p){
+    if(!p.dal||data<p.dal)return false;
+    if(p.al&&data>p.al)return false;
+    return true;
+  });
+}
+export function postazioniAttive(lista,data){
+  return lista.filter(function(s){return !sospesaIl(s,data);});
 }
 
 function _applicaPostazioni(lista){
   const copia=lista.slice();
+  POSTAZIONI.length=0;
+  copia.forEach(function(s){POSTAZIONI.push(s);});
   STATIONS.length=0;
-  copia.forEach(function(s){STATIONS.push(s);});
+  postazioniAttive(copia,romeNow().date).forEach(function(s){STATIONS.push(s);});
   ZONES.length=0;
   STATIONS.forEach(function(s){ZONES.push(`P.${s.num} \u2013 ${s.name}`);});
   ZONES.push("Spiaggia libera / Area non concessionata");
@@ -924,6 +960,23 @@ _ascolta(postazioniRef,"postazioni",function(snap){
   if(currentScreen==="dashboard"&&window.activeDashTab!=="postazioni")renderPage();
 });
 
+// Una sospensione che inizia o finisce stanotte deve valere domattina anche
+// sugli apparecchi che nessuno spegne mai - i tablet di postazione restano
+// accesi per settimane, e l'elenco lo calcola la data di oggi. Ogni dieci
+// minuti si guarda se la giornata e' cambiata, e in quel caso si rifa' il
+// conto delle postazioni in servizio (e si ridisegna: cambia anche il banner
+// di fine stagione, che dipende dalla stessa data).
+var _giornoCorrente=romeNow().date;
+setInterval(function(){
+  var oggi=romeNow().date;
+  if(oggi===_giornoCorrente)return;
+  _giornoCorrente=oggi;
+  _applicaPostazioni(POSTAZIONI);
+  _ricalcolaBandiere();
+  refreshMarkers();
+  renderPage();
+},10*60*1000);
+
 _ascolta(stagioneRef,"stagione",function(snap){
   stagioneData=snap.val()||null;
   try{
@@ -1120,7 +1173,7 @@ export function getFlags(){return{...flagsData};}
 // di differenza perche' una postazione smettesse di vedere le proprie.
 export function zonaPostazione(num){
   const n=String((num===undefined||num===null)?(stationMode||""):num);
-  const st=STATIONS.find(function(s){return String(s.num)===n;});
+  const st=postazionePerNumero(n);
   return "P."+n+(st?" – "+st.name:"");
 }
 export function addReport(r){
@@ -1198,6 +1251,9 @@ export function haversine(lat1,lng1,lat2,lng2){
 export function findNearest(lat,lng){
   let best=null,bestDist=Infinity;
   STATIONS.forEach(s=>{const d=haversine(lat,lng,s.lat,s.lng);if(d<bestDist){bestDist=d;best=s;}});
+  // Nessuna postazione in servizio (tutte sospese, o fuori stagione): non
+  // esiste una "piu' vicina", e una distanza infinita non si mostra a nessuno.
+  if(!best)return{station:null,dist:null};
   return{station:best,dist:Math.round(bestDist)};
 }
 export function findNearestDAE(lat,lng){

@@ -1,4 +1,4 @@
-import { FLAG_COLORS, STATIONS, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
+import { FLAG_COLORS, STATIONS, postazionePerNumero, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
 import { refreshMarkers } from "./map.js";
 import { CHILD_ESCALATE_MIN } from "./pages-public.js";
 import { renderChatPanel } from "./chat.js";
@@ -387,7 +387,7 @@ export function renderDispositivi(page){
   }
   active.forEach(function(entry){
     var deviceId=entry[0],d=entry[1];
-    var st=STATIONS.find(function(s){return String(s.num)===String(d.station);});
+    var st=postazionePerNumero(d.station);
     var row=document.createElement("div");
     row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
     var info=document.createElement("div");info.style.cssText="flex:1;min-width:0";
