@@ -79,6 +79,24 @@
       }
     },
     "config": {
+      "postazioni": {
+        ".read": true,
+        ".write": "auth != null && auth.token.role === 'admin'",
+        "$num": {
+          ".validate": "$num.matches(/^[1-9][0-9]{0,2}$/) && newData.hasChildren(['name','lat','lng']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 80 && newData.child('lat').isNumber() && newData.child('lat').val() >= -90 && newData.child('lat').val() <= 90 && newData.child('lng').isNumber() && newData.child('lng').val() >= -180 && newData.child('lng').val() <= 180",
+          "$campo": {
+            ".validate": "$campo.matches(/^(name|lat|lng)$/)"
+          }
+        }
+      },
+      "stagione": {
+        ".read": true,
+        ".write": "auth != null && auth.token.role === 'admin'",
+        ".validate": "newData.hasChildren(['inizio','fine']) && newData.child('inizio').isString() && newData.child('inizio').val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.child('fine').isString() && newData.child('fine').val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && newData.child('fine').val() >= newData.child('inizio').val() && (!newData.hasChild('messaggio') || (newData.child('messaggio').isString() && newData.child('messaggio').val().length <= 500))",
+        "$campo": {
+          ".validate": "$campo.matches(/^(inizio|fine|messaggio)$/)"
+        }
+      },
       "turniOggi": {
         ".read": "auth != null && (auth.token.role === 'admin' || auth.token.role === 'coordinator')",
         ".write": false,

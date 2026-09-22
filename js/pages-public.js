@@ -1,4 +1,4 @@
-import { FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stationDevicesRef, stationMode } from "./core.js";
+import { FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, isStagioneAttiva, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stagioneData, stationDevicesRef, stationMode } from "./core.js";
 import { degToCompass, fetchMeteoMarine, knotsFromKmh, renderMeteoCard } from "./meteo.js";
 import { _renderDeviceActivation } from "./device.js";
 import { STATION_APP } from "./core.js";
@@ -196,9 +196,28 @@ export function _emergency112Prompt(onProceed){
   document.body.appendChild(ov);
 }
 
+// Fuori dal periodo di attivazione (tab Postazioni della dashboard admin, vedi
+// stagioneData in core.js) la home si apre con i saluti di fine stagione.
+// Vale sia dopo la fine sia prima dell'inizio: per chi apre l'app a marzo la
+// stagione "in corso" e' ancora quella chiusa a settembre.
+export function _bannerFineStagione(stagione,oggi){
+  const s=stagione||{};
+  const riapre=s.inizio&&s.inizio>oggi?s.inizio.split("-"):null;
+  const box=document.createElement("div");
+  box.className="banner-fine-stagione";
+  box.innerHTML='<div style="font-size:40px;line-height:1;margin-bottom:8px">🌅</div>'
+    +'<p style="font-size:18px;font-weight:800;margin-bottom:6px">Grazie e arrivederci!</p>'
+    +'<p class="bfs-testo" style="font-size:13.5px;line-height:1.5;margin-bottom:8px"></p>'
+    +(riapre?'<p style="font-size:12.5px;font-weight:700;margin-bottom:8px">Il servizio di salvataggio riprenderà il '+riapre[2]+'/'+riapre[1]+'/'+riapre[0]+'.</p>':'')
+    +'<p style="font-size:12px;opacity:.85">Il servizio di salvataggio non è attivo: per emergenze chiama il 112.</p>';
+  box.querySelector(".bfs-testo").textContent=s.messaggio
+    ||"La stagione balneare è terminata. Omnia Adriatic Lifeguard Service ringrazia bagnanti, stabilimenti e tutto il personale per averci accompagnato quest'estate: vi aspettiamo la prossima!";
+  return box;
+}
+
 export function renderHome(page){
   fetchMeteoMarine(false);
-  
+  if(!isStagioneAttiva())page.appendChild(_bannerFineStagione(stagioneData,romeNow().date));
 
   const emergencyBox=document.createElement("div");
   emergencyBox.style.cssText="margin-bottom:14px";

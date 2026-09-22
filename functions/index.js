@@ -264,7 +264,7 @@ async function sirenaPostazioniVicine(data, reportId) {
   const postazione = postazioneDellaSegnalazione(data);
   if (!postazione) return;
 
-  const { north, south } = stationNeighbors(postazione);
+  const { north, south } = stationNeighbors(postazione, await leggiPostazioni());
   const bersagli = [...north, ...south].map((s) => String(s.num));
   bersagli.push(String(postazione));
 
@@ -366,11 +366,14 @@ exports.repeatOpenAlerts = onSchedule(
 //    Scrive direttamente su /flags, indipendentemente da qualsiasi dispositivo.
 //      • 09:00 ora di Roma → tutte VERDI
 //      • 19:00 ora di Roma → tutte ROSSE
-//    Le postazioni vanno da P.10 a P.35.
+//    Le postazioni sono quelle dell'elenco in uso (vedi leggiPostazioni):
+//    una postazione aggiunta dall'admin riceve la sua bandiera come le altre.
+//    Fuori dal periodo di attivazione (config/stagione) alle 09:00 le
+//    bandiere restano ROSSE: il servizio non c'e'.
 // ============================================================
-function buildFlags(color) {
+function buildFlags(color, stations) {
   const flags = {};
-  for (let n = 10; n <= 35; n++) flags[String(n)] = color;
+  stations.forEach((s) => { flags[String(s.num)] = color; });
   return flags;
 }
 
@@ -382,7 +385,13 @@ exports.bandiereVerdi = onSchedule(
   },
   async () => {
     try {
-      await admin.database().ref("flags").set(buildFlags("verde"));
+      const stations = await leggiPostazioni();
+      if (!(await stagioneInCorso())) {
+        await admin.database().ref("flags").set(buildFlags("rossa", stations));
+        console.log("Fuori stagione: bandiere lasciate ROSSE (09:00 Roma)");
+        return;
+      }
+      await admin.database().ref("flags").set(buildFlags("verde", stations));
       console.log("Bandiere impostate a VERDE (09:00 Roma)");
     } catch (e) {
       await reportError(e, "bandiereVerdi");
@@ -398,7 +407,7 @@ exports.bandiereRosse = onSchedule(
   },
   async () => {
     try {
-      await admin.database().ref("flags").set(buildFlags("rossa"));
+      await admin.database().ref("flags").set(buildFlags("rossa", await leggiPostazioni()));
       console.log("Bandiere impostate a ROSSO (19:00 Roma)");
     } catch (e) {
       await reportError(e, "bandiereRosse");
@@ -452,18 +461,61 @@ exports.resetChatEsternaSerale = onSchedule(
 // 4) DISPOSITIVI DI POSTAZIONE — autenticazione e allarme emergenza mirato
 // ============================================================
 
-// Stessa lista di postazioni del client (index.html): fonte unica in
-// ../stations-data.js, copiata qui automaticamente ad ogni deploy (vedi
-// "predeploy" in firebase.json) — non modificare stations-data.js in questa
-// cartella a mano, si perde al prossimo deploy.
+// L'elenco delle postazioni lo gestisce l'admin dalla dashboard e sta in
+// /config/postazioni ({"10": {name, lat, lng}, ...}). stations-data.js
+// (copiato qui da ../public ad ogni deploy, vedi "predeploy" in firebase.json)
+// resta come riserva: vale finche' il nodo non esiste o se non si riesce a
+// leggerlo. Stessa regola del client, vedi postazioniDaNodo in js/core.js.
+function postazioniDaNodo(raw) {
+  if (!raw || typeof raw !== "object") return [];
+  return Object.keys(raw)
+    .map((k) => {
+      const v = raw[k] || {};
+      const num = parseInt(k, 10);
+      const lat = Number(v.lat);
+      const lng = Number(v.lng);
+      if (!(num > 0) || typeof v.name !== "string" || !v.name || !isFinite(lat) || !isFinite(lng)) return null;
+      return { num, name: v.name, lat, lng };
+    })
+    .filter(Boolean);
+}
+
+async function leggiPostazioni() {
+  try {
+    const snap = await admin.database().ref("config/postazioni").once("value");
+    const lista = postazioniDaNodo(snap.val());
+    if (lista.length) return lista;
+  } catch (e) {
+    await reportError(e, "leggiPostazioni");
+  }
+  return STATIONS;
+}
+
+// Periodo di attivazione (config/stagione: {inizio, fine} come "AAAA-MM-GG",
+// impostato dall'admin). Senza periodo la stagione e' sempre in corso, come
+// prima che il periodo esistesse. In caso di errore di lettura si considera
+// in corso: meglio una bandiera verde di troppo in ottobre che rosse in agosto.
+async function stagioneInCorso() {
+  try {
+    const s = (await admin.database().ref("config/stagione").once("value")).val();
+    if (!s) return true;
+    const oggi = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+    if (s.inizio && oggi < s.inizio) return false;
+    if (s.fine && oggi > s.fine) return false;
+    return true;
+  } catch (e) {
+    await reportError(e, "stagioneInCorso");
+    return true;
+  }
+}
 
 
 // Ordina le postazioni da sud a nord per LATITUDINE REALE (non per numero:
 // P.31-35 non sono in sequenza geografica col resto), poi prende fino a 2
 // vicine per lato. Se un lato ne ha meno di 2 (o zero), semplicemente non
 // include quelle mancanti — nessun avvolgimento (wrap-around).
-function stationNeighbors(stationNum) {
-  const ordered = STATIONS.slice().sort((a, b) => a.lat - b.lat);
+function stationNeighbors(stationNum, stations) {
+  const ordered = stations.slice().sort((a, b) => a.lat - b.lat);
   const idx = ordered.findIndex((s) => String(s.num) === String(stationNum));
   if (idx === -1) return { north: [], south: [] };
   const south = ordered.slice(Math.max(0, idx - 2), idx);
@@ -512,7 +564,7 @@ exports.sendStationEmergency = onValueCreated(
     const data = event.data.val();
     if (!data || !data.station) return null;
 
-    const { north, south } = stationNeighbors(data.station);
+    const { north, south } = stationNeighbors(data.station, await leggiPostazioni());
     const targetStations = [...north, ...south].map((s) => String(s.num));
 
     const devicesSnap = await admin.database().ref("stationDevices").once("value");
