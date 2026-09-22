@@ -35,6 +35,10 @@ export function registerChrome(parts){
   });
 }
 export function refreshMarkers(){chrome.refreshMarkers();}
+// La legenda racconta i simboli delle postazioni: quando l'elenco in servizio
+// cambia (stagione aperta o chiusa, ultima postazione sospesa) va ridisegnata
+// insieme ai segnaposti, altrimenti resta a spiegare una mappa che non c'e'.
+export function renderMapLegend(){chrome.renderMapLegend();}
 export function renderHeader(){chrome.renderHeader();}
 
 const screens={};
@@ -949,6 +953,7 @@ _ascolta(flagsRef,"bandiere",snap=>{
   _ultimeBandiere=snap.val()||{};
   _ricalcolaBandiere();
   refreshMarkers();
+  renderMapLegend();
   if(currentScreen==="home")renderPage();
   if(currentScreen==="station")renderPage();
   if(currentScreen==="dashboard"&&window.activeDashTab==="bandiere")renderPage();
@@ -965,6 +970,7 @@ _ascolta(postazioniRef,"postazioni",function(snap){
   }catch(e){}
   _ricalcolaBandiere();
   refreshMarkers();
+  renderMapLegend();
   if(currentScreen==="home"||currentScreen==="station")renderPage();
   // Sul tab Postazioni ci pensa il pannello stesso: ridisegnarlo qui
   // butterebbe via una modifica a meta'.
@@ -985,6 +991,7 @@ setInterval(function(){
   _applicaPostazioni(POSTAZIONI);
   _ricalcolaBandiere();
   refreshMarkers();
+  renderMapLegend();
   renderPage();
 },10*60*1000);
 
@@ -999,6 +1006,7 @@ _ascolta(stagioneRef,"stagione",function(snap){
   _applicaPostazioni(POSTAZIONI);
   _ricalcolaBandiere();
   refreshMarkers();
+  renderMapLegend();
   if(currentScreen==="dashboard"&&window.activeDashTab==="postazioni")return;
   renderPage();
 });

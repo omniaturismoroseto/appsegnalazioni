@@ -457,7 +457,12 @@ export function refreshMarkers(){
   addDAEMarkers();
 }
 export function renderMapLegend(){
-  const leg=document.getElementById("map-legend");leg.style.display="flex";
+  const leg=document.getElementById("map-legend");
+  // Senza postazioni sulla mappa (fuori dal periodo di balneazione) la
+  // legenda spiegherebbe simboli che non ci sono: bandiere, emergenze,
+  // pericoli. Sparisce con loro.
+  if(!STATIONS.length){leg.style.display="none";leg.innerHTML="";return;}
+  leg.style.display="flex";
   leg.innerHTML=
     `<span><span class="ldot" style="background:#27ae60"></span>Verde</span>`+
     `<span><span class="ldot" style="background:#F5C800"></span>Gialla</span>`+
