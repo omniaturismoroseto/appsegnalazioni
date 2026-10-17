@@ -237,11 +237,25 @@ function _hideMapError(){
   if(b&&b.parentNode)b.parentNode.removeChild(b);
 }
 
+// Un segnaposto di contorno che non si disegna non e' una mappa rotta.
+// Il 13 ottobre (Chrome 145, Windows) Google Maps e' andato in errore dentro
+// il proprio codice mentre costruiva il segnaposto LOCAMARE: "Cannot set
+// properties of undefined (setting 'baseVal')", lanciato da common.js nel
+// preparare il suo spillo predefinito - nessuna nostra opzione coinvolta.
+// Siccome era il primo segnaposto della lista, l'errore saltava tutto il
+// resto: niente Carabinieri, DAE, zone vietate e soprattutto niente
+// postazioni, e al loro posto il riquadro "Mappa non caricata" sopra una
+// mappa che invece c'era. Ognuno ora fa per conto suo: se uno cade, Sentry
+// lo racconta e gli altri si disegnano lo stesso.
+function _sePossibile(fn){
+  try{fn();}catch(err){_sentryCapture(err);}
+}
+
 // MAPPA
 export async function initMap(){
   var el=document.getElementById("main-map");
   if(!el)return;
-  if(window.mapObj){ensureLocamareMarker();refreshMarkers();_resizeMap();return;}
+  if(window.mapObj){_sePossibile(ensureLocamareMarker);refreshMarkers();_resizeMap();return;}
   if(window._mapInitializing)return;
   window._mapInitializing=true;
   _hideMapError();
@@ -278,20 +292,10 @@ export async function initMap(){
     // importare core.js), ma _syncUserMarker deve poter rimettere la rotazione
     // subito dopo il fitBounds che la azzera, prima che lo schermo la disegni.
     window._applyMapHeading=applyHeadingPreference;
-    addMapTypeToggle();
-    addHeadingToggle();
-    ensureLocamareMarker();
-    addCCMarker();
-    addPLMarker();
-    addFinanzaMarker();
-    addVVFMarker();
-    addGuardiaMedicaMarker();
-    addComuneMarker();
-    addIATMarker();
-    addRosetanaMarker();
-    addPortoroseMarker();
-    addZoneVietate();
-    addDAEMarkers();
+    [addMapTypeToggle,addHeadingToggle,ensureLocamareMarker,addCCMarker,
+     addPLMarker,addFinanzaMarker,addVVFMarker,addGuardiaMedicaMarker,
+     addComuneMarker,addIATMarker,addRosetanaMarker,addPortoroseMarker,
+     addZoneVietate,addDAEMarkers].forEach(_sePossibile);
     refreshMarkers();
     _syncUserMarker();
     google.maps.event.addListenerOnce(window.mapObj,"idle",function(){
