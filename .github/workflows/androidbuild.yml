@@ -1,4 +1,4 @@
-name: Build APK Android (Omnia Postazioni)
+name: Build Android (Omnia Postazioni)
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - "android-app/**"
-      - ".github/workflows/android-build.yml"
+      - ".github/workflows/androidbuild.yml"
 
 jobs:
   build:
@@ -55,7 +55,15 @@ jobs:
       # l'aggiornamento sopra la versione gia' presente, senza disinstallare e
       # senza perdere i dati locali dell'app - fra cui omnia_device_id, cioe'
       # l'identita' con cui la postazione e' stata approvata.
-      - name: Compila APK di release firmato
+      # Due pacchetti dalla stessa compilazione e dalla stessa firma:
+      #
+      # - l'APK, che si installa direttamente sul tablet ed e' quello che usiamo
+      #   oggi per i dispositivi gia' in servizio;
+      # - l'AAB (Android App Bundle), che e' l'unico formato che il Play Store
+      #   accetta per un'app nuova. Finche' l'app non e' sullo Store nessuno lo
+      #   guarda, ma averlo gia' pronto a ogni build evita di dover ricompilare
+      #   a mano il giorno della pubblicazione.
+      - name: Compila i pacchetti di release firmati
         working-directory: android-app/android
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/omnia-release.p12
@@ -65,7 +73,7 @@ jobs:
           # il pacchetto come aggiornamento.
           ANDROID_VERSION_CODE: ${{ github.run_number }}
           ANDROID_VERSION_NAME: 1.0.${{ github.run_number }}
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Rimuovi la keystore dal runner
         if: always()
@@ -76,4 +84,11 @@ jobs:
         with:
           name: omnia-postazioni-apk
           path: android-app/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+      - name: Carica AAB come artifact scaricabile
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnia-postazioni-aab
+          path: android-app/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
