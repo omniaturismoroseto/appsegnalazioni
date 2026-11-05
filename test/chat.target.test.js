@@ -12,11 +12,20 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // puo' leggere una const dichiarata qui sotto (sarebbe ancora in TDZ).
 const state = vi.hoisted(() => ({ station: null, messages: {}, pushed: [] }));
 
+// Stesso motivo del blocco qui sopra: la fabbrica del mock gira prima di
+// qualsiasi const normale di questo file.
+const postazioni = vi.hoisted(() => [
+  { num: 14, name: "Bolla Mare" },
+  { num: 20, name: "Lido Azzurra" },
+]);
+
 vi.mock("../js/core.js", () => ({
-  STATIONS: [
-    { num: 14, name: "Bolla Mare" },
-    { num: 20, name: "Lido Azzurra" },
-  ],
+  // Solo le postazioni in servizio: la barra del destinatario non offre
+  // quelle sospese (vedi sospesaIl in core.js).
+  STATIONS: postazioni,
+  // Il nome di una postazione si cerca sull'elenco completo, sospese
+  // comprese: un messaggio di ieri deve restare leggibile.
+  postazionePerNumero: (num) => postazioni.find((s) => String(s.num) === String(num)) || null,
   _escapeHtml: (s) =>
     String(s === null || s === undefined ? "" : s).replace(
       /[&<>"']/g,

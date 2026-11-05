@@ -1,15 +1,24 @@
-import { FLAG_COLORS, STATIONS, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
+import { FLAG_COLORS, STATIONS, isStagioneAttiva, postazionePerNumero, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
 import { refreshMarkers } from "./map.js";
 import { CHILD_ESCALATE_MIN } from "./pages-public.js";
 import { renderChatPanel } from "./chat.js";
 import { renderAdminPanel, _promoteSelfBootstrap, _callAdminFn } from "./admin.js";
+import { renderPostazioniAdmin } from "./admin-postazioni.js";
+
+// Dal numero piu' basso al piu' alto dell'elenco in uso, che ora cambia
+// dal tab Postazioni e non e' piu' una costante.
+function _intervalloPostazioni(){
+  if(!STATIONS.length)return "";
+  const nums=STATIONS.map(s=>s.num);
+  return "P."+Math.min.apply(null,nums)+" \u2013 P."+Math.max.apply(null,nums);
+}
 
 export function renderDashboard(page){
   const reports=getReports(),open=reports.filter(r=>r.status==="aperta");
   const tb=document.createElement("div");tb.className="dash-toolbar";
   const ti=document.createElement("div");
   const sd=window.fbReady?`<span class="sync-dot" title="Sync attivo"></span>`:`<span class="sync-dot off" title="Connessione..."></span>`;
-  ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">Dashboard Operatori ${sd}</h1><p style="font-size:11px;color:var(--text2)">Roseto degli Abruzzi &middot; P.10 \u2013 P.35</p>`;
+  ti.innerHTML=`<h1 style="font-size:16px;font-weight:600;margin-bottom:2px">Dashboard Operatori ${sd}</h1><p style="font-size:11px;color:var(--text2)">Roseto degli Abruzzi &middot; ${_intervalloPostazioni()}</p>`;
   const logoutBtn=document.createElement("button");
   logoutBtn.style.cssText="font-size:12px;padding:5px 12px;color:var(--danger-text);background:var(--danger-bg);border-color:transparent;border-radius:var(--radius)";
   logoutBtn.innerHTML="\uD83D\uDD13 Esci";
@@ -66,6 +75,7 @@ export function renderDashboard(page){
   if(chatAllowed)tabs.push(["chat","\ud83d\udcac Chat"]);
   tabs.push(["dispositivi","\ud83d\udcf1 Dispositivi"]);
   if(externalChatAllowed)tabs.push(["chatEsterna","\ud83c\udf10 Chat esterna"]);
+  if(window.isAdmin)tabs.push(["postazioni","\ud83d\udccd Postazioni"]);
   if(window.isAdmin)tabs.push(["admin","\ud83d\udee0\ufe0f Admin"]);
   tabs.forEach(([k,l])=>{
     const btn=document.createElement("button");btn.className="tab-btn"+(window.activeDashTab===k?" active":"");btn.textContent=l;
@@ -82,6 +92,10 @@ export function renderDashboard(page){
   if(window.activeDashTab==="chatEsterna"){
     if(!externalChatAllowed){window.activeDashTab="segnalazioni";}
     else{renderChatPanel(page,{channel:"external"});return;}
+  }
+  if(window.activeDashTab==="postazioni"){
+    if(!window.isAdmin){window.activeDashTab="segnalazioni";}
+    else{renderPostazioniAdmin(page);return;}
   }
   if(window.activeDashTab==="admin"){
     if(!window.isAdmin){window.activeDashTab="segnalazioni";}
@@ -192,7 +206,22 @@ export function renderDashboard(page){
   page.appendChild(list);
 }
 
+// Fuori dal periodo di balneazione le postazioni non sono in servizio e
+// spariscono da tutta l'app: in dashboard va detto, altrimenti bandiere e
+// note sembrano un pannello rotto.
+function _avvisoNessunaPostazione(page){
+  if(STATIONS.length)return false;
+  const box=document.createElement("div");
+  box.style.cssText="background:var(--warning-bg);color:var(--warning-text);border-radius:var(--radius-lg);padding:14px;font-size:13px;line-height:1.5";
+  box.textContent=isStagioneAttiva()
+    ?"Nessuna postazione in servizio: sono tutte sospese. Il periodo di sospensione si cambia nel tab Postazioni."
+    :"Fuori dal periodo di balneazione: nessuna postazione è in servizio e nessuna compare nell'app. Il periodo si imposta nel tab Postazioni.";
+  page.appendChild(box);
+  return true;
+}
+
 export function renderNote(page){
+  if(_avvisoNessunaPostazione(page))return;
   var panel=document.createElement("div");panel.className="bandiere-panel";
   panel.id="_notePanelRows";
   var hdr=document.createElement("div");hdr.className="bandiere-header";
@@ -373,7 +402,7 @@ export function renderDispositivi(page){
   }
   active.forEach(function(entry){
     var deviceId=entry[0],d=entry[1];
-    var st=STATIONS.find(function(s){return String(s.num)===String(d.station);});
+    var st=postazionePerNumero(d.station);
     var row=document.createElement("div");
     row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
     var info=document.createElement("div");info.style.cssText="flex:1;min-width:0";
@@ -424,6 +453,7 @@ export function renderDispositivi(page){
 
 // PANNELLO DI POSTAZIONE (dispositivo dedicato, nessun accesso alla dashboard generale)
 export function renderBandiere(page){
+  if(_avvisoNessunaPostazione(page))return;
   const flags=getFlags();
   const panel=document.createElement("div");panel.className="bandiere-panel";
   const hdr=document.createElement("div");hdr.className="bandiere-header";

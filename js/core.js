@@ -35,6 +35,10 @@ export function registerChrome(parts){
   });
 }
 export function refreshMarkers(){chrome.refreshMarkers();}
+// La legenda racconta i simboli delle postazioni: quando l'elenco in servizio
+// cambia (stagione aperta o chiusa, ultima postazione sospesa) va ridisegnata
+// insieme ai segnaposti, altrimenti resta a spiegare una mappa che non c'e'.
+export function renderMapLegend(){chrome.renderMapLegend();}
 export function renderHeader(){chrome.renderHeader();}
 
 const screens={};
@@ -467,11 +471,113 @@ export const FLAG_COLORS={verde:"#27ae60",gialla:"#F5C800",rossa:"#e74c3c"};
 export const ALERT_COLORS={emergenza:"#D81B8C",pericolo:"#1a1a1a"};
 export const LOGO_SRC=null;
 
+// Elenco delle postazioni. Chi comanda e' /config/postazioni, che l'admin
+// gestisce dalla dashboard (tab "Postazioni", vedi admin-postazioni.js).
+// public/stations-data.js resta come riserva: e' cio' che si vede finche' il
+// nodo non esiste (la prima volta, prima che un admin salvi) o mentre il
+// primo caricamento non e' ancora arrivato e non c'e' una copia in cache.
+// STATIONS e ZONES si aggiornano SUL POSTO (stesso array, contenuto nuovo):
+// mezza app li ha importati per riferimento e deve vedere il cambio.
 export const STATIONS=STATIONS_DATA;
+const _STATIONS_FILE=STATIONS_DATA.slice();
 // Note permanenti di pericolo — non eliminabili dall'operatore
 export const PERMANENT_STATION_NOTES={"10":"⚠️Zona soggetta a correnti che trascinano verso il Pontile. Prestare sempre la massima attenzione ed ascolta i richiami del personale ALS⚠️"};
-export const ZONES=STATIONS.map(s=>`P.${s.num} \u2013 ${s.name}`);
-ZONES.push("Spiaggia libera / Area non concessionata");
+export const ZONES=[];
+export const postazioniRef=_realDb.ref("config/postazioni");
+export const stagioneRef=_realDb.ref("config/stagione");
+// Vero quando l'elenco in uso viene dal database e non dal file di riserva:
+// il pannello admin lo usa per sapere se al primo salvataggio deve copiare
+// nel database l'intero elenco o solo la postazione toccata.
+export let postazioniDaDb=false;
+
+// Tutte le postazioni, comprese quelle sospese. STATIONS tiene solo quelle in
+// servizio oggi: una postazione sospesa sparisce da mappa, elenchi e
+// segnalazioni, ma il suo nome serve ancora a chi guarda indietro (una
+// segnalazione vecchia, un messaggio in chat, un tablet assegnato).
+export const POSTAZIONI=[];
+export function postazionePerNumero(num){
+  const n=String(num);
+  return POSTAZIONI.find(function(s){return String(s.num)===n;})||null;
+}
+
+// Da {"10":{name,lat,lng,sospensioni?}, ...} a [{num,name,lat,lng,sospensioni},
+// ...] ordinato per numero. Le voci malformate si scartano: una riga sbagliata
+// non deve togliere la mappa a tutti.
+export function postazioniDaNodo(raw){
+  if(!raw||typeof raw!=="object")return [];
+  return Object.keys(raw).map(function(k){
+    const v=raw[k]||{};
+    const num=parseInt(k,10);
+    const lat=Number(v.lat),lng=Number(v.lng);
+    if(!(num>0)||typeof v.name!=="string"||!v.name||!isFinite(lat)||!isFinite(lng))return null;
+    return {num:num,name:v.name,lat:lat,lng:lng,sospensioni:_sospensioniDaNodo(v.sospensioni)};
+  }).filter(Boolean).sort(function(a,b){return a.num-b.num;});
+}
+function _sospensioniDaNodo(raw){
+  if(!raw||typeof raw!=="object")return [];
+  return Object.keys(raw).map(function(id){
+    const p=raw[id]||{};
+    if(typeof p.dal!=="string"||!p.dal)return null;
+    return {id:id,dal:p.dal,al:(typeof p.al==="string"&&p.al)?p.al:null};
+  }).filter(Boolean).sort(function(a,b){return a.dal<b.dal?-1:1;});
+}
+
+// Una postazione chiusa per un periodo non si cancella: si sospende. Cosi'
+// bandiere, note, tablet e turni restano legati al suo numero e tornano tali e
+// quali alla riapertura. Periodo senza fine = sospesa finche' l'admin non la
+// riattiva.
+export function sospesaIl(postazione,data){
+  const periodi=(postazione&&postazione.sospensioni)||[];
+  return periodi.some(function(p){
+    if(!p.dal||data<p.dal)return false;
+    if(p.al&&data>p.al)return false;
+    return true;
+  });
+}
+// Periodo di attivazione del servizio: {inizio:"AAAA-MM-GG", fine:"AAAA-MM-GG",
+// messaggio?}. Fuori dal periodo la home mostra il banner di fine stagione e
+// il servizio risulta non attivo. Senza periodo impostato la stagione e'
+// sempre aperta: e' il comportamento di prima che il periodo esistesse.
+export let stagioneData=null;
+try{stagioneData=JSON.parse(localStorage.getItem("fb_stagione")||"null");}catch(e){}
+export function inStagione(stagione,data){
+  if(!stagione)return true;
+  if(stagione.inizio&&data<stagione.inizio)return false;
+  if(stagione.fine&&data>stagione.fine)return false;
+  return true;
+}
+
+export function postazioniAttive(lista,data){
+  return lista.filter(function(s){return !sospesaIl(s,data);});
+}
+
+// Chi e' in servizio oggi: nessuno fuori dal periodo di balneazione, altrimenti
+// tutte tranne le sospese. Fuori stagione le postazioni non esistono per
+// nessuno - niente segnaposti sulla mappa, niente zone da scegliere, niente
+// postazione piu' vicina: sulla spiaggia non c'e' nessuno, e mostrarle
+// lascerebbe credere il contrario.
+export function postazioniInServizio(lista,stagione,data){
+  if(!inStagione(stagione,data))return [];
+  return postazioniAttive(lista,data);
+}
+
+function _applicaPostazioni(lista){
+  const copia=lista.slice();
+  POSTAZIONI.length=0;
+  copia.forEach(function(s){POSTAZIONI.push(s);});
+  STATIONS.length=0;
+  postazioniInServizio(copia,stagioneData,romeNow().date).forEach(function(s){STATIONS.push(s);});
+  ZONES.length=0;
+  STATIONS.forEach(function(s){ZONES.push(`P.${s.num} \u2013 ${s.name}`);});
+  ZONES.push("Spiaggia libera / Area non concessionata");
+}
+(function(){
+  var cache=null;
+  try{cache=postazioniDaNodo(JSON.parse(localStorage.getItem("fb_postazioni")||"null"));}catch(e){}
+  if(cache&&cache.length){_applicaPostazioni(cache);postazioniDaDb=true;}
+  else _applicaPostazioni(_STATIONS_FILE);
+})();
+
 export const TYPES={
   emergenza:{label:"Emergenza",sub:["Annegamento / soccorso","Persona dispersa","Infortunio","Malore in spiaggia"]},
   pericolo: {label:"Pericolo", sub:["Vento Forte","Correnti pericolose","Mare molto mosso","Cane libero senza padrone","Oggetti pericolosi in acqua o spiaggia"]},
@@ -836,14 +942,73 @@ _ascolta(stationNotesRef,"note di postazione",function(snap){
   if(currentScreen==="dashboard"&&window.activeDashTab==="note")_refreshNotePanel();
 });
 
-_ascolta(flagsRef,"bandiere",snap=>{
-  const fsnap=snap.val()||{};
+// Ultimo /flags ricevuto: serve a ricalcolare flagsData quando cambia
+// l'elenco delle postazioni senza che cambino le bandiere.
+var _ultimeBandiere={};
+function _ricalcolaBandiere(){
   flagsData={};
-  STATIONS.forEach(s=>{flagsData[s.num]=fsnap[String(s.num)]||fsnap[s.num]||"verde";});
+  STATIONS.forEach(s=>{flagsData[s.num]=_ultimeBandiere[String(s.num)]||_ultimeBandiere[s.num]||"verde";});
+}
+_ascolta(flagsRef,"bandiere",snap=>{
+  _ultimeBandiere=snap.val()||{};
+  _ricalcolaBandiere();
   refreshMarkers();
+  renderMapLegend();
   if(currentScreen==="home")renderPage();
   if(currentScreen==="station")renderPage();
   if(currentScreen==="dashboard"&&window.activeDashTab==="bandiere")renderPage();
+});
+
+_ascolta(postazioniRef,"postazioni",function(snap){
+  var raw=snap.val();
+  var lista=postazioniDaNodo(raw);
+  postazioniDaDb=lista.length>0;
+  _applicaPostazioni(postazioniDaDb?lista:_STATIONS_FILE);
+  try{
+    if(postazioniDaDb)localStorage.setItem("fb_postazioni",JSON.stringify(raw));
+    else localStorage.removeItem("fb_postazioni");
+  }catch(e){}
+  _ricalcolaBandiere();
+  refreshMarkers();
+  renderMapLegend();
+  if(currentScreen==="home"||currentScreen==="station")renderPage();
+  // Sul tab Postazioni ci pensa il pannello stesso: ridisegnarlo qui
+  // butterebbe via una modifica a meta'.
+  if(currentScreen==="dashboard"&&window.activeDashTab!=="postazioni")renderPage();
+});
+
+// Una sospensione che inizia o finisce stanotte deve valere domattina anche
+// sugli apparecchi che nessuno spegne mai - i tablet di postazione restano
+// accesi per settimane, e l'elenco lo calcola la data di oggi. Ogni dieci
+// minuti si guarda se la giornata e' cambiata, e in quel caso si rifa' il
+// conto delle postazioni in servizio (e si ridisegna: cambia anche il banner
+// di fine stagione, che dipende dalla stessa data).
+var _giornoCorrente=romeNow().date;
+setInterval(function(){
+  var oggi=romeNow().date;
+  if(oggi===_giornoCorrente)return;
+  _giornoCorrente=oggi;
+  _applicaPostazioni(POSTAZIONI);
+  _ricalcolaBandiere();
+  refreshMarkers();
+  renderMapLegend();
+  renderPage();
+},10*60*1000);
+
+_ascolta(stagioneRef,"stagione",function(snap){
+  stagioneData=snap.val()||null;
+  try{
+    if(stagioneData)localStorage.setItem("fb_stagione",JSON.stringify(stagioneData));
+    else localStorage.removeItem("fb_stagione");
+  }catch(e){}
+  // Il periodo decide anche chi e' in servizio: cambiarlo dal pannello admin
+  // fa sparire (o ricomparire) le postazioni senza ricaricare niente.
+  _applicaPostazioni(POSTAZIONI);
+  _ricalcolaBandiere();
+  refreshMarkers();
+  renderMapLegend();
+  if(currentScreen==="dashboard"&&window.activeDashTab==="postazioni")return;
+  renderPage();
 });
 
 // Segnalazioni COMPLETE (con dati personali): leggibili solo da operatori/
@@ -1033,7 +1198,7 @@ export function getFlags(){return{...flagsData};}
 // di differenza perche' una postazione smettesse di vedere le proprie.
 export function zonaPostazione(num){
   const n=String((num===undefined||num===null)?(stationMode||""):num);
-  const st=STATIONS.find(function(s){return String(s.num)===n;});
+  const st=postazionePerNumero(n);
   return "P."+n+(st?" – "+st.name:"");
 }
 export function addReport(r){
@@ -1111,6 +1276,9 @@ export function haversine(lat1,lng1,lat2,lng2){
 export function findNearest(lat,lng){
   let best=null,bestDist=Infinity;
   STATIONS.forEach(s=>{const d=haversine(lat,lng,s.lat,s.lng);if(d<bestDist){bestDist=d;best=s;}});
+  // Nessuna postazione in servizio (tutte sospese, o fuori stagione): non
+  // esiste una "piu' vicina", e una distanza infinita non si mostra a nessuno.
+  if(!best)return{station:null,dist:null};
   return{station:best,dist:Math.round(bestDist)};
 }
 export function findNearestDAE(lat,lng){
@@ -1157,7 +1325,8 @@ export function romeNow(){
     return {h:d.getHours(),m:d.getMinutes(),date:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
   }
 }
-export function isServiceActive(){var h=romeNow().h;return h>=9&&h<19;}
+export function isStagioneAttiva(){return inStagione(stagioneData,romeNow().date);}
+export function isServiceActive(){var h=romeNow().h;return isStagioneAttiva()&&h>=9&&h<19;}
 
 // --- Bandiere automatiche: GESTITE LATO SERVER ---
 // Il cambio automatico (tutte VERDI alle 09:00, tutte ROSSE alle 19:00, ora di Roma)

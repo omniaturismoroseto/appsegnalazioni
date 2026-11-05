@@ -30,6 +30,22 @@ Sentry.onLoad(function(){
       Sentry.consoleLoggingIntegration({levels:["error"]}),
       Sentry.replayIntegration()
     ],
+    // "Script error." e' tutto quello che il browser concede quando a lanciare
+    // l'errore e' uno script di un'altra origine senza CORS: niente file,
+    // niente riga, niente messaggio vero. Sentry lo scarta gia' da solo - sta
+    // nella sua lista predefinita - ma soltanto quando gli arriva scritto
+    // proprio cosi'.
+    //
+    // Se pero' l'errore capita PRIMA che il pacchetto Sentry abbia finito di
+    // caricarsi, a raccoglierlo e' il caricatore qui sopra, che lo tiene da
+    // parte e poi lo riconsegna come oggetto ErrorEvent invece che come testo.
+    // A quel punto Sentry lo riscrive "Event `ErrorEvent` captured as exception
+    // with message `Script error.`", che alla lista predefinita non somiglia
+    // piu': stessa identica informazione - cioe' nessuna - ma stavolta aperta
+    // come segnalazione. La prima e' arrivata il 20 settembre da
+    // postazione.html; qui la pagina e' diversa ma il caricatore e' lo stesso,
+    // e anche il rischio. Si ripete la stessa decisione sulla forma travestita.
+    ignoreErrors:[/Event `ErrorEvent` captured as exception with message `Script error\.?`/],
     replaysSessionSampleRate:0.1,
     replaysOnErrorSampleRate:1.0
   });
@@ -39,7 +55,17 @@ Sentry.onLoad(function(){
 // try/catch — se uno di quei file fallisce a caricarsi/eseguirsi, questo
 // mostra comunque una pagina d'errore comprensibile invece di uno schermo
 // bianco o a metà caricato.
+//
+// Un errore anonimo pero' non e' un guasto di questa app: "Script error." senza
+// oggetto errore vuol dire che a lanciarlo e' stato uno script di un'altra
+// origine (Google Maps quando carica da solo i suoi moduli, il reCAPTCHA di
+// App Check, un'estensione del browser). Non c'e' file, non c'e' riga, non c'e'
+// modo di dire che la colpa sia nostra. I nostri file sono tutti della stessa
+// origine e un errore lo raccontano per intero, quindi la rete di sicurezza non
+// si perde niente a lasciar passare questo caso - e in cambio non copre la
+// pagina di chi sta guardando con un avviso rosso per colpa di qualcun altro.
 window.addEventListener("error",function(e){
+  if(!e.error&&/^Script error\.?$/.test(String(e.message||"")))return;
   try{if(window.Sentry&&typeof Sentry.captureException==="function")Sentry.captureException(e.error||e.message);}catch(e2){}
   var page=document.getElementById("page");
   if(page&&!page.dataset.appStarted){

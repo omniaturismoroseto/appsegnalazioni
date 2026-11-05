@@ -13,7 +13,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   --verde:#27ae60;--gialla:#F5C800;--rossa:#e74c3c;
 }
 input,select,textarea,button{font-family:inherit;font-size:14px;outline:none}
-input[type=text],input[type=password],select{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);display:block}
+input[type=text],input[type=password],input[type=date],input[type=number],select{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);display:block}
 input:focus,select:focus,textarea:focus{border-color:var(--navy)}
 textarea{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);resize:vertical;background:var(--bg);color:var(--text);line-height:1.5}
 button{cursor:pointer;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg);color:var(--text);padding:7px 14px;transition:background .15s}
@@ -977,3 +977,5 @@ button.st-striscia{cursor:pointer}
   border-radius:12px;padding:14px;margin:0}
 .min-fatto{text-align:center;padding:20px 0 16px}
 .min-fatto__segno{font-size:52px;line-height:1}
+/* Banner di fine stagione in home (vedi _bannerFineStagione, pages-public.js) */
+.banner-fine-stagione{background:linear-gradient(135deg,#1A3B8C,#2d5fc4);color:#fff;border-radius:var(--radius-lg);padding:20px 18px;margin-bottom:14px;text-align:center;box-shadow:0 4px 14px rgba(26,59,140,.25)}

@@ -1,4 +1,4 @@
-import { FLAG_COLORS, STATIONS, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData, zonaPostazione } from "./core.js";
+import { FLAG_COLORS, STATIONS, postazionePerNumero, _openNoteModal, addReport, flagsData, fmt, render, setFlag, stationEmergenciesRef, stationMode, stationNotesData, zonaPostazione } from "./core.js";
 import { renderChatPanel, createRadioRecorder } from "./chat.js";
 import { icona as _icona } from "./icone.js";
 
@@ -153,7 +153,7 @@ export function renderStationPanel(page){
     return;
   }
 
-  const st=STATIONS.find(s=>String(s.num)===String(num));
+  const st=postazionePerNumero(num);
   const stName=st?st.name:"";
   const zoneStr=zonaPostazione(num);
   const flagColor=flagsData[num]||"verde";
