@@ -1,4 +1,4 @@
-import { FLAG_COLORS, METEO_POINT, STATIONS, flagsData, fmt, fmtDist, nearestDist, nearestStation } from "./core.js";
+import { FLAG_COLORS, METEO_POINT, STATIONS, _escapeHtml, flagsData, fmt, fmtDist, nearestDist, nearestStation } from "./core.js";
 
 export function knotsFromKmh(v){return Math.round((Number(v||0))*0.539957);}
 export function degToCompass(deg){
@@ -147,7 +147,7 @@ export function renderMeteoCard(page){
     '<div class="mhero-flag" style="background:'+fc+'28;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;z-index:1">'+fEmoji+'</div>'+
     '<div class="mhero-body" style="flex:1;z-index:1">'+
       '<div class="mhero-name" style="font-size:28px;font-weight:900;line-height:1;margin-bottom:4px;color:'+fc+'">'+String(risk.flag||"verde").toUpperCase()+'</div>'+
-      '<div class="mhero-desc" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:'+(displaySub?"6px":"4px")+'">'+risk.text+'</div>'+
+      '<div class="mhero-desc" style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:'+(displaySub?"6px":"4px")+'">'+_escapeHtml(risk.text)+'</div>'+
       '<div class="mhero-time" style="font-size:11px;color:var(--text3);margin-bottom:'+( displaySub?"4px":"0")+'">Aggiornato: '+fmt(m.updatedAt)+'</div>'+
       (displaySub?'<div style="font-size:11px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:5px 8px;line-height:1.4">'+ displaySub+'</div>':'')
     +'</div>'+

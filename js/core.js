@@ -595,8 +595,8 @@ export function _openNoteModal(stationNum, stationName, existingNote){
   overlay.id="_noteModal";
   var modal=document.createElement("div");
   modal.className="note-modal";
-  modal.innerHTML='<h3>\u26a0\ufe0f Nota pericolo &mdash; P.'+stationNum+'</h3>'
-    +'<p>'+stationName+'</p>';
+  modal.innerHTML='<h3>\u26a0\ufe0f Nota pericolo &mdash; P.'+_escapeHtml(stationNum)+'</h3>'
+    +'<p>'+_escapeHtml(stationName||"")+'</p>';
   var ta=document.createElement("textarea");
   ta.placeholder="Es: Secca pericolosa, corrente laterale...";
   ta.value=existingNote||"";
@@ -1399,8 +1399,14 @@ export function _startAlertSound(report){
   banner.className="alert-banner "+type;banner.id="_alertBanner";
   var icon=type==="emergenza"?"\uD83D\uDEA8":"\u26A0\uFE0F";
   var label=type==="emergenza"?"EMERGENZA":"PERICOLO";
+  // sub e zone arrivano da /reports, che chiunque puo' creare senza
+  // autenticazione (vedi database.rules.json: ".write": "!data.exists() || ..."):
+  // le regole ne limitano la lunghezza, non i caratteri. Senza escape questo
+  // banner - che compare da solo su ogni dashboard operatore appena c'e' una
+  // segnalazione aperta, senza che nessuno tocchi niente - eseguirebbe markup
+  // scritto da un estraneo dentro la sessione di un operatore o dell'admin.
   banner.innerHTML='<span style="font-size:20px;flex-shrink:0">'+icon+'</span>'
-    +'<span class="alert-banner-text">'+label+': '+report.sub+' &mdash; '+report.zone+'</span>';
+    +'<span class="alert-banner-text">'+label+': '+_escapeHtml(report.sub||"")+' &mdash; '+_escapeHtml(report.zone||"")+'</span>';
   var stopBtn=document.createElement("button");stopBtn.className="alert-banner-btn";stopBtn.textContent="\u2714 Visto";
   stopBtn.addEventListener("click",function(e){e.stopPropagation();_stopAlertSound();});
   banner.appendChild(stopBtn);

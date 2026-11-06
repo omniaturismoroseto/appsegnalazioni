@@ -68,7 +68,14 @@ window.addEventListener("error",function(e){
   try{if(window.Sentry&&typeof Sentry.captureException==="function")Sentry.captureException(e.error||e.message);}catch(e2){}
   var page=document.getElementById("page");
   if(page&&!page.dataset.appStarted){
-    page.innerHTML='<div style="padding:20px;color:red;font-size:13px"><b>Errore:</b><br>'+String(e.message||e.error||"Errore sconosciuto")+'</div>';
+    // Il testo dell'errore puo' arrivare da codice di terze parti: va messo
+    // come testo, non come markup, o la pagina d'errore diventa essa stessa
+    // il punto d'ingresso.
+    page.textContent="";
+    var _b=document.createElement("b");_b.textContent="Errore:";
+    var _m=document.createElement("div");_m.textContent=String(e.message||e.error||"Errore sconosciuto");
+    var _w=document.createElement("div");_w.style.cssText="padding:20px;color:red;font-size:13px";
+    _w.appendChild(_b);_w.appendChild(_m);page.appendChild(_w);
   }
 });
 </script>

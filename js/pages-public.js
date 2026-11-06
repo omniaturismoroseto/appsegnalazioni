@@ -1,4 +1,4 @@
-import { FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, isStagioneAttiva, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stagioneData, stationDevicesRef, stationMode } from "./core.js";
+import { FLAG_COLORS, PHONE, TYPES, WA_NOTIFY, ZONES, _escapeHtml, _activateStationMode, _checkForActiveAlerts, _checkServiceOrEmergency, _getAuth, _openAnnegamentoAlert, _userGpsAcc, _userLat, _userLng, addReport, auth, callEmergency112, flagsData, fmt, fmtDist, isServiceActive, isStagioneAttiva, nearestDAE, nearestDAEDist, nearestDist, nearestStation, render, renderPage, requestGPS, resizeImg, romeNow, sendWANotify, stagioneData, stationDevicesRef, stationMode } from "./core.js";
 import { degToCompass, fetchMeteoMarine, knotsFromKmh, renderMeteoCard } from "./meteo.js";
 import { _renderDeviceActivation } from "./device.js";
 import { STATION_APP } from "./core.js";
@@ -256,7 +256,7 @@ export function renderHome(page){
       infoRow.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 14px 10px";
       infoRow.innerHTML='<span style="font-size:22px">\uD83D\uDCCD</span>'
         +'<div style="flex:1;min-width:0">'
-        +'<p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 2px">P.'+nearestStation.num+' \u2013 '+nearestStation.name+'</p>'
+        +'<p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 2px">P.'+_escapeHtml(nearestStation.num)+' \u2013 '+_escapeHtml(nearestStation.name)+'</p>'
         +'<p style="font-size:12px;color:var(--text2);margin:0">A <strong>'+fmtDist(nearestDist)+'</strong> da te &nbsp;\u00b7&nbsp; Bandiera <span style="font-weight:700;color:'+fc2+'">'+fn+'</span>'+(svc?'':' &nbsp;\u00b7&nbsp; <span style="color:#b91c1c;font-weight:700">FUORI SERVIZIO</span>')+'</p>'
         +'</div>';
       ns.appendChild(infoRow);
@@ -329,7 +329,7 @@ export function renderHome(page){
         '<div style="width:34px;height:34px;border-radius:6px;overflow:hidden;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.25)">'
         +'<img src="img/dae.jpg" style="width:100%;height:100%;object-fit:cover;display:block;"/></div>'
         +'<div style="flex:1;min-width:0">'
-        +'<p style="font-size:13px;font-weight:700;color:#14532d;margin:0 0 1px">'+nearestDAE.name+'</p>'
+        +'<p style="font-size:13px;font-weight:700;color:#14532d;margin:0 0 1px">'+_escapeHtml(nearestDAE.name)+'</p>'
         +'<p style="font-size:12px;color:var(--text2);margin:0">Defibrillatore DAE &nbsp;\u00b7&nbsp; A <strong>'+fmtDist(nearestDAEDist)+'</strong> da te</p>'
         +'</div>';
       daeCard.appendChild(daeInfoRow);
@@ -627,9 +627,9 @@ export function renderForecastPage(page){
         var lc=document.createElement("div");
         lc.style.cssText="padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--bg2);border-right:1px solid var(--border)";
         lc.innerHTML=
-          '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">'+meta.label+'</div>'+
+          '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">'+_escapeHtml(meta.label)+'</div>'+
           '<div style="font-size:38px;line-height:1;margin:4px 0">'+sky+'</div>'+
-          '<div style="font-size:10px;color:var(--text3)">'+meta.hours+'</div>';
+          '<div style="font-size:10px;color:var(--text3)">'+_escapeHtml(meta.hours)+'</div>';
         // Colonna dx
         var rc=document.createElement("div");
         rc.style.cssText="padding:12px 14px;display:flex;flex-direction:column;gap:7px";
@@ -884,11 +884,11 @@ export function renderOrdinanzePage(page){
     var card=document.createElement("div");
     card.className="ordinanza-card";
     card.innerHTML='<div class="ordinanza-card-header">'
-      +'<span style="font-size:26px">'+o.icona+'</span>'
-      +'<div><span class="ordinanza-badge '+o.tipo+'">'+o.tipo.toUpperCase()+'</span>'
-      +'<h3 style="margin-top:4px">'+o.titolo+'</h3></div>'
+      +'<span style="font-size:26px">'+_escapeHtml(o.icona)+'</span>'
+      +'<div><span class="ordinanza-badge '+_escapeHtml(o.tipo)+'">'+_escapeHtml(o.tipo.toUpperCase())+'</span>'
+      +'<h3 style="margin-top:4px">'+_escapeHtml(o.titolo)+'</h3></div>'
       +'</div>'
-      +'<p>'+o.testo+'</p>';
+      +'<p>'+_escapeHtml(o.testo)+'</p>';
     page.appendChild(card);
   });
 
@@ -1538,7 +1538,7 @@ export function _nearestStationNavCard(){
     infoRow.style.cssText="display:flex;align-items:center;gap:10px;padding:12px 14px 10px";
     infoRow.innerHTML='<span style="font-size:22px">\uD83C\uDFD6\uFE0F</span>'
       +'<div style="flex:1;min-width:0">'
-      +'<p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 2px">P.'+nearestStation.num+' \u2013 '+nearestStation.name+'</p>'
+      +'<p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 2px">P.'+_escapeHtml(nearestStation.num)+' \u2013 '+_escapeHtml(nearestStation.name)+'</p>'
       +'<p style="font-size:12px;color:var(--text2);margin:0">Postazione pi\u00f9 vicina'+(nearestDist?' &nbsp;\u00b7&nbsp; a <strong>'+fmtDist(nearestDist)+'</strong> da te':'')+'</p>'
       +'</div>';
     ns.appendChild(infoRow);

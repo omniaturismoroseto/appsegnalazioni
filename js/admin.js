@@ -6,7 +6,7 @@
 // createOperatorAccount/deleteOperatorAccount in functions/index.js.
 // promoteToAdmin resta solo per il bootstrap del primissimo admin (vedi
 // _promoteSelfBootstrap sotto).
-import { ROLE_LABELS, _getAuth, renderPage } from "./core.js";
+import { ROLE_LABELS, _escapeHtml, _getAuth, renderPage } from "./core.js";
 
 const FN_BASE="https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/";
 
@@ -113,7 +113,7 @@ export function renderAdminPanel(page){
         const card=document.createElement("div");
         card.className="report-card";
         card.innerHTML='<div class="report-top"><div class="report-body">'
-          +'<strong style="font-size:13.5px">'+(acc.email||acc.uid)+'</strong>'
+          +'<strong style="font-size:13.5px">'+_escapeHtml(acc.email||acc.uid)+'</strong>'
           +(roleLabel?' <span class="badge" style="background:var(--info-bg);color:var(--info-text)">'+roleLabel.toUpperCase()+'</span>':'')
           +(acc.owner?' <span class="badge" style="background:var(--bg2);color:var(--text2)">🔒 PRINCIPALE</span>':'')
           +(acc.disabled?' <span class="badge" style="background:var(--danger-bg);color:var(--danger-text)">DISATTIVATO</span>':'')
@@ -159,7 +159,7 @@ export function renderAdminPanel(page){
         list.appendChild(card);
       });
     }).catch(function(e){
-      list.innerHTML='<div class="empty">Errore nel caricamento: '+e.message+'</div>';
+      list.innerHTML='<div class="empty">Errore nel caricamento: '+_escapeHtml(e.message||e)+'</div>';
     });
   }
   refreshList();

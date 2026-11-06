@@ -1,4 +1,4 @@
-import { FLAG_COLORS, STATIONS, isStagioneAttiva, postazionePerNumero, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
+import { FLAG_COLORS, STATIONS, _escapeHtml, isStagioneAttiva, postazionePerNumero, TYPES, WA_NOTIFY, _getAuth, _openNoteModal, _registerContactPush, currentScreen, deleteReport, emergencyContactsRef, flagsData, fmt, getFlags, getReports, render, renderPage, resolveReport, saveFlags, setFlag, stationDevicesData, stationDevicesRef, stationNotesData, stationNotesRef } from "./core.js";
 import { refreshMarkers } from "./map.js";
 import { CHILD_ESCALATE_MIN } from "./pages-public.js";
 import { renderChatPanel } from "./chat.js";
@@ -57,7 +57,7 @@ export function renderDashboard(page){
   const sg=document.createElement("div");sg.className="stats-grid";
   [{label:"APERTE",value:open.length,color:""},{label:"EMERGENZE",value:open.filter(r=>r.type==="emergenza").length,color:"var(--danger-text)"},
    {label:"PERICOLI",value:open.filter(r=>r.type==="pericolo").length,color:"var(--warning-text)"}]
-  .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${s.label}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${s.value}</p>`;sg.appendChild(sc);});
+  .forEach(s=>{const sc=document.createElement("div");sc.className="stat-card";sc.innerHTML=`<p class="stat-label">${_escapeHtml(s.label)}</p><p class="stat-value"${s.color?` style="color:${s.color}"`:""}>${_escapeHtml(s.value)}</p>`;sg.appendChild(sc);});
   page.appendChild(sg);
   const tabBar=document.createElement("div");tabBar.className="tab-bar";
   // La chat con le postazioni e' riservata a admin e coordinatore (oltre
@@ -148,7 +148,7 @@ export function renderDashboard(page){
         if(opp){
           const xm=document.createElement("div");
           xm.style.cssText="margin:6px 0 2px;font-size:12px;font-weight:700;padding:8px 10px;border-radius:8px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;line-height:1.4";
-          xm.innerHTML="\u26A0\uFE0F Possibile riscontro: c'\u00e8 anche "+(dir==="perso"?"un <b>ritrovamento</b>":"una <b>scomparsa</b>")+" aperta ("+opp.zone+"). Verifica se coincidono.";
+          xm.innerHTML="\u26A0\uFE0F Possibile riscontro: c'\u00e8 anche "+(dir==="perso"?"un <b>ritrovamento</b>":"una <b>scomparsa</b>")+" aperta ("+_escapeHtml(opp.zone||"")+"). Verifica se coincidono.";
           body.appendChild(xm);
         }
       }
@@ -240,7 +240,7 @@ export function renderNote(page){
     row.appendChild(dot);
     // Name + badge
     var nm=document.createElement("div");nm.style.cssText="flex:1;min-width:0";
-    nm.innerHTML='<span style="font-size:13px">'+s.name+'</span> <span style="font-size:11px;color:var(--text3)">P.'+s.num+'</span>';
+    nm.innerHTML='<span style="font-size:13px">'+_escapeHtml(s.name)+'</span> <span style="font-size:11px;color:var(--text3)">P.'+_escapeHtml(s.num)+'</span>';
     var noteBadge=document.createElement("div");
     noteBadge.id="_noteBadge_"+s.num;
     noteBadge.style.cssText="font-size:11px;color:#fff;background:#1a1a1a;border-radius:4px;padding:2px 7px;margin-top:3px;display:"+(note?"inline-block":"none");
@@ -350,7 +350,11 @@ export function renderDispositivi(page){
     var row=document.createElement("div");
     row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;gap:8px";
     var info=document.createElement("div");info.style.cssText="flex:1;min-width:180px";
-    info.innerHTML='<span style="font-size:12.5px">Richiesta del '+fmt(d.requestedAt)+'</span><br><span style="font-size:10.5px;color:var(--text3)">'+String(d.userAgent||"").substring(0,60)+'</span>';
+    // userAgent lo scrive il dispositivo stesso, e una richiesta di attivazione
+    // la puo' creare chiunque senza autenticazione (stationDevices/$deviceId,
+    // ".write": "!data.exists() || ..."): va escapato, o questo elenco esegue
+    // markup altrui nella sessione dell'operatore che lo guarda.
+    info.innerHTML='<span style="font-size:12.5px">Richiesta del '+fmt(d.requestedAt)+'</span><br><span style="font-size:10.5px;color:var(--text3)">'+_escapeHtml(String(d.userAgent||"").substring(0,60))+'</span>';
     row.appendChild(info);
     var sel=document.createElement("select");sel.style.cssText="width:auto;padding:6px 8px;font-size:12.5px";
     var ph=document.createElement("option");ph.value="";ph.textContent="Scegli postazione…";sel.appendChild(ph);
@@ -407,10 +411,10 @@ export function renderDispositivi(page){
     row.style.cssText="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px";
     var info=document.createElement("div");info.style.cssText="flex:1;min-width:0";
     var pushOk=!!d.pushToken;
-    info.innerHTML='<span style="font-size:13px;font-weight:600">P.'+d.station+(st?" – "+st.name:"")+'</span>'
+    info.innerHTML='<span style="font-size:13px;font-weight:600">P.'+_escapeHtml(d.station)+(st?" – "+_escapeHtml(st.name):"")+'</span>'
       +'<br><span style="font-size:10.5px;font-weight:'+(pushOk?"400":"700")+';color:'+(pushOk?"var(--text3)":"var(--danger-text)")+'">'
       +(pushOk?"🔔 allarmi attivi":"⚠️ nessun token push: NON riceve gli allarmi")+'</span>'
-      +'<br><span style="font-size:10.5px;color:var(--text3)">'+String(d.userAgent||"").substring(0,60)+'</span>';
+      +'<br><span style="font-size:10.5px;color:var(--text3)">'+_escapeHtml(String(d.userAgent||"").substring(0,60))+'</span>';
     row.appendChild(info);
     if(pushOk){
       var testBtn=document.createElement("button");
@@ -482,7 +486,7 @@ export function renderBandiere(page){
     const row=document.createElement("div");row.className="station-row";
     const dot=document.createElement("div");dot.className="station-flag-dot";dot.style.background=FLAG_COLORS[flags[s.num]||"verde"];row.appendChild(dot);
     const nm=document.createElement("div");nm.className="station-name";
-    nm.innerHTML=`${s.name} <span class="station-num">P.${s.num}</span>`;row.appendChild(nm);
+    nm.innerHTML=`${_escapeHtml(s.name)} <span class="station-num">P.${_escapeHtml(s.num)}</span>`;row.appendChild(nm);
     const sel=document.createElement("select");sel.className="flag-select";
     [["verde","\uD83D\uDFE2 Verde"],["gialla","\uD83D\uDFE1 Gialla"],["rossa","\uD83D\uDD34 Rossa"]].forEach(([v,l])=>{
       const o=document.createElement("option");o.value=v;o.textContent=l;

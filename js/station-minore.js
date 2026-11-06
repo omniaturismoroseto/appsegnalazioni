@@ -15,7 +15,7 @@
 //    nome e un numero di telefono non si possono indovinare, il resto si'.
 //  - Il messaggio lo compone l'app, non il bagnino. Dettare un annuncio chiaro
 //    mentre qualcuno urla e' proprio la cosa che riesce peggio.
-import { addReport, emergencyContactsRef, render, resizeImg, zonaPostazione } from "./core.js";
+import { addReport, emergencyContactsRef, render, resizeImg, zonaPostazione, _escapeHtml } from "./core.js";
 import { inviaInChat } from "./chat.js";
 
 const MAX_TESTO_CHAT = 500;   // limite imposto dalle regole del database
@@ -94,7 +94,7 @@ function _scelte(opzioni) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "min-scelta" + (o.grave ? " min-scelta--grave" : "");
-    b.innerHTML = '<span class="min-scelta__icona">' + o.icona + '</span><span>' + o.testo + '</span>';
+    b.innerHTML = '<span class="min-scelta__icona">' + _escapeHtml(o.icona) + '</span><span>' + _escapeHtml(o.testo) + '</span>';
     b.addEventListener("click", o.azione);
     g.appendChild(b);
   });
