@@ -38,4 +38,16 @@ function normalizzaRuolo(role) {
   return String(role);
 }
 
-module.exports = { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo };
+// Chi puo' scrivere il claim admin su un account.
+//
+// Un admin promuove chi vuole. Il primo admin, quando non ne esiste ancora
+// nessuno, lo crea soltanto l'account principale (OWNER_EMAIL in index.js):
+// prima bastava essere autenticati, e con la creazione account aperta sul
+// progetto voleva dire chiunque, in qualunque momento in cui nessun admin
+// esistesse. E' anche la via di rientro se i claim si perdessero.
+function puoPromuovereAdmin(stato) {
+  if (stato.giaAdmin) return true;
+  return !!(stato.proprietario && stato.nessunAdminEsiste);
+}
+
+module.exports = { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo, puoPromuovereAdmin };

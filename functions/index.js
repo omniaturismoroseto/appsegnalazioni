@@ -4,7 +4,7 @@ const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https")
 const admin = require("firebase-admin");
 const STATIONS = require("./stations-data.js");
 const { postazioneDellaSegnalazione } = require("./instradamento.js");
-const { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo } = require("./ruoli.js");
+const { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo, puoPromuovereAdmin } = require("./ruoli.js");
 const { defineSecret } = require("firebase-functions/params");
 const Sentry = require("@sentry/google-cloud-serverless");
 
@@ -1150,13 +1150,27 @@ function _isOwnerEmail(email) {
 const VALID_ROLES = RUOLI_OPERATORE;
 
 exports.promoteToAdmin = onCall({ region: "europe-west1" }, async (request) => {
-  _requireOperatorAuth(request);
+  if (!request.auth) throw new HttpsError("unauthenticated", "Devi essere autenticato");
   const email = String((request.data && request.data.email) || "").trim();
   if (!email) throw new HttpsError("invalid-argument", "Email mancante");
 
+  // Il bootstrap del primo admin era aperto a qualunque utente autenticato.
+  // Con la creazione account attiva sul progetto voleva dire: aperto a
+  // chiunque, nei momenti in cui nessun admin esiste. Ora e' riservato
+  // all'account principale, che e' una costante di questo file e non un dato
+  // che qualcuno possa scrivere.
+  //
+  // Serve anche come via di rientro: ora che le regole chiedono un ruolo
+  // riconosciuto, un progetto in cui nessun account ha un ruolo non avrebbe
+  // piu' modo di assegnarne uno. Il proprietario puo' sempre ripartire, e
+  // nessun altro.
+  const proprietario = _isOwnerEmail(request.auth.token.email);
+  const giaAdmin = request.auth.token.role === "admin";
+  if (!proprietario && !giaAdmin) _requireOperatorAuth(request);
+
   try {
     const isBootstrap = !(await _hasAnyAdmin());
-    if (!isBootstrap && request.auth.token.role !== "admin") {
+    if (!puoPromuovereAdmin({ giaAdmin, proprietario, nessunAdminEsiste: isBootstrap })) {
       throw new HttpsError("permission-denied", "Solo un admin puo' promuovere altri admin");
     }
     const user = await admin.auth().getUserByEmail(email);

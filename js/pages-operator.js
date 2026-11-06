@@ -34,9 +34,12 @@ export function renderDashboard(page){
   });
   ti.appendChild(logoutBtn);
   if(!window.isAdmin){
-    // Visibile a chiunque per permettere al primo admin di "auto-promuoversi":
-    // la Cloud Function promoteToAdmin accetta la richiesta solo se non
-    // esiste ancora nessun admin nel progetto, altrimenti la rifiuta.
+    // Via di rientro per l'account principale: la Cloud Function
+    // promoteToAdmin accetta la richiesta solo se non esiste ancora nessun
+    // admin nel progetto E chi chiede e' l'account principale (OWNER_EMAIL in
+    // functions/index.js). Per tutti gli altri il pulsante c'e' e la chiamata
+    // viene rifiutata: il controllo sta sul server, non qui, perche' la
+    // callable e' raggiungibile anche senza passare da questo pannello.
     const bootstrapBtn=document.createElement("button");
     bootstrapBtn.style.cssText="font-size:11px;padding:4px 10px;color:var(--text2);background:var(--bg2);border-color:transparent;margin-left:6px";
     bootstrapBtn.textContent="\uD83D\uDD11 Diventa admin";

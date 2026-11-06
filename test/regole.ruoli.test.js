@@ -19,7 +19,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo } from "../functions/ruoli.js";
+import { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo, puoPromuovereAdmin } from "../functions/ruoli.js";
 
 const REGOLE = JSON.parse(readFileSync(join(import.meta.dirname, "..", "database.rules.json"), "utf8"));
 
@@ -135,5 +135,24 @@ describe("il ruolo base si scrive per esteso", () => {
   it("un ruolo inventato passa invariato, e tocca a chi chiama rifiutarlo", () => {
     expect(normalizzaRuolo("superadmin")).toBe("superadmin");
     expect(ruoloOperatore(normalizzaRuolo("superadmin"))).toBe(false);
+  });
+});
+
+describe("il primo admin lo crea solo l'account principale", () => {
+  // Il bootstrap era aperto a qualunque utente autenticato. Con la creazione
+  // account attiva sul progetto significava: aperto a chiunque, in qualunque
+  // momento in cui nessun admin esistesse - per esempio subito dopo un
+  // ripristino, o se i claim si fossero persi.
+  const casi = [
+    { nome: "estraneo, nessun admin esiste", stato: { giaAdmin: false, proprietario: false, nessunAdminEsiste: true }, atteso: false },
+    { nome: "estraneo, un admin esiste", stato: { giaAdmin: false, proprietario: false, nessunAdminEsiste: false }, atteso: false },
+    { nome: "proprietario, nessun admin esiste (via di rientro)", stato: { giaAdmin: false, proprietario: true, nessunAdminEsiste: true }, atteso: true },
+    { nome: "proprietario senza claim, ma un admin esiste: chieda a lui", stato: { giaAdmin: false, proprietario: true, nessunAdminEsiste: false }, atteso: false },
+    { nome: "admin promuove un collega", stato: { giaAdmin: true, proprietario: false, nessunAdminEsiste: false }, atteso: true },
+  ];
+  casi.forEach(({ nome, stato, atteso }) => {
+    it(nome + " \u2192 " + (atteso ? "permesso" : "rifiutato"), () => {
+      expect(puoPromuovereAdmin(stato)).toBe(atteso);
+    });
   });
 });
