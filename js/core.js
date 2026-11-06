@@ -8,6 +8,11 @@ import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio, aggiornaLis
 // Nomi leggibili dei ruoli. Stanno nelle fondamenta perche' li usano sia il
 // pannello admin sia la chat, e non sono un pezzo di nessuna delle due.
 export const ROLE_LABELS={
+  // "operator" e' il ruolo di chi non ne ha uno speciale, e si scrive per
+  // esteso nel claim come tutti gli altri: un account senza claim non e' piu'
+  // un operatore, e' un account che le regole del database non riconoscono
+  // (vedi functions/ruoli.js).
+  operator:"Operatore",
   admin:"Admin",
   coordinator:"Coordinatore",
   cp:"Capitaneria di Porto",
@@ -595,8 +600,8 @@ export function _openNoteModal(stationNum, stationName, existingNote){
   overlay.id="_noteModal";
   var modal=document.createElement("div");
   modal.className="note-modal";
-  modal.innerHTML='<h3>\u26a0\ufe0f Nota pericolo &mdash; P.'+stationNum+'</h3>'
-    +'<p>'+stationName+'</p>';
+  modal.innerHTML='<h3>\u26a0\ufe0f Nota pericolo &mdash; P.'+_escapeHtml(stationNum)+'</h3>'
+    +'<p>'+_escapeHtml(stationName||"")+'</p>';
   var ta=document.createElement("textarea");
   ta.placeholder="Es: Secca pericolosa, corrente laterale...";
   ta.value=existingNote||"";
@@ -1152,9 +1157,10 @@ _ascolta(chatEsternaResetAtRef,"azzeramento chat esterna",function(snap){
             stationDevicesData=snap.val()||{};
             if(currentScreen==="dashboard"&&window.activeDashTab==="dispositivi")renderPage();
           });
-          // Ruolo vero: vive nel custom claim del token (role:"admin"/
-          // "coordinator"/"cp"/"forze_ordine", assente per un operatore
-          // normale), non in una variabile locale - forceRefresh(true)
+          // Ruolo vero: vive nel custom claim del token (role:"operator"/
+          // "admin"/"coordinator"/"cp"/"forze_ordine"), non in una variabile
+          // locale. Se e' assente l'account non e' stato creato dal pannello e
+          // non ha accesso a niente - forceRefresh(true)
           // perché dopo una promozione/rimozione appena fatta il token in
           // cache potrebbe ancora avere il claim vecchio (dura fino a
           // un'ora altrimenti).
@@ -1399,8 +1405,14 @@ export function _startAlertSound(report){
   banner.className="alert-banner "+type;banner.id="_alertBanner";
   var icon=type==="emergenza"?"\uD83D\uDEA8":"\u26A0\uFE0F";
   var label=type==="emergenza"?"EMERGENZA":"PERICOLO";
+  // sub e zone arrivano da /reports, che chiunque puo' creare senza
+  // autenticazione (vedi database.rules.json: ".write": "!data.exists() || ..."):
+  // le regole ne limitano la lunghezza, non i caratteri. Senza escape questo
+  // banner - che compare da solo su ogni dashboard operatore appena c'e' una
+  // segnalazione aperta, senza che nessuno tocchi niente - eseguirebbe markup
+  // scritto da un estraneo dentro la sessione di un operatore o dell'admin.
   banner.innerHTML='<span style="font-size:20px;flex-shrink:0">'+icon+'</span>'
-    +'<span class="alert-banner-text">'+label+': '+report.sub+' &mdash; '+report.zone+'</span>';
+    +'<span class="alert-banner-text">'+label+': '+_escapeHtml(report.sub||"")+' &mdash; '+_escapeHtml(report.zone||"")+'</span>';
   var stopBtn=document.createElement("button");stopBtn.className="alert-banner-btn";stopBtn.textContent="\u2714 Visto";
   stopBtn.addEventListener("click",function(e){e.stopPropagation();_stopAlertSound();});
   banner.appendChild(stopBtn);

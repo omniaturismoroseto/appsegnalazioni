@@ -13,7 +13,7 @@
 // un bagnino vede in servizio. Cio' che resta in comune e' solo il modo di
 // mandare il dato al server (addReport), che e' il punto in cui le due app si
 // parlano davvero.
-import { addReport, emergencyContactsRef, render, resizeImg, zonaPostazione } from "./core.js";
+import { addReport, emergencyContactsRef, render, resizeImg, zonaPostazione, _escapeHtml } from "./core.js";
 import { avviaProtocolloMinore } from "./station-minore.js";
 
 // Sulle emergenze che richiedono il soccorso della postazione vicina la prima
@@ -105,7 +105,7 @@ export function renderSegnalaPostazione(page) {
     b.innerHTML = '<span class="seg-voce__gravita">' + (v.tipo === "emergenza" ? "Emergenza" : "Pericolo")
       + (v.chiamaCoordinatore ? ' · chiama il coordinatore' : '')
       + (v.protocollo ? ' · domande guidate' : '') + '</span>'
-      + '<span class="seg-voce__testo">' + v.testo + '</span>';
+      + '<span class="seg-voce__testo">' + _escapeHtml(v.testo) + '</span>';
     b.addEventListener("click", function () {
       // Alcune voci non sono una casella da spuntare ma una procedura: la
       // persona smarrita ha un protocollo di domande che raccoglie i dati

@@ -442,7 +442,7 @@ export function refreshMarkers(){
         }
         var content=
             "<div class=\"omnia-popup\" style=\"font-family:sans-serif\">"
-            +"<b style=\"font-size:14px\">P."+station.num+" – "+station.name+"</b>"
+            +"<b style=\"font-size:14px\">P."+_escapeHtml(station.num)+" – "+_escapeHtml(station.name)+"</b>"
             +noteStr+distStr+flagStr+alertStr
             +"<br><button onclick=\"window._segnalaPostazione('"+zoneLabel+"')\" "
             +"style=\"margin-top:8px;width:100%;padding:7px;background:#D62B1F;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer\">"

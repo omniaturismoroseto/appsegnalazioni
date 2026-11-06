@@ -6,7 +6,7 @@
 // createOperatorAccount/deleteOperatorAccount in functions/index.js.
 // promoteToAdmin resta solo per il bootstrap del primissimo admin (vedi
 // _promoteSelfBootstrap sotto).
-import { ROLE_LABELS, _getAuth, renderPage } from "./core.js";
+import { ROLE_LABELS, _escapeHtml, _getAuth, renderPage } from "./core.js";
 
 const FN_BASE="https://europe-west1-app-segnalazioni-omnia-roseto.cloudfunctions.net/";
 
@@ -65,10 +65,15 @@ function _fmtDate(iso){
 // (ne' testo ne' vocali) - vedi database.rules.json e pages-operator.js.
 // ROLE_LABELS vive ora in core.js: la usa anche la chat, e tenerla qui
 // obbligava l'app di postazione a caricarsi il pannello di gestione account.
+// "Operatore" non e' piu' la voce vuota del menu: e' un ruolo come gli altri
+// (ROLE_LABELS.operator). La voce vuota voleva dire "nessun claim", che ora
+// non da' accesso a niente - lasciarla nel menu avrebbe permesso di
+// disabilitare un account per sbaglio credendo di declassarlo.
 function _roleOptionsHtml(selected){
-  let html='<option value=""'+(!selected?" selected":"")+'>Operatore</option>';
+  let html="";
+  const sel=selected||"operator";
   Object.keys(ROLE_LABELS).forEach(function(k){
-    html+='<option value="'+k+'"'+(selected===k?" selected":"")+'>'+ROLE_LABELS[k]+'</option>';
+    html+='<option value="'+k+'"'+(sel===k?" selected":"")+'>'+_escapeHtml(ROLE_LABELS[k])+'</option>';
   });
   return html;
 }
@@ -95,6 +100,39 @@ export function renderAdminPanel(page){
   newBox.appendChild(emailInput);newBox.appendChild(passInput);newBox.appendChild(roleSelect);newBox.appendChild(createBtn);newBox.appendChild(createMsg);
   wrap.appendChild(newBox);
 
+  // Riempie il ruolo mancante sugli account nati prima che il ruolo base si
+  // scrivesse per esteso. Va premuto una volta, dopo il deploy delle funzioni
+  // e prima di quello delle regole nuove; si puo' ripremere senza danno.
+  // Finito, nell'elenco qui sotto non deve restare nessun "SENZA RUOLO".
+  const migraBox=document.createElement("div");
+  migraBox.style.cssText="background:var(--bg2);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px";
+  const migraTit=document.createElement("h3");
+  migraTit.style.cssText="font-size:13px;font-weight:700;margin-bottom:6px";
+  migraTit.textContent="\uD83D\uDD11 Ruolo base sugli account esistenti";
+  migraBox.appendChild(migraTit);
+  const migraNota=document.createElement("p");
+  migraNota.style.cssText="font-size:12px;color:var(--text2);margin:0 0 10px;line-height:1.5";
+  migraNota.textContent="Gli account creati prima non hanno un ruolo scritto, e con le regole nuove non leggono niente. Questo assegna loro il ruolo Operatore. Si puo' premere piu' volte.";
+  migraBox.appendChild(migraNota);
+  const migraBtn=document.createElement("button");migraBtn.type="button";
+  migraBtn.className="btn-primary";migraBtn.style.cssText="width:auto;padding:8px 16px;font-size:13px";
+  migraBtn.textContent="Assegna ruolo base";
+  const migraMsg=document.createElement("div");migraMsg.style.cssText="font-size:12px;margin-top:8px";
+  migraBtn.addEventListener("click",function(){
+    migraBtn.disabled=true;migraMsg.textContent="Assegnazione in corso\u2026";migraMsg.style.color="var(--text2)";
+    _callAdminFn("assegnaRuoloBase").then(function(res){
+      migraMsg.textContent="\u2705 "+(res.aggiornati||0)+" account aggiornati su "+(res.totale||0)+".";
+      migraMsg.style.color="var(--success-text)";
+      migraBtn.disabled=false;
+      refreshList();
+    }).catch(function(e){
+      migraMsg.textContent="Errore: "+e.message;migraMsg.style.color="var(--danger-text)";
+      migraBtn.disabled=false;
+    });
+  });
+  migraBox.appendChild(migraBtn);migraBox.appendChild(migraMsg);
+  wrap.appendChild(migraBox);
+
   const list=document.createElement("div");
   list.className="reports-list";
   list.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px">Caricamento account...</div>';
@@ -113,8 +151,13 @@ export function renderAdminPanel(page){
         const card=document.createElement("div");
         card.className="report-card";
         card.innerHTML='<div class="report-top"><div class="report-body">'
-          +'<strong style="font-size:13.5px">'+(acc.email||acc.uid)+'</strong>'
-          +(roleLabel?' <span class="badge" style="background:var(--info-bg);color:var(--info-text)">'+roleLabel.toUpperCase()+'</span>':'')
+          +'<strong style="font-size:13.5px">'+_escapeHtml(acc.email||acc.uid)+'</strong>'
+          +(roleLabel
+            ?' <span class="badge" style="background:var(--info-bg);color:var(--info-text)">'+_escapeHtml(roleLabel.toUpperCase())+'</span>'
+            // Un account senza ruolo e' nato prima che il ruolo base si
+            // scrivesse per esteso: con le regole nuove non legge niente.
+            // Si vede qui, cosi' si sa quando non ne resta piu' nessuno.
+            :' <span class="badge" style="background:var(--danger-bg);color:var(--danger-text)">\u26A0\uFE0F SENZA RUOLO</span>')
           +(acc.owner?' <span class="badge" style="background:var(--bg2);color:var(--text2)">🔒 PRINCIPALE</span>':'')
           +(acc.disabled?' <span class="badge" style="background:var(--danger-bg);color:var(--danger-text)">DISATTIVATO</span>':'')
           +'<div class="report-meta">Creato: '+_fmtDate(acc.createdAt)+' &middot; Ultimo accesso: '+_fmtDate(acc.lastSignIn)+'</div>'
@@ -159,7 +202,7 @@ export function renderAdminPanel(page){
         list.appendChild(card);
       });
     }).catch(function(e){
-      list.innerHTML='<div class="empty">Errore nel caricamento: '+e.message+'</div>';
+      list.innerHTML='<div class="empty">Errore nel caricamento: '+_escapeHtml(e.message||e)+'</div>';
     });
   }
   refreshList();

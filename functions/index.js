@@ -4,6 +4,7 @@ const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https")
 const admin = require("firebase-admin");
 const STATIONS = require("./stations-data.js");
 const { postazioneDellaSegnalazione } = require("./instradamento.js");
+const { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo, puoPromuovereAdmin } = require("./ruoli.js");
 const { defineSecret } = require("firebase-functions/params");
 const Sentry = require("@sentry/google-cloud-serverless");
 
@@ -1102,10 +1103,22 @@ async function _hasAnyAdmin() {
   return list.users.some((u) => u.customClaims && u.customClaims.role === "admin");
 }
 
+// "Autenticato" non basta piu'. Finche' bastava, un estraneo registrato da
+// solo sull'endpoint pubblico di Firebase Auth arrivava fin dentro
+// promoteToAdmin: il bootstrap del primo admin chiede solo di essere
+// autenticati, e se per qualunque ragione nessun admin esistesse in quel
+// momento se lo prendeva lui. Ora serve un ruolo riconosciuto, che si ottiene
+// soltanto da un account creato dal pannello (vedi functions/ruoli.js).
 function _requireOperatorAuth(request) {
   if (!request.auth) throw new HttpsError("unauthenticated", "Devi essere autenticato");
   if (request.auth.token.role === "station") {
     throw new HttpsError("permission-denied", "Non disponibile per i dispositivi di postazione");
+  }
+  if (!ruoloOperatore(request.auth.token.role)) {
+    throw new HttpsError(
+      "permission-denied",
+      "Questo account non ha un ruolo assegnato: chiedi all'amministratore di abilitarlo."
+    );
   }
 }
 
@@ -1132,16 +1145,32 @@ function _isOwnerEmail(email) {
 // seguito - per ora l'unica differenza attiva e' che CP e forze dell'ordine
 // non vedono mai la chat interna, ne' testo ne' vocali (vedi
 // database.rules.json e getAllChatTokens qui sotto).
-const VALID_ROLES = ["admin", "coordinator", "cp", "forze_ordine"];
+// L'elenco vive in functions/ruoli.js, che lo condivide con il gate delle
+// callable e con il riempimento dei claim mancanti.
+const VALID_ROLES = RUOLI_OPERATORE;
 
 exports.promoteToAdmin = onCall({ region: "europe-west1" }, async (request) => {
-  _requireOperatorAuth(request);
+  if (!request.auth) throw new HttpsError("unauthenticated", "Devi essere autenticato");
   const email = String((request.data && request.data.email) || "").trim();
   if (!email) throw new HttpsError("invalid-argument", "Email mancante");
 
+  // Il bootstrap del primo admin era aperto a qualunque utente autenticato.
+  // Con la creazione account attiva sul progetto voleva dire: aperto a
+  // chiunque, nei momenti in cui nessun admin esiste. Ora e' riservato
+  // all'account principale, che e' una costante di questo file e non un dato
+  // che qualcuno possa scrivere.
+  //
+  // Serve anche come via di rientro: ora che le regole chiedono un ruolo
+  // riconosciuto, un progetto in cui nessun account ha un ruolo non avrebbe
+  // piu' modo di assegnarne uno. Il proprietario puo' sempre ripartire, e
+  // nessun altro.
+  const proprietario = _isOwnerEmail(request.auth.token.email);
+  const giaAdmin = request.auth.token.role === "admin";
+  if (!proprietario && !giaAdmin) _requireOperatorAuth(request);
+
   try {
     const isBootstrap = !(await _hasAnyAdmin());
-    if (!isBootstrap && request.auth.token.role !== "admin") {
+    if (!puoPromuovereAdmin({ giaAdmin, proprietario, nessunAdminEsiste: isBootstrap })) {
       throw new HttpsError("permission-denied", "Solo un admin puo' promuovere altri admin");
     }
     const user = await admin.auth().getUserByEmail(email);
@@ -1169,9 +1198,10 @@ exports.demoteAdmin = onCall({ region: "europe-west1" }, async (request) => {
 
   try {
     const user = await admin.auth().getUserByEmail(email);
-    const claims = { ...(user.customClaims || {}) };
-    delete claims.role;
-    await admin.auth().setCustomUserClaims(user.uid, claims);
+    // Non si cancella il claim: si torna al ruolo base scritto per esteso.
+    // Un account senza claim non e' piu' un operatore, e' un account che le
+    // regole del database non riconoscono.
+    await admin.auth().setCustomUserClaims(user.uid, { ...(user.customClaims || {}), role: RUOLO_BASE });
     return { ok: true };
   } catch (e) {
     if (!(e instanceof HttpsError)) await reportError(e, "demoteAdmin");
@@ -1185,9 +1215,11 @@ exports.demoteAdmin = onCall({ region: "europe-west1" }, async (request) => {
 exports.setAccountRole = onCall({ region: "europe-west1" }, async (request) => {
   _requireAdmin(request);
   const uid = String((request.data && request.data.uid) || "");
-  const role = request.data && request.data.role ? String(request.data.role) : null;
+  // Il menu del pannello manda stringa vuota per "Operatore": vale il ruolo
+  // base, non la cancellazione del claim.
+  const role = normalizzaRuolo(request.data && request.data.role);
   if (!uid) throw new HttpsError("invalid-argument", "uid mancante");
-  if (role && !VALID_ROLES.includes(role)) throw new HttpsError("invalid-argument", "Ruolo non valido");
+  if (!VALID_ROLES.includes(role)) throw new HttpsError("invalid-argument", "Ruolo non valido");
   if (uid === request.auth.uid && role !== "admin") {
     throw new HttpsError("failed-precondition", "Non puoi rimuovere il ruolo admin a te stesso");
   }
@@ -1197,10 +1229,7 @@ exports.setAccountRole = onCall({ region: "europe-west1" }, async (request) => {
     if (_isOwnerEmail(user.email) && role !== "admin") {
       throw new HttpsError("failed-precondition", "L'account principale deve restare admin");
     }
-    const claims = { ...(user.customClaims || {}) };
-    if (role) claims.role = role;
-    else delete claims.role;
-    await admin.auth().setCustomUserClaims(uid, claims);
+    await admin.auth().setCustomUserClaims(uid, { ...(user.customClaims || {}), role });
     return { ok: true };
   } catch (e) {
     if (!(e instanceof HttpsError)) await reportError(e, "setAccountRole");
@@ -1213,6 +1242,35 @@ exports.setAccountRole = onCall({ region: "europe-west1" }, async (request) => {
 // schermo intero. Con l'allarme vero non si puo' provare senza coinvolgere
 // nessuno - sendStationEmergency raggiunge le 2 postazioni piu' vicine e i
 // contatti di emergenza, e mai la postazione da cui parte.
+// ---- Riempie il ruolo mancante sugli account che esistono gia' ----
+//
+// Prima di questa modifica un operatore normale non aveva nessun claim, e le
+// regole del database gli aprivano su "auth != null". Ora chiedono un ruolo
+// riconosciuto: gli account nati prima resterebbero fuori. Questa callable
+// scrive "operator" su tutti quelli che non hanno un ruolo, e si puo'
+// rilanciare quante volte si vuole senza cambiare niente a chi ce l'ha gia'.
+//
+// Va eseguita DOPO il deploy delle funzioni e PRIMA del deploy delle regole
+// nuove: in mezzo gli account senza ruolo funzionano ancora come prima.
+// L'admin la lancia dal pannello (tab Admin), e l'elenco degli account mostra
+// chi e' ancora senza ruolo, cosi' si vede quando non ne resta nessuno.
+exports.assegnaRuoloBase = onCall({ region: "europe-west1" }, async (request) => {
+  _requireAdmin(request);
+  try {
+    const list = await admin.auth().listUsers(1000);
+    const senzaRuolo = list.users.filter((u) => !ruoloOperatore(u.customClaims && u.customClaims.role));
+    for (const u of senzaRuolo) {
+      await admin.auth().setCustomUserClaims(u.uid, { ...(u.customClaims || {}), role: RUOLO_BASE });
+    }
+    console.log("Ruolo base assegnato a " + senzaRuolo.length + " account su " + list.users.length);
+    return { ok: true, aggiornati: senzaRuolo.length, totale: list.users.length };
+  } catch (e) {
+    if (e instanceof HttpsError) throw e;
+    await reportError(e, "assegnaRuoloBase");
+    throw new HttpsError("internal", "Errore nell'assegnazione del ruolo base");
+  }
+});
+
 exports.sendStationTestAlert = onCall({ region: "europe-west1" }, async (request) => {
   _requireAdmin(request);
   const deviceId = String((request.data && request.data.deviceId) || "");
@@ -1277,14 +1335,17 @@ exports.createOperatorAccount = onCall({ region: "europe-west1" }, async (reques
   _requireAdmin(request);
   const email = String((request.data && request.data.email) || "").trim();
   const password = String((request.data && request.data.password) || "");
-  const role = request.data && request.data.role ? String(request.data.role) : null;
+  const role = normalizzaRuolo(request.data && request.data.role);
   if (!email || !email.includes("@")) throw new HttpsError("invalid-argument", "Email non valida");
   if (password.length < 6) throw new HttpsError("invalid-argument", "Password troppo corta (minimo 6 caratteri)");
-  if (role && !VALID_ROLES.includes(role)) throw new HttpsError("invalid-argument", "Ruolo non valido");
+  if (!VALID_ROLES.includes(role)) throw new HttpsError("invalid-argument", "Ruolo non valido");
 
   try {
     const user = await admin.auth().createUser({ email, password });
-    if (role) await admin.auth().setCustomUserClaims(user.uid, { role });
+    // Il claim si scrive sempre, anche per un operatore senza ruolo speciale:
+    // e' quello che distingue un account creato qui da uno che si e'
+    // registrato da solo.
+    await admin.auth().setCustomUserClaims(user.uid, { role });
     return { ok: true, uid: user.uid };
   } catch (e) {
     if (e.code === "auth/email-already-exists") throw new HttpsError("already-exists", "Email gia' registrata");
