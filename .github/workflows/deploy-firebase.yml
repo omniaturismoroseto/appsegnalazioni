@@ -77,36 +77,46 @@ jobs:
     if: github.event_name == 'push' || inputs.cosa == 'funzioni' || inputs.cosa == 'tutto'
     runs-on: ubuntu-latest
     steps:
-      # Prima di tutto, così un secret mancante lo dice in chiaro invece di
-      # far fallire il deploy con un errore di autenticazione criptico.
-      - name: Controlla il secret
+      # Questo job parte da solo a ogni push. Senza il secret non può
+      # deployare, ma non deve nemmeno lasciare una X rossa addosso a una
+      # modifica che non c'entra niente: lo dice e si ferma lì.
+      - name: C'è il secret?
+        id: secret
         run: |
           if [ -z "$CHIAVE" ]; then
-            echo "::error title=Secret FIREBASE_SERVICE_ACCOUNT mancante::Aggiungilo seguendo le istruzioni in cima a .github/workflows/deploy-firebase.yml. Finché manca, i deploy si fanno a mano con firebase deploy: nient'altro è rotto."
-            exit 1
+            echo "presente=no" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Deploy automatico spento::Manca il secret FIREBASE_SERVICE_ACCOUNT, quindi non pubblico niente. I deploy restano a mano con 'firebase deploy --only functions'. Per accenderlo, istruzioni in cima a .github/workflows/deploy-firebase.yml."
+          else
+            echo "presente=si" >> "$GITHUB_OUTPUT"
           fi
         env:
           CHIAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - uses: actions/checkout@v4
+        if: steps.secret.outputs.presente == 'si'
 
       - uses: actions/setup-node@v4
+        if: steps.secret.outputs.presente == 'si'
         with:
           node-version: "22"
           cache: "npm"
 
       - name: Installa dipendenze
+        if: steps.secret.outputs.presente == 'si'
         run: npm ci
 
       - name: Test automatici
+        if: steps.secret.outputs.presente == 'si'
         run: npm test
 
       - name: Scrivi le credenziali
+        if: steps.secret.outputs.presente == 'si'
         run: printf '%s' "$CHIAVE" > "$RUNNER_TEMP/chiave.json"
         env:
           CHIAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Pubblica le funzioni
+        if: steps.secret.outputs.presente == 'si'
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/chiave.json
         run: npx --yes "$FIREBASE_TOOLS" deploy --only functions --project "$PROGETTO" --non-interactive
@@ -120,12 +130,12 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && (inputs.cosa == 'regole' || inputs.cosa == 'tutto')
     runs-on: ubuntu-latest
     steps:
-      # Prima di tutto, così un secret mancante lo dice in chiaro invece di
-      # far fallire il deploy con un errore di autenticazione criptico.
+      # Questo job lo lanci a mano: se manca il secret devi saperlo subito,
+      # non ritrovarti un run verde che non ha pubblicato niente.
       - name: Controlla il secret
         run: |
           if [ -z "$CHIAVE" ]; then
-            echo "::error title=Secret FIREBASE_SERVICE_ACCOUNT mancante::Aggiungilo seguendo le istruzioni in cima a .github/workflows/deploy-firebase.yml. Finché manca, i deploy si fanno a mano con firebase deploy: nient'altro è rotto."
+            echo "::error title=Secret FIREBASE_SERVICE_ACCOUNT mancante::Non posso pubblicare le regole. Aggiungi il secret (istruzioni in cima a questo file) oppure pubblicale a mano con 'firebase deploy --only database'."
             exit 1
           fi
         env:

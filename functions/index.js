@@ -5,6 +5,7 @@ const admin = require("firebase-admin");
 const STATIONS = require("./stations-data.js");
 const { postazioneDellaSegnalazione } = require("./instradamento.js");
 const { RUOLI_OPERATORE, RUOLO_BASE, ruoloOperatore, normalizzaRuolo, puoPromuovereAdmin } = require("./ruoli.js");
+const { SOGLIA_ACCORPAMENTO, raggruppaPerDestinatario, testoRiepilogo } = require("./riepilogo.js");
 const { defineSecret } = require("firebase-functions/params");
 const Sentry = require("@sentry/google-cloud-serverless");
 
@@ -95,6 +96,46 @@ function buildMessage(tokens, data, reportId, opts) {
       fcmOptions: {
         link: "https://omniaturismoroseto.github.io/appsegnalazioni/",
       },
+    },
+  };
+}
+
+// ---- Il promemoria accorpato, quando le segnalazioni aperte sono tante ----
+// Stessa forma e stesso canale di una ripetizione normale (deve suonare
+// uguale: e' lo stesso livello di urgenza), ma il contenuto lo scrive
+// riepilogo.js a partire dalle segnalazioni che riguardano QUESTI
+// destinatari. Il tag cambia a ogni ciclo, altrimenti Android sostituisce la
+// notifica precedente in silenzio e il promemoria non si sentirebbe.
+function buildRiepilogo(tokens, segnalazioni) {
+  const { title, body } = testoRiepilogo(segnalazioni);
+  return {
+    tokens,
+    notification: { title, body },
+    data: { type: "riepilogo_aperte", quante: String(segnalazioni.length) },
+    android: {
+      priority: "high",
+      notification: {
+        channelId: "omnia_allerta",
+        sound: "default",
+        color: "#D62B1F",
+        defaultVibrateTimings: false,
+        vibrateTimingsMillis: [0, 500, 200, 500, 200, 500],
+        tag: "riepilogo_" + Date.now(),
+      },
+    },
+    apns: {
+      headers: { "apns-priority": "10" },
+      payload: { aps: { sound: "default", badge: 1 } },
+    },
+    webpush: {
+      headers: { Urgency: "high", TTL: "120" },
+      notification: {
+        icon: "/appsegnalazioni/icon-192-fixed.png",
+        badge: "/appsegnalazioni/icon-192-fixed.png",
+        requireInteraction: true,
+        vibrate: [500, 200, 500, 200, 500],
+      },
+      fcmOptions: { link: "https://omniaturismoroseto.github.io/appsegnalazioni/" },
     },
   };
 }
@@ -339,26 +380,63 @@ exports.repeatOpenAlerts = onSchedule(
 
     if (!daRipetere.length) return;
 
-    let inviate = 0;
+    // Gli stessi destinatari dell'invio iniziale: chi e' stato avvisato
+    // dev'essere anche chi viene richiamato, altrimenti la ripetizione
+    // insiste con qualcuno che non era stato chiamato in causa. Si calcolano
+    // qui una volta sola, perche' servono a entrambe le strade.
+    const conDestinatari = [];
     for (const [id, r] of daRipetere) {
       try {
-        // Gli stessi destinatari dell'invio iniziale: chi e' stato avvisato
-        // dev'essere anche chi viene richiamato, altrimenti la ripetizione
-        // insiste con qualcuno che non era stato chiamato in causa.
         const { percorsi } = await destinatariSegnalazione(r);
-        const tokens = [...percorsi.keys()];
-        if (!tokens.length) continue;
-        const resp = await admin.messaging().sendEachForMulticast(
-          buildMessage(tokens, r, id, { repeat: true })
-        );
-        await ripulisciToken(resp, tokens, percorsi);
-        inviate++;
+        if (percorsi.size) conDestinatari.push({ id, r, percorsi });
       } catch (e) {
-        await reportError(e, "repeatOpenAlerts:" + id);
+        await reportError(e, "repeatOpenAlerts:destinatari:" + id);
       }
     }
+    if (!conDestinatari.length) return;
 
-    console.log("Ripetizione inviata per", inviate, "segnalazioni non ancora prese in carico");
+    // Poche segnalazioni aperte: ognuna tiene la sua ripetizione per esteso,
+    // esattamente come prima. E' il caso normale, e li' il dettaglio serve.
+    if (conDestinatari.length <= SOGLIA_ACCORPAMENTO) {
+      let inviate = 0;
+      for (const { id, r, percorsi } of conDestinatari) {
+        try {
+          const tokens = [...percorsi.keys()];
+          const resp = await admin.messaging().sendEachForMulticast(
+            buildMessage(tokens, r, id, { repeat: true })
+          );
+          await ripulisciToken(resp, tokens, percorsi);
+          inviate++;
+        } catch (e) {
+          await reportError(e, "repeatOpenAlerts:" + id);
+        }
+      }
+      console.log("Ripetizione inviata per", inviate, "segnalazioni non ancora prese in carico");
+      return;
+    }
+
+    // Tante: al posto di una ripetizione per segnalazione va un promemoria
+    // solo per destinatario, con le sole segnalazioni che lo riguardano.
+    // Il primo allarme di ognuna era gia' partito per intero alla creazione
+    // (sendPushOnNewReport): qui non si perde nessuna informazione nuova, si
+    // smette di ripetere N volte al minuto una cosa gia' detta.
+    const gruppi = raggruppaPerDestinatario(conDestinatari);
+    let promemoria = 0;
+    for (const g of gruppi) {
+      try {
+        const resp = await admin.messaging().sendEachForMulticast(
+          buildRiepilogo(g.tokens, g.segnalazioni)
+        );
+        await ripulisciToken(resp, g.tokens, g.percorsi);
+        promemoria++;
+      } catch (e) {
+        await reportError(e, "repeatOpenAlerts:riepilogo");
+      }
+    }
+    console.log(
+      "Accorpate", conDestinatari.length, "segnalazioni aperte in", promemoria,
+      "promemoria (invece di", conDestinatari.length, "ripetizioni per destinatario)"
+    );
   }
 );
 
