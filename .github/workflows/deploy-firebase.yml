@@ -1,0 +1,167 @@
+name: Deploy Firebase
+
+# Due cose diverse, con due regole diverse di proposito.
+#
+# Le FUNZIONI si pubblicano da sole a ogni push su main che le tocca. Sono
+# codice come il resto del sito, e il sito si pubblica già così (vedi
+# deploy-pages.yml).
+#
+# Le REGOLE del database NO: si pubblicano solo quando lo chiedi a mano, da
+# Actions. Non è pigrizia: sono il confine di sicurezza dell'intero database,
+# l'unica cosa che impedisce a un estraneo di leggere telefoni, GPS e foto di
+# minori. Un merge distratto che le pubblicasse da sé aprirebbe il database in
+# silenzio, e non se ne accorgerebbe nessuno fino al danno. Un deploy che va
+# chiesto è un deploy che qualcuno ha guardato.
+#
+# In più c'è un cancello: prima di pubblicare qualunque cosa girano i test, e
+# test/regole.ruoli.test.js si rifiuta di far passare regole che aprano sulla
+# sola esistenza di un account. Una regola che torna a dire "auth != null" e
+# basta non arriva in produzione da qui.
+#
+# ---------------------------------------------------------------------------
+# CONFIGURAZIONE, UNA VOLTA SOLA
+#
+# Serve un secret GitHub chiamato FIREBASE_SERVICE_ACCOUNT con dentro la
+# chiave JSON di un service account del progetto.
+#
+#  1. Console Google Cloud → IAM e amministrazione → Account di servizio →
+#     "Crea account di servizio". Chiamalo per esempio "deploy-da-github".
+#  2. Assegnagli questi ruoli: Firebase Admin, Cloud Functions Admin,
+#     Utente account di servizio, Cloud Build Editor, Artifact Registry
+#     Writer. Se un deploy si ferma per un permesso, l'errore dice quale
+#     ruolo manca: aggiungi quello e rilancia.
+#  3. Sull'account di servizio → Chiavi → "Aggiungi chiave" → JSON. Scarica
+#     il file.
+#  4. GitHub → Settings → Secrets and variables → Actions → "New repository
+#     secret". Nome: FIREBASE_SERVICE_ACCOUNT. Valore: tutto il contenuto del
+#     file JSON, incollato così com'è.
+#  5. Cancella il file JSON dal computer: da quel momento vive nel secret.
+#
+# È una credenziale di lunga durata con diritti di deploy: chi entra nel
+# repository con permessi di scrittura sui workflow può usarla. Se un giorno
+# non la vuoi più, cancella la chiave dall'account di servizio al punto 3 e il
+# secret qui: i deploy torneranno a mano, nient'altro si rompe.
+# ---------------------------------------------------------------------------
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "functions/**"
+      - ".github/workflows/deploy-firebase.yml"
+  workflow_dispatch:
+    inputs:
+      cosa:
+        description: "Cosa pubblicare"
+        required: true
+        default: funzioni
+        type: choice
+        options:
+          - funzioni
+          - regole
+          - tutto
+
+env:
+  PROGETTO: app-segnalazioni-omnia-roseto
+  # Versione fissata apposta: un deploy deve fare oggi quello che faceva ieri.
+  # Per aggiornarla, cambia il numero qui (una sola riga) e guarda che il
+  # primo deploy dopo il cambio vada a buon fine.
+  FIREBASE_TOOLS: firebase-tools@15.34.2
+
+permissions:
+  contents: read
+
+jobs:
+  funzioni:
+    name: Funzioni
+    if: github.event_name == 'push' || inputs.cosa == 'funzioni' || inputs.cosa == 'tutto'
+    runs-on: ubuntu-latest
+    steps:
+      # Prima di tutto, così un secret mancante lo dice in chiaro invece di
+      # far fallire il deploy con un errore di autenticazione criptico.
+      - name: Controlla il secret
+        run: |
+          if [ -z "$CHIAVE" ]; then
+            echo "::error title=Secret FIREBASE_SERVICE_ACCOUNT mancante::Aggiungilo seguendo le istruzioni in cima a .github/workflows/deploy-firebase.yml. Finché manca, i deploy si fanno a mano con firebase deploy: nient'altro è rotto."
+            exit 1
+          fi
+        env:
+          CHIAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Installa dipendenze
+        run: npm ci
+
+      - name: Test automatici
+        run: npm test
+
+      - name: Scrivi le credenziali
+        run: printf '%s' "$CHIAVE" > "$RUNNER_TEMP/chiave.json"
+        env:
+          CHIAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Pubblica le funzioni
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/chiave.json
+        run: npx --yes "$FIREBASE_TOOLS" deploy --only functions --project "$PROGETTO" --non-interactive
+
+      - name: Butta via le credenziali
+        if: always()
+        run: rm -f "$RUNNER_TEMP/chiave.json"
+
+  regole:
+    name: Regole del database
+    if: github.event_name == 'workflow_dispatch' && (inputs.cosa == 'regole' || inputs.cosa == 'tutto')
+    runs-on: ubuntu-latest
+    steps:
+      # Prima di tutto, così un secret mancante lo dice in chiaro invece di
+      # far fallire il deploy con un errore di autenticazione criptico.
+      - name: Controlla il secret
+        run: |
+          if [ -z "$CHIAVE" ]; then
+            echo "::error title=Secret FIREBASE_SERVICE_ACCOUNT mancante::Aggiungilo seguendo le istruzioni in cima a .github/workflows/deploy-firebase.yml. Finché manca, i deploy si fanno a mano con firebase deploy: nient'altro è rotto."
+            exit 1
+          fi
+        env:
+          CHIAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Installa dipendenze
+        run: npm ci
+
+      # Qui dentro c'è test/regole.ruoli.test.js, che controlla che nessuna
+      # regola conceda permessi sulla sola esistenza di un account e che le
+      # parentesi di ogni espressione siano bilanciate (una regola sbilanciata
+      # la rifiuta il deploy, ma lo scopre più tardi di qui).
+      - name: Test automatici
+        run: npm test
+
+      - name: Promemoria
+        run: |
+          echo "::notice title=Prima di pubblicare le regole::Gli account senza ruolo restano fuori. Nel pannello Admin, tab Admin, non deve comparire nessun badge rosso SENZA RUOLO: se ce n'è, premi prima 'Assegna ruolo base'."
+
+      - name: Scrivi le credenziali
+        run: printf '%s' "$CHIAVE" > "$RUNNER_TEMP/chiave.json"
+        env:
+          CHIAVE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Pubblica le regole
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/chiave.json
+        run: npx --yes "$FIREBASE_TOOLS" deploy --only database --project "$PROGETTO" --non-interactive
+
+      - name: Butta via le credenziali
+        if: always()
+        run: rm -f "$RUNNER_TEMP/chiave.json"
