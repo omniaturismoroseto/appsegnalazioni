@@ -8,6 +8,11 @@ import { _chatDeviceId, _chatMsgAddressedToMe, _onIncomingChatAudio, aggiornaLis
 // Nomi leggibili dei ruoli. Stanno nelle fondamenta perche' li usano sia il
 // pannello admin sia la chat, e non sono un pezzo di nessuna delle due.
 export const ROLE_LABELS={
+  // "operator" e' il ruolo di chi non ne ha uno speciale, e si scrive per
+  // esteso nel claim come tutti gli altri: un account senza claim non e' piu'
+  // un operatore, e' un account che le regole del database non riconoscono
+  // (vedi functions/ruoli.js).
+  operator:"Operatore",
   admin:"Admin",
   coordinator:"Coordinatore",
   cp:"Capitaneria di Porto",
@@ -1152,9 +1157,10 @@ _ascolta(chatEsternaResetAtRef,"azzeramento chat esterna",function(snap){
             stationDevicesData=snap.val()||{};
             if(currentScreen==="dashboard"&&window.activeDashTab==="dispositivi")renderPage();
           });
-          // Ruolo vero: vive nel custom claim del token (role:"admin"/
-          // "coordinator"/"cp"/"forze_ordine", assente per un operatore
-          // normale), non in una variabile locale - forceRefresh(true)
+          // Ruolo vero: vive nel custom claim del token (role:"operator"/
+          // "admin"/"coordinator"/"cp"/"forze_ordine"), non in una variabile
+          // locale. Se e' assente l'account non e' stato creato dal pannello e
+          // non ha accesso a niente - forceRefresh(true)
           // perché dopo una promozione/rimozione appena fatta il token in
           // cache potrebbe ancora avere il claim vecchio (dura fino a
           // un'ora altrimenti).
